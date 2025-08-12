@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CardBazaar 1.3 FIXED</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      background-color: #ffffff;
+      padding: 40px 20px;
+      display: flex;
+      align-items: center;
+      border-bottom: 2px solid #e0e0e0;
+      box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .logo {
+      font-family: 'Bangers', Impact, Charcoal, sans-serif;
+      font-size: 120px;
+      color: #d92626;
+      letter-spacing: 2px;
+      text-shadow: 3px 3px #000000;
+      flex: 1;
+    }
+    .content {
+      display: flex;
+    }
+    .right-sidebar {
+      width: 180px;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .right-sidebar a {
+      color: #444;
+      text-decoration: none;
+      margin-bottom: 16px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 512px);
+      gap: 0;
+      padding: 20px 40px 60px 40px;
+      justify-content: start;
+    }
+    .card {
+      position: relative;
+      width: 512px;
+      height: 716px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.75);
+      color: white;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      z-index: 2;
+    }
+    .card:hover .overlay {
+      display: flex;
+    }
+    .variant-selector {
+      margin-top: 12px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .variant-selector button {
+      padding: 4px 8px;
+      font-size: 12px;
+      background-color: white;
+      color: #000;
+      border: none;
+      cursor: pointer;
+    }
+    .card-stack {
+      position: relative;
+      width: 512px;
+      height: 716px;
+    }
+    .variant-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+      object-fit: contain;
+    }
+    .variant-image.active {
+      opacity: 1;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">CARDBAZAAR</div>
+    </div>
+    <div class="content">
+      <div class="grid" id="cardGrid">
+        <!-- Cards will be populated here -->
+      </div>
+      <div class="right-sidebar">
+        <a href="#">🛒 Your Cart</a>
+        <a href="#">👤 Profile</a>
+      </div>
+    </div>
+  </div>
+  <script>
+    const cardNames = [
+      "Teferi, Hero of Dominaria",
+      "Liliana of the Veil",
+      "Sheoldred, the Apocalypse",
+      "Cut Down",
+      "Go for the Throat",
+      "Cavern of Souls",
+      "Arcane Signet",
+      "Boseiju, Who Endures",
+      "Command Tower",
+      "Ossification"
+    ];
+
+    async function fetchCardImages() {
+      const grid = document.getElementById("cardGrid");
+      for (let name of cardNames) {
+        const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        const image = data.image_uris.normal;
+
+        const cardDiv = document.createElement("div");
+        cardDiv.className = "card";
+        cardDiv.innerHTML = `
+          <div class="card-stack">
+            <img class="variant-image active" src="${image}" alt="${name} NM">
+            <img class="variant-image" src="${image}" alt="${name} EX">
+            <img class="variant-image" src="${image}" alt="${name} LP">
+          </div>
+          <div class="overlay">
+            <div>
+              <div>Price: $29.99</div>
+              <div>Rarity: Mythic</div>
+              <div>Condition: NM</div>
+              <div>Live Inventory: 4 copies</div>
+              <div class="variant-selector">
+                <button onclick="this.closest('.card').querySelectorAll('.variant-image').forEach((img,i)=>img.classList.toggle('active', i===0))">$29.99 - NM</button>
+                <button onclick="this.closest('.card').querySelectorAll('.variant-image').forEach((img,i)=>img.classList.toggle('active', i===1))">$27.50 - EX</button>
+                <button onclick="this.closest('.card').querySelectorAll('.variant-image').forEach((img,i)=>img.classList.toggle('active', i===2))">$24.99 - LP</button>
+              </div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(cardDiv);
+      }
+    }
+
+    fetchCardImages();
+  </script>
+</body>
+</html>
