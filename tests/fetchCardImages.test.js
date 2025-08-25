@@ -3,14 +3,15 @@ const assert = require('node:assert/strict');
 const { changeVariant, cycleVariant } = require('../fetchCardImages');
 
 class Element {
-  constructor(tag) {
-    this.tagName = tag.toUpperCase();
-    this.children = [];
-    this.parentElement = null;
-    this.className = '';
-    this.dataset = {};
-    this.textContent = '';
-  }
+    constructor(tag) {
+      this.tagName = tag.toUpperCase();
+      this.children = [];
+      this.parentElement = null;
+      this.className = '';
+      this.dataset = {};
+      this.textContent = '';
+      this.style = {};
+    }
   get classList() {
     const el = this;
     return {
@@ -30,18 +31,34 @@ class Element {
       }
     };
   }
-  appendChild(child) {
-    if (child.parentElement) {
-      const idx = child.parentElement.children.indexOf(child);
-      if (idx !== -1) child.parentElement.children.splice(idx, 1);
+    appendChild(child) {
+      if (child.parentElement) {
+        const idx = child.parentElement.children.indexOf(child);
+        if (idx !== -1) child.parentElement.children.splice(idx, 1);
+      }
+      child.parentElement = this;
+      this.children.push(child);
     }
-    child.parentElement = this;
-    this.children.push(child);
+    insertBefore(child, ref) {
+      if (child.parentElement) {
+        const idx = child.parentElement.children.indexOf(child);
+        if (idx !== -1) child.parentElement.children.splice(idx, 1);
+      }
+      child.parentElement = this;
+      const idx = this.children.indexOf(ref);
+      if (idx === -1) {
+        this.children.push(child);
+      } else {
+        this.children.splice(idx, 0, child);
+      }
+    }
+    get lastElementChild() {
+      return this.children[this.children.length - 1];
+    }
+    get firstChild() {
+      return this.children[0];
+    }
   }
-  get lastElementChild() {
-    return this.children[this.children.length - 1];
-  }
-}
 
 function matches(el, selector) {
   if (!selector.startsWith('.')) return false;
@@ -95,14 +112,15 @@ function buildCard() {
   card.appendChild(condition);
 
   const priceMap = { NM: '$29.99', VG: '$24.99', EX: '$19.99', G: '$9.99' };
-  const variants = ['NM', 'VG', 'EX', 'G'].map(cond => {
-    const img = el('img', 'variant-image');
-    img.dataset.condition = cond;
-    img.dataset.price = priceMap[cond];
-    stack.appendChild(img);
-    return img;
-  });
-  variants[0].classList.add('active');
+    const variants = ['NM', 'VG', 'EX', 'G'].map(cond => {
+      const img = el('img', 'variant-image');
+      img.dataset.condition = cond;
+      img.dataset.price = priceMap[cond];
+      stack.appendChild(img);
+      return img;
+    });
+    variants[0].classList.add('active');
+    stack.appendChild(variants[0]);
 
   const selector = el('div', 'condition-buttons');
   const buttons = ['NM', 'VG', 'EX', 'G'].map(() => el('button'));
@@ -130,12 +148,12 @@ test('changeVariant reorders stack and updates labels', () => {
   assert.equal(stack.querySelectorAll('.variant-image').length, 4);
 });
 
-test('cycleVariant advances to next image', () => {
-  const { stack, price, condition } = buildCard();
-  cycleVariant(stack);
-  assert.equal(stack.lastElementChild.dataset.condition, 'VG');
-  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'VG');
-  assert.equal(price.textContent, 'Price: $24.99');
-  assert.equal(condition.textContent, 'Condition: VG');
-});
+  test('cycleVariant advances to next image', async () => {
+    const { stack, price, condition } = buildCard();
+    await cycleVariant(stack);
+    assert.equal(stack.lastElementChild.dataset.condition, 'G');
+    assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'G');
+    assert.equal(price.textContent, 'Price: $9.99');
+    assert.equal(condition.textContent, 'Condition: G');
+  });
 
