@@ -112,11 +112,26 @@
       width: 100%;
       height: 100%;
       opacity: 0;
-      transition: opacity 0.3s ease-in-out;
+      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
       object-fit: contain;
     }
     .variant-image.active {
       opacity: 1;
+    }
+    .card-stack.show-stack .variant-image {
+      opacity: 1;
+    }
+    .card-stack.show-stack .variant-image:nth-child(1) {
+      transform: translate(-15px, 15px) rotate(-3deg);
+    }
+    .card-stack.show-stack .variant-image:nth-child(2) {
+      transform: translate(-5px, 5px) rotate(2deg);
+    }
+    .card-stack.show-stack .variant-image:nth-child(3) {
+      transform: translate(5px, -5px) rotate(-2deg);
+    }
+    .card-stack.show-stack .variant-image:nth-child(4) {
+      transform: translate(15px, -15px) rotate(1deg);
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
@@ -138,15 +153,9 @@
   </div>
     <script src="fetchCardImages.js"></script>
     <script>
-      function changeVariant(button, index, price, condition) {
-        const card = button.closest('.card');
-        card.querySelectorAll('.variant-image').forEach((img, i) =>
-          img.classList.toggle('active', i === index)
-        );
-        card.querySelector('.price').textContent = `Price: ${price}`;
-        card.querySelector('.condition').textContent = `Condition: ${condition}`;
+      function changeVariant(button, condition, price) {
+        window.changeVariant(button, condition, price);
       }
-
       fetchCardImages();
     </script>
 </body>
