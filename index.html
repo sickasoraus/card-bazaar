@@ -78,6 +78,7 @@
       width: 512px;
       height: 716px;
       transition: transform 0.3s ease-in-out;
+      perspective: 1000px;
     }
     .variant-image {
       position: absolute;
@@ -85,36 +86,21 @@
       left: 0;
       width: 100%;
       height: 100%;
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+      transition: transform 0.3s ease-in-out;
       object-fit: contain;
-      cursor: pointer;
       pointer-events: none;
       z-index: 1;
+      backface-visibility: hidden;
     }
     .variant-image.active {
-      opacity: 1;
       pointer-events: auto;
       z-index: 5;
-    }
-    .card:hover .variant-image {
-      opacity: 1;
-      pointer-events: auto;
     }
     .card:hover .card-stack {
       transform: translateY(-5px) rotate(-1deg);
     }
-    .card:hover .variant-image:nth-child(1) {
-      transform: translate(-6px, 6px) rotate(-1deg);
-    }
-    .card:hover .variant-image:nth-child(2) {
-      transform: translate(-2px, 2px) rotate(1deg);
-    }
-    .card:hover .variant-image:nth-child(3) {
-      transform: translate(2px, -2px) rotate(-0.5deg);
-    }
-    .card:hover .variant-image:nth-child(4) {
-      transform: translate(0, 0) rotate(0deg);
+    .variant-image.flipping {
+      transform: rotateY(90deg);
     }
     .condition-buttons {
       position: absolute;
@@ -124,7 +110,7 @@
       display: flex;
       justify-content: space-around;
       background: rgba(0, 0, 0, 0.3);
-      padding: 8px 0;
+      padding: 12px 0;
       box-sizing: border-box;
     }
     .condition-buttons button {
@@ -132,9 +118,10 @@
       color: #fff;
       border: 1px solid #fff;
       border-radius: 4px;
-      padding: 4px 6px;
+      padding: 8px 12px;
       cursor: pointer;
       font-weight: bold;
+      font-size: 18px;
     }
     .condition-buttons button:hover {
       background: rgba(255, 255, 255, 0.4);

@@ -25,6 +25,22 @@ const inventory = {
   G: 2
 };
 
+function applyOffsets(stack) {
+  const images = Array.from(stack.querySelectorAll('.variant-image'));
+  images.forEach((img, i) => {
+    if (!img.dataset.offsetX) {
+      img.dataset.offsetX = (Math.random() * 12 - 6).toFixed(2);
+      img.dataset.offsetY = (Math.random() * 12 - 6).toFixed(2);
+      img.dataset.rotate = (Math.random() * 4 - 2).toFixed(2);
+    }
+    img.style = img.style || {};
+    img.style.transform = `translate(${img.dataset.offsetX}px, ${img.dataset.offsetY}px) rotate(${img.dataset.rotate}deg)`;
+    img.style.zIndex = i + 1;
+  });
+  const active = stack.querySelector('.variant-image.active');
+  if (active && active.style) active.style.zIndex = images.length + 10;
+}
+
 async function fetchCardImages() {
   const grid = document.getElementById("cardGrid");
   for (let name of cardNames) {
@@ -56,17 +72,18 @@ async function fetchCardImages() {
     // ensure the initially active image is the last child so it sits on top
     const initialActive = stack.querySelector('.variant-image.active');
     if (initialActive) stack.appendChild(initialActive);
+    applyOffsets(stack);
 
     stack.querySelectorAll('.variant-image').forEach(img => {
       img.addEventListener('click', (e) => {
         e.stopPropagation();
-        changeVariant(img, img.dataset.condition, img.dataset.price);
+        animateToCondition(cardDiv, img.dataset.condition);
       });
     });
     cardDiv.querySelectorAll('.condition-buttons button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        changeVariant(btn, btn.dataset.condition, btn.dataset.price);
+        animateToCondition(cardDiv, btn.dataset.condition);
       });
     });
 
@@ -84,6 +101,7 @@ function changeVariant(button, condition, price) {
   stack.appendChild(target);
   card.querySelector('.price').textContent = `Price: ${price}`;
   card.querySelector('.condition').textContent = `Condition: ${condition}`;
+  applyOffsets(stack);
 }
 
 function cycleVariant(stack) {
@@ -91,6 +109,29 @@ function cycleVariant(stack) {
   const activeIndex = images.findIndex(img => img.classList.contains('active'));
   const next = images[(activeIndex + 1) % images.length];
   changeVariant(next, next.dataset.condition, next.dataset.price);
+}
+
+function animateToCondition(card, condition) {
+  const stack = card.querySelector('.card-stack');
+  const images = Array.from(stack.querySelectorAll('.variant-image'));
+  const currentIndex = images.findIndex(img => img.classList.contains('active'));
+  const targetIndex = images.findIndex(img => img.dataset.condition === condition);
+  let steps = (targetIndex - currentIndex + images.length) % images.length;
+
+  function flipNext() {
+    if (steps === 0) return;
+    const active = stack.querySelector('.variant-image.active');
+    if (active && active.classList) active.classList.add('flipping');
+    setTimeout(() => {
+      if (active && active.classList) active.classList.remove('flipping');
+      cycleVariant(stack);
+      applyOffsets(stack);
+      steps--;
+      setTimeout(flipNext, 100);
+    }, 300);
+  }
+
+  flipNext();
 }
 
 // UMD-style export so function is available in browser and Node tests
