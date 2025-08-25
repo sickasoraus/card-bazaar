@@ -43,7 +43,8 @@ async function fetchCardImages() {
       </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
-    stack.addEventListener('click', () => stack.classList.toggle('show-stack'));
+    cardDiv.addEventListener('mouseenter', () => stack.classList.add('show-stack'));
+    cardDiv.addEventListener('mouseleave', () => stack.classList.remove('show-stack'));
     grid.appendChild(cardDiv);
   }
 }
