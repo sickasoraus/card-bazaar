@@ -48,10 +48,12 @@ async function fetchCardImages() {
     cardDiv.addEventListener('mouseleave', () => stack.classList.remove('show-stack'));
 
     stack.querySelectorAll('.variant-image').forEach(img => {
-      img.addEventListener('click', () => {
+      img.addEventListener('click', (e) => {
+        e.stopPropagation();
         changeVariant(img, img.dataset.condition, img.dataset.price);
       });
     });
+    stack.addEventListener('click', () => cycleVariant(stack));
 
     grid.appendChild(cardDiv);
   }
@@ -69,11 +71,19 @@ function changeVariant(button, condition, price) {
   card.querySelector('.condition').textContent = `Condition: ${condition}`;
 }
 
+function cycleVariant(stack) {
+  const images = Array.from(stack.querySelectorAll('.variant-image'));
+  const activeIndex = images.findIndex(img => img.classList.contains('active'));
+  const next = images[(activeIndex + 1) % images.length];
+  changeVariant(next, next.dataset.condition, next.dataset.price);
+}
+
 // UMD-style export so function is available in browser and Node tests
 if (typeof module !== 'undefined') {
-  module.exports = { fetchCardImages, cardNames, changeVariant };
+  module.exports = { fetchCardImages, cardNames, changeVariant, cycleVariant };
 } else {
   window.fetchCardImages = fetchCardImages;
   window.cardNames = cardNames;
   window.changeVariant = changeVariant;
+  window.cycleVariant = cycleVariant;
 }

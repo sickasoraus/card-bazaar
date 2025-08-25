@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { changeVariant } = require('../fetchCardImages');
+const { changeVariant, cycleVariant } = require('../fetchCardImages');
 
 class Element {
   constructor(tag) {
@@ -94,9 +94,11 @@ function buildCard() {
   card.appendChild(price);
   card.appendChild(condition);
 
+  const priceMap = { NM: '$29.99', EX: '$27.50', LP: '$24.99', HP: '$19.99' };
   const variants = ['NM', 'EX', 'LP', 'HP'].map(cond => {
     const img = el('img', 'variant-image');
     img.dataset.condition = cond;
+    img.dataset.price = priceMap[cond];
     stack.appendChild(img);
     return img;
   });
@@ -126,5 +128,14 @@ test('changeVariant reorders stack and updates labels', () => {
   assert.equal(condition.textContent, 'Condition: HP');
 
   assert.equal(stack.querySelectorAll('.variant-image').length, 4);
+});
+
+test('cycleVariant advances to next image', () => {
+  const { stack, price, condition } = buildCard();
+  cycleVariant(stack);
+  assert.equal(stack.lastElementChild.dataset.condition, 'EX');
+  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'EX');
+  assert.equal(price.textContent, 'Price: $27.50');
+  assert.equal(condition.textContent, 'Condition: EX');
 });
 
