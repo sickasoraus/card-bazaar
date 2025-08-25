@@ -83,48 +83,64 @@ function el(tag, className) {
   return e;
 }
 
-function buildCard() {
-  const card = el('div', 'card');
-  const stack = el('div', 'card-stack');
-  const price = el('div', 'price');
-  price.textContent = 'Price: $29.99';
-  const condition = el('div', 'condition');
-  condition.textContent = 'Condition: NM';
-  card.appendChild(stack);
-  card.appendChild(price);
-  card.appendChild(condition);
+  function buildCard() {
+    const card = el('div', 'card');
+    const stack = el('div', 'card-stack');
+    const price = el('div', 'price');
+    price.textContent = 'Price: $29.99';
+    const condition = el('div', 'condition');
+    condition.textContent = 'Condition: NM';
+    card.appendChild(stack);
+    card.appendChild(price);
+    card.appendChild(condition);
 
-  const variants = ['NM', 'EX', 'LP', 'HP'].map(cond => {
-    const img = el('img', 'variant-image');
-    img.dataset.condition = cond;
-    stack.appendChild(img);
-    return img;
+    const prices = { NM: '$29.99', EX: '$27.50', LP: '$24.99', HP: '$19.99' };
+    const variants = ['NM', 'EX', 'LP', 'HP'].map(cond => {
+      const img = el('img', 'variant-image');
+      img.dataset.condition = cond;
+      img.dataset.price = prices[cond];
+      stack.appendChild(img);
+      return img;
+    });
+    variants[0].classList.add('active');
+
+    const selector = el('div', 'variant-selector');
+    const buttons = ['NM', 'EX', 'LP', 'HP'].map(cond => {
+      const btn = el('button');
+      btn.dataset.condition = cond;
+      selector.appendChild(btn);
+      return btn;
+    });
+    card.appendChild(selector);
+
+    return { card, stack, price, condition, buttons, variants };
+  }
+
+  test('changeVariant reorders stack and updates labels via buttons', () => {
+    const { stack, price, condition, buttons } = buildCard();
+
+    changeVariant(buttons[2], 'LP', '$24.99');
+    assert.equal(stack.lastElementChild.dataset.condition, 'LP');
+    assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'LP');
+    assert.equal(price.textContent, 'Price: $24.99');
+    assert.equal(condition.textContent, 'Condition: LP');
+
+    changeVariant(buttons[3], 'HP', '$19.99');
+    assert.equal(stack.lastElementChild.dataset.condition, 'HP');
+    assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'HP');
+    assert.equal(price.textContent, 'Price: $19.99');
+    assert.equal(condition.textContent, 'Condition: HP');
+
+    assert.equal(stack.querySelectorAll('.variant-image').length, 4);
   });
-  variants[0].classList.add('active');
 
-  const selector = el('div', 'variant-selector');
-  const buttons = ['NM', 'EX', 'LP', 'HP'].map(() => el('button'));
-  buttons.forEach(btn => selector.appendChild(btn));
-  card.appendChild(selector);
+  test('changeVariant works when clicking variant images', () => {
+    const { stack, price, condition, variants } = buildCard();
 
-  return { card, stack, price, condition, buttons };
-}
-
-test('changeVariant reorders stack and updates labels', () => {
-  const { card, stack, price, condition, buttons } = buildCard();
-
-  changeVariant(buttons[2], 'LP', '$24.99');
-  assert.equal(stack.lastElementChild.dataset.condition, 'LP');
-  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'LP');
-  assert.equal(price.textContent, 'Price: $24.99');
-  assert.equal(condition.textContent, 'Condition: LP');
-
-  changeVariant(buttons[3], 'HP', '$19.99');
-  assert.equal(stack.lastElementChild.dataset.condition, 'HP');
-  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'HP');
-  assert.equal(price.textContent, 'Price: $19.99');
-  assert.equal(condition.textContent, 'Condition: HP');
-
-  assert.equal(stack.querySelectorAll('.variant-image').length, 4);
-});
+    changeVariant(variants[1], 'EX', '$27.50');
+    assert.equal(stack.lastElementChild.dataset.condition, 'EX');
+    assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'EX');
+    assert.equal(price.textContent, 'Price: $27.50');
+    assert.equal(condition.textContent, 'Condition: EX');
+  });
 

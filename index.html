@@ -68,24 +68,28 @@
       object-fit: contain;
       display: block;
     }
-    .overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.75);
-      color: white;
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      font-size: 20px;
-      z-index: 2;
-    }
-    .card:hover .overlay {
-      display: flex;
-    }
+      .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+        z-index: 2;
+        pointer-events: none;
+      }
+      .overlay > div {
+        pointer-events: auto;
+      }
+      .card:hover .overlay {
+        display: flex;
+      }
     .variant-selector {
       margin-top: 12px;
       display: flex;
@@ -100,27 +104,32 @@
       border: none;
       cursor: pointer;
     }
-    .card-stack {
-      position: relative;
-      width: 512px;
-      height: 716px;
-    }
-    .variant-image {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-      object-fit: contain;
-    }
-    .variant-image.active {
-      opacity: 1;
-    }
-    .card-stack.show-stack .variant-image {
-      opacity: 1;
-    }
+      .card-stack {
+        position: relative;
+        width: 512px;
+        height: 716px;
+        transition: transform 0.3s ease-in-out;
+      }
+      .variant-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        object-fit: contain;
+        cursor: pointer;
+      }
+      .variant-image.active {
+        opacity: 1;
+      }
+      .card-stack.show-stack {
+        transform: translateY(-10px);
+      }
+      .card-stack.show-stack .variant-image {
+        opacity: 1;
+      }
     .card-stack.show-stack .variant-image:nth-child(1) {
       transform: translate(-15px, 15px) rotate(-3deg);
     }
