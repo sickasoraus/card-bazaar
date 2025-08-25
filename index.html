@@ -102,6 +102,11 @@
     .variant-image.flipping {
       transform: rotateY(90deg);
     }
+    .variant-image[data-condition="VG"],
+    .variant-image[data-condition="EX"],
+    .variant-image[data-condition="G"] {
+      filter: brightness(0.85) contrast(0.95);
+    }
     .condition-buttons {
       position: absolute;
       bottom: 0;

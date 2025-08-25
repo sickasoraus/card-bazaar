@@ -104,35 +104,52 @@ function changeVariant(button, condition, price) {
   applyOffsets(stack);
 }
 
-function cycleVariant(stack) {
-  const images = Array.from(stack.querySelectorAll('.variant-image'));
-  const activeIndex = images.findIndex(img => img.classList.contains('active'));
-  const next = images[(activeIndex + 1) % images.length];
-  changeVariant(next, next.dataset.condition, next.dataset.price);
-}
+  function cycleVariant(stack) {
+    const images = Array.from(stack.querySelectorAll('.variant-image'));
+    const activeIndex = images.findIndex(img => img.classList.contains('active'));
+    const nextIndex = (activeIndex - 1 + images.length) % images.length;
+    const active = images[activeIndex];
+    const next = images[nextIndex];
+    const card = stack.closest('.card');
 
-function animateToCondition(card, condition) {
-  const stack = card.querySelector('.card-stack');
-  const images = Array.from(stack.querySelectorAll('.variant-image'));
-  const currentIndex = images.findIndex(img => img.classList.contains('active'));
-  const targetIndex = images.findIndex(img => img.dataset.condition === condition);
-  let steps = (targetIndex - currentIndex + images.length) % images.length;
+    const baseTransform = `translate(${active.dataset.offsetX}px, ${active.dataset.offsetY}px) rotate(${active.dataset.rotate}deg)`;
+    active.style.transform = baseTransform;
+    active.style.transition = 'transform 0.3s ease-in-out';
+    active.style.transform = `${baseTransform} translate(40px, 40px) rotate(10deg)`;
 
-  function flipNext() {
-    if (steps === 0) return;
-    const active = stack.querySelector('.variant-image.active');
-    if (active && active.classList) active.classList.add('flipping');
-    setTimeout(() => {
-      if (active && active.classList) active.classList.remove('flipping');
-      cycleVariant(stack);
-      applyOffsets(stack);
-      steps--;
-      setTimeout(flipNext, 100);
-    }, 300);
+    return new Promise(resolve => {
+      setTimeout(() => {
+        active.style.transition = '';
+        active.classList.remove('active');
+        stack.insertBefore(active, stack.firstChild);
+        next.classList.add('active');
+        if (card) {
+          card.querySelector('.price').textContent = `Price: ${next.dataset.price}`;
+          card.querySelector('.condition').textContent = `Condition: ${next.dataset.condition}`;
+        }
+        applyOffsets(stack);
+        resolve();
+      }, 300);
+    });
   }
 
-  flipNext();
-}
+  async function animateToCondition(card, condition) {
+    const stack = card.querySelector('.card-stack');
+    const images = Array.from(stack.querySelectorAll('.variant-image'));
+    const currentIndex = images.findIndex(img => img.classList.contains('active'));
+    const targetIndex = images.findIndex(img => img.dataset.condition === condition);
+    let steps = (currentIndex - targetIndex + images.length) % images.length;
+
+    while (steps > 0) {
+      const active = stack.querySelector('.variant-image.active');
+      if (active && active.classList) active.classList.add('flipping');
+      await new Promise(r => setTimeout(r, 150));
+      if (active && active.classList) active.classList.remove('flipping');
+      await cycleVariant(stack);
+      await new Promise(r => setTimeout(r, 50));
+      steps--;
+    }
+  }
 
 // UMD-style export so function is available in browser and Node tests
 if (typeof module !== 'undefined') {
