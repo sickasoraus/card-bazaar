@@ -53,6 +53,9 @@ async function fetchCardImages() {
       </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
+    // ensure the initially active image is the last child so it sits on top
+    const initialActive = stack.querySelector('.variant-image.active');
+    if (initialActive) stack.appendChild(initialActive);
 
     stack.querySelectorAll('.variant-image').forEach(img => {
       img.addEventListener('click', (e) => {
