@@ -82,28 +82,16 @@
       align-items: center;
       font-size: 20px;
       z-index: 2;
+      pointer-events: none;
     }
     .card:hover .overlay {
       display: flex;
-    }
-    .variant-selector {
-      margin-top: 12px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .variant-selector button {
-      padding: 4px 8px;
-      font-size: 12px;
-      background-color: white;
-      color: #000;
-      border: none;
-      cursor: pointer;
     }
     .card-stack {
       position: relative;
       width: 512px;
       height: 716px;
+      transition: transform 0.3s ease-in-out;
     }
     .variant-image {
       position: absolute;
@@ -114,12 +102,16 @@
       opacity: 0;
       transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
       object-fit: contain;
+      cursor: pointer;
     }
     .variant-image.active {
       opacity: 1;
     }
     .card-stack.show-stack .variant-image {
       opacity: 1;
+    }
+    .card-stack.show-stack {
+      transform: translateY(-20px) rotate(-3deg);
     }
     .card-stack.show-stack .variant-image:nth-child(1) {
       transform: translate(-15px, 15px) rotate(-3deg);
@@ -153,9 +145,6 @@
   </div>
     <script src="fetchCardImages.js"></script>
     <script>
-      function changeVariant(button, condition, price) {
-        window.changeVariant(button, condition, price);
-      }
       fetchCardImages();
     </script>
 </body>
