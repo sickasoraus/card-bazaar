@@ -11,6 +11,13 @@ const cardNames = [
   "Ossification"
 ];
 
+const prices = {
+  NM: '$29.99',
+  EX: '$27.50',
+  LP: '$24.99',
+  HP: '$19.99'
+};
+
 async function fetchCardImages() {
   const grid = document.getElementById("cardGrid");
   for (let name of cardNames) {
@@ -22,29 +29,35 @@ async function fetchCardImages() {
     cardDiv.className = "card";
     cardDiv.innerHTML = `
       <div class="card-stack">
-        <img class="variant-image active" data-condition="NM" src="${image}" alt="${name} NM">
-        <img class="variant-image" data-condition="EX" src="${image}" alt="${name} EX">
-        <img class="variant-image" data-condition="LP" src="${image}" alt="${name} LP">
-        <img class="variant-image" data-condition="HP" src="${image}" alt="${name} HP">
+        <img class="variant-image active" data-condition="NM" data-price="${prices.NM}" src="${image}" alt="${name} NM">
+        <img class="variant-image" data-condition="EX" data-price="${prices.EX}" src="${image}" alt="${name} EX">
+        <img class="variant-image" data-condition="LP" data-price="${prices.LP}" src="${image}" alt="${name} LP">
+        <img class="variant-image" data-condition="HP" data-price="${prices.HP}" src="${image}" alt="${name} HP">
       </div>
       <div class="overlay">
         <div>
-          <div class="price">Price: $29.99</div>
+          <div class="price">Price: ${prices.NM}</div>
           <div>Rarity: Mythic</div>
           <div class="condition">Condition: NM</div>
           <div>Live Inventory: 4 copies</div>
-          <div class="variant-selector">
-            <button onclick="changeVariant(this, 'NM', '$29.99')">$29.99 - NM</button>
-            <button onclick="changeVariant(this, 'EX', '$27.50')">$27.50 - EX</button>
-            <button onclick="changeVariant(this, 'LP', '$24.99')">$24.99 - LP</button>
-            <button onclick="changeVariant(this, 'HP', '$19.99')">$19.99 - HP</button>
-          </div>
         </div>
       </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
     cardDiv.addEventListener('mouseenter', () => stack.classList.add('show-stack'));
     cardDiv.addEventListener('mouseleave', () => stack.classList.remove('show-stack'));
+
+    stack.addEventListener('click', (e) => {
+      const images = Array.from(stack.querySelectorAll('.variant-image'));
+      if (e.target.classList.contains('variant-image') && !e.target.classList.contains('active')) {
+        changeVariant(e.target, e.target.dataset.condition, e.target.dataset.price);
+      } else {
+        const activeIndex = images.findIndex(img => img.classList.contains('active'));
+        const next = images[(activeIndex + 1) % images.length];
+        changeVariant(next, next.dataset.condition, next.dataset.price);
+      }
+    });
+
     grid.appendChild(cardDiv);
   }
 }
