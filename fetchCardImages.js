@@ -27,14 +27,18 @@ const inventory = {
 
 function applyOffsets(stack) {
   const images = Array.from(stack.querySelectorAll('.variant-image'));
+  const preset = [
+    { x: -20, y: -20, r: -4 },
+    { x: -10, y: 10, r: -2 },
+    { x: 10, y: -10, r: 2 },
+    { x: 0, y: 0, r: 0 }
+  ];
   images.forEach((img, i) => {
-    if (!img.dataset.offsetX) {
-      img.dataset.offsetX = (Math.random() * 12 - 6).toFixed(2);
-      img.dataset.offsetY = (Math.random() * 12 - 6).toFixed(2);
-      img.dataset.rotate = (Math.random() * 4 - 2).toFixed(2);
-    }
-    img.style = img.style || {};
-    img.style.transform = `translate(${img.dataset.offsetX}px, ${img.dataset.offsetY}px) rotate(${img.dataset.rotate}deg)`;
+    const off = preset[i] || preset[preset.length - 1];
+    img.dataset.offsetX = off.x;
+    img.dataset.offsetY = off.y;
+    img.dataset.rotate = off.r;
+    img.style.transform = `translate(${off.x}px, ${off.y}px) rotate(${off.r}deg)`;
     img.style.zIndex = i + 1;
   });
   const active = stack.querySelector('.variant-image.active');
@@ -77,13 +81,13 @@ async function fetchCardImages() {
     stack.querySelectorAll('.variant-image').forEach(img => {
       img.addEventListener('click', (e) => {
         e.stopPropagation();
-        animateToCondition(cardDiv, img.dataset.condition);
+        changeVariant(img, img.dataset.condition, img.dataset.price);
       });
     });
     cardDiv.querySelectorAll('.condition-buttons button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        animateToCondition(cardDiv, btn.dataset.condition);
+        changeVariant(btn, btn.dataset.condition, btn.dataset.price);
       });
     });
 
@@ -112,7 +116,7 @@ function changeVariant(button, condition, price) {
     const next = images[nextIndex];
     const card = stack.closest('.card');
 
-    const baseTransform = `translate(${active.dataset.offsetX}px, ${active.dataset.offsetY}px) rotate(${active.dataset.rotate}deg)`;
+    const baseTransform = `translate(${active.dataset.offsetX || 0}px, ${active.dataset.offsetY || 0}px) rotate(${active.dataset.rotate || 0}deg)`;
     active.style.transform = baseTransform;
     active.style.transition = 'transform 0.3s ease-in-out';
     active.style.transform = `${baseTransform} translate(40px, 40px) rotate(10deg)`;
