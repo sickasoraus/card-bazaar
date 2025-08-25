@@ -150,13 +150,11 @@
       "Ossification"
     ];
 
-    function changeVariant(button, index, price, condition) {
+    function changeVariant(button, index) {
       const card = button.closest('.card');
       card.querySelectorAll('.variant-image').forEach((img, i) =>
         img.classList.toggle('active', i === index)
       );
-      card.querySelector('.price').textContent = `Price: ${price}`;
-      card.querySelector('.condition').textContent = `Condition: ${condition}`;
     }
 
     async function fetchCardImages() {
@@ -181,9 +179,9 @@
               <div class="condition">Condition: NM</div>
               <div>Live Inventory: 4 copies</div>
               <div class="variant-selector">
-                <button onclick="changeVariant(this, 0, '$29.99', 'NM')">$29.99 - NM</button>
-                <button onclick="changeVariant(this, 1, '$27.50', 'EX')">$27.50 - EX</button>
-                <button onclick="changeVariant(this, 2, '$24.99', 'LP')">$24.99 - LP</button>
+                <button onclick="changeVariant(this, 0); const card=this.closest('.card'); card.querySelector('.price').textContent='Price: $29.99'; card.querySelector('.condition').textContent='Condition: NM';">$29.99 - NM</button>
+                <button onclick="changeVariant(this, 1); const card=this.closest('.card'); card.querySelector('.price').textContent='Price: $27.50'; card.querySelector('.condition').textContent='Condition: EX';">$27.50 - EX</button>
+                <button onclick="changeVariant(this, 2); const card=this.closest('.card'); card.querySelector('.price').textContent='Price: $24.99'; card.querySelector('.condition').textContent='Condition: LP';">$24.99 - LP</button>
               </div>
             </div>
           </div>
