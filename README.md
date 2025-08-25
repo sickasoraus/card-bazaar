@@ -6,8 +6,10 @@ and displays them in a two-column grid with interactive hover overlays showing p
 
 ## Features
 - Fetches MTG card art from the Scryfall API
-- Hover overlay showing price, rarity, condition, and live inventory
+- Hover overlay showing placeholder price, rarity, condition, and inventory data
 - Variant selector for different conditions/prices
+
+*Future versions aim to source real pricing and inventory data.*
 
 ## Live Demo
 (Once GitHub Pages is enabled, the link will appear here.)
