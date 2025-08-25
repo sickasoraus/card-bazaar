@@ -35,17 +35,32 @@ async function fetchCardImages() {
         <img class="variant-image" data-condition="HP" data-price="${prices.HP}" src="${image}" alt="${name} HP">
       </div>
       <div class="overlay">
-        <div>
+        <div class="info">
           <div class="price">Price: ${prices.NM}</div>
           <div>Rarity: Mythic</div>
           <div class="condition">Condition: NM</div>
           <div>Live Inventory: 4 copies</div>
         </div>
+        <div class="variant-selector">
+          <button data-condition="NM" data-price="${prices.NM}">NM</button>
+          <button data-condition="EX" data-price="${prices.EX}">EX</button>
+          <button data-condition="LP" data-price="${prices.LP}">LP</button>
+          <button data-condition="HP" data-price="${prices.HP}">HP</button>
+        </div>
       </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
-    cardDiv.addEventListener('mouseenter', () => stack.classList.add('show-stack'));
-    cardDiv.addEventListener('mouseleave', () => stack.classList.remove('show-stack'));
+
+    cardDiv.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const active = document.querySelector('.card.active');
+      if (active && active !== cardDiv) {
+        active.classList.remove('active');
+        active.querySelector('.card-stack').classList.remove('show-stack');
+      }
+      cardDiv.classList.toggle('active');
+      stack.classList.toggle('show-stack', cardDiv.classList.contains('active'));
+    });
 
     stack.querySelectorAll('.variant-image').forEach(img => {
       img.addEventListener('click', (e) => {
@@ -53,10 +68,26 @@ async function fetchCardImages() {
         changeVariant(img, img.dataset.condition, img.dataset.price);
       });
     });
-    stack.addEventListener('click', () => cycleVariant(stack));
+    cardDiv.querySelectorAll('.variant-selector button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        changeVariant(btn, btn.dataset.condition, btn.dataset.price);
+      });
+    });
+    stack.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cycleVariant(stack);
+    });
 
     grid.appendChild(cardDiv);
   }
+
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.card.active').forEach(c => {
+      c.classList.remove('active');
+      c.querySelector('.card-stack').classList.remove('show-stack');
+    });
+  });
 }
 
 function changeVariant(button, condition, price) {
