@@ -94,8 +94,8 @@ function buildCard() {
   card.appendChild(price);
   card.appendChild(condition);
 
-  const priceMap = { NM: '$29.99', EX: '$27.50', LP: '$24.99', HP: '$19.99' };
-  const variants = ['NM', 'EX', 'LP', 'HP'].map(cond => {
+  const priceMap = { NM: '$29.99', VG: '$24.99', EX: '$19.99', G: '$9.99' };
+  const variants = ['NM', 'VG', 'EX', 'G'].map(cond => {
     const img = el('img', 'variant-image');
     img.dataset.condition = cond;
     img.dataset.price = priceMap[cond];
@@ -104,8 +104,8 @@ function buildCard() {
   });
   variants[0].classList.add('active');
 
-  const selector = el('div', 'variant-selector');
-  const buttons = ['NM', 'EX', 'LP', 'HP'].map(() => el('button'));
+  const selector = el('div', 'condition-buttons');
+  const buttons = ['NM', 'VG', 'EX', 'G'].map(() => el('button'));
   buttons.forEach(btn => selector.appendChild(btn));
   card.appendChild(selector);
 
@@ -115,17 +115,17 @@ function buildCard() {
 test('changeVariant reorders stack and updates labels', () => {
   const { card, stack, price, condition, buttons } = buildCard();
 
-  changeVariant(buttons[2], 'LP', '$24.99');
-  assert.equal(stack.lastElementChild.dataset.condition, 'LP');
-  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'LP');
-  assert.equal(price.textContent, 'Price: $24.99');
-  assert.equal(condition.textContent, 'Condition: LP');
-
-  changeVariant(buttons[3], 'HP', '$19.99');
-  assert.equal(stack.lastElementChild.dataset.condition, 'HP');
-  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'HP');
+  changeVariant(buttons[2], 'EX', '$19.99');
+  assert.equal(stack.lastElementChild.dataset.condition, 'EX');
+  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'EX');
   assert.equal(price.textContent, 'Price: $19.99');
-  assert.equal(condition.textContent, 'Condition: HP');
+  assert.equal(condition.textContent, 'Condition: EX');
+
+  changeVariant(buttons[3], 'G', '$9.99');
+  assert.equal(stack.lastElementChild.dataset.condition, 'G');
+  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'G');
+  assert.equal(price.textContent, 'Price: $9.99');
+  assert.equal(condition.textContent, 'Condition: G');
 
   assert.equal(stack.querySelectorAll('.variant-image').length, 4);
 });
@@ -133,9 +133,9 @@ test('changeVariant reorders stack and updates labels', () => {
 test('cycleVariant advances to next image', () => {
   const { stack, price, condition } = buildCard();
   cycleVariant(stack);
-  assert.equal(stack.lastElementChild.dataset.condition, 'EX');
-  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'EX');
-  assert.equal(price.textContent, 'Price: $27.50');
-  assert.equal(condition.textContent, 'Condition: EX');
+  assert.equal(stack.lastElementChild.dataset.condition, 'VG');
+  assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'VG');
+  assert.equal(price.textContent, 'Price: $24.99');
+  assert.equal(condition.textContent, 'Condition: VG');
 });
 
