@@ -117,14 +117,36 @@ async function changeVariant(button, condition, price) {
     const next = images[nextIndex];
     const card = stack.closest('.card');
 
-    const baseTransform = `translate(${active.dataset.offsetX || 0}px, ${active.dataset.offsetY || 0}px) rotate(${active.dataset.rotate || 0}deg)`;
-    active.style.transform = baseTransform;
-    active.style.transition = 'transform 0.3s ease-in-out';
-    active.style.transform = `${baseTransform} translate(40px, 40px) rotate(10deg)`;
+    // Smoothly move each image to its next position
+    images.forEach(img => {
+      img.style.transition = 'transform 0.3s ease-in-out';
+    });
+
+    // Active image flips and slides to the back of the stack
+    const bottom = images[0];
+    const targetX = bottom.dataset.offsetX || 0;
+    const targetY = bottom.dataset.offsetY || 0;
+    const targetR = bottom.dataset.rotate || 0;
+    active.style.transform = `translate(${targetX}px, ${targetY}px) rotate(${targetR}deg) rotateY(180deg)`;
+
+    // Remaining images shift forward one slot
+    images.forEach((img, i) => {
+      if (i !== activeIndex) {
+        const ref = images[(i + 1) % images.length];
+        img.style.transform = `translate(${ref.dataset.offsetX || 0}px, ${ref.dataset.offsetY || 0}px) rotate(${ref.dataset.rotate || 0}deg)`;
+      }
+    });
+
+    // Lower z-index mid-animation so the card appears behind others
+    setTimeout(() => {
+      active.style.zIndex = 1;
+    }, 150);
 
     return new Promise(resolve => {
       setTimeout(() => {
-        active.style.transition = '';
+        images.forEach(img => {
+          img.style.transition = '';
+        });
         active.classList.remove('active');
         stack.insertBefore(active, stack.firstChild);
         next.classList.add('active');
@@ -146,10 +168,6 @@ async function changeVariant(button, condition, price) {
     let steps = (currentIndex - targetIndex + images.length) % images.length;
 
     while (steps > 0) {
-      const active = stack.querySelector('.variant-image.active');
-      if (active && active.classList) active.classList.add('flipping');
-      await new Promise(r => setTimeout(r, 150));
-      if (active && active.classList) active.classList.remove('flipping');
       await cycleVariant(stack);
       await new Promise(r => setTimeout(r, 50));
       steps--;
