@@ -96,13 +96,15 @@ async function fetchCardImages() {
     resetOffsets(stack);
     stack._hovered = false;
 
-    cardDiv.addEventListener('mouseenter', () => {
+    cardDiv.addEventListener('pointerenter', () => {
       stack._hovered = true;
+      stack.classList.add('show-stack');
       applyOffsets(stack);
     });
 
-    cardDiv.addEventListener('mouseleave', () => {
+    cardDiv.addEventListener('pointerleave', () => {
       stack._hovered = false;
+      stack.classList.remove('show-stack');
       resetOffsets(stack);
     });
 
