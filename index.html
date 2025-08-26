@@ -44,9 +44,60 @@
     .right-sidebar a {
       color: #444;
       text-decoration: none;
-      margin-bottom: 16px;
       font-size: 20px;
       font-weight: 600;
+      cursor: pointer;
+    }
+    .right-sidebar .sidebar-section {
+      margin-bottom: 24px;
+    }
+    .sidebar-content {
+      font-size: 14px;
+      margin-top: 8px;
+      display: none;
+    }
+    #cartItems {
+      list-style: none;
+      padding-left: 0;
+    }
+    #cartItems li {
+      margin-bottom: 8px;
+    }
+    #cartItems button {
+      margin-left: 8px;
+    }
+    #checkoutBtn {
+      margin-top: 8px;
+    }
+    .auth {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    #loginForm {
+      display: none;
+      margin-top: 8px;
+    }
+    #loginForm input {
+      margin-bottom: 4px;
+    }
+    .condition-buttons {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 12px 0;
+      box-sizing: border-box;
+    }
+    .condition-buttons .add-to-cart {
+      background: #ffd700;
+      color: #333;
+      border-color: #ffd700;
     }
     .grid {
       display: grid;
@@ -107,17 +158,6 @@
     .variant-image[data-condition="G"] {
       filter: brightness(0.85) contrast(0.95);
     }
-    .condition-buttons {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      display: flex;
-      justify-content: space-around;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 12px 0;
-      box-sizing: border-box;
-    }
     .condition-buttons button {
       background: rgba(255, 255, 255, 0.2);
       color: #fff;
@@ -138,18 +178,46 @@
   <div class="container">
     <div class="header">
       <div class="logo">CARD BAZAAR</div>
+      <div class="auth">
+        <span id="userStatus"></span>
+        <button id="loginBtn">Log In/Create My Account</button>
+        <div id="loginForm">
+          <input type="email" id="loginEmail" placeholder="Email">
+          <input type="password" id="loginPassword" placeholder="Password">
+          <button id="loginSubmit" type="button">Submit</button>
+        </div>
+      </div>
     </div>
     <div class="content">
       <div class="grid" id="cardGrid">
         <!-- Cards will be populated here -->
       </div>
       <div class="right-sidebar">
-        <a href="#">🛒 Your Cart</a>
-        <a href="#">👤 Profile</a>
+        <div class="sidebar-section">
+          <a id="cartToggle">🛒 My Cart</a>
+          <div id="cartMenu" class="sidebar-content">
+            <ul id="cartItems"></ul>
+            <div id="cartTotal"></div>
+            <button id="checkoutBtn" style="display:none;">Proceed to Checkout</button>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <a id="binderToggle">📘 My Binder</a>
+          <div id="binderInfo" class="sidebar-content">
+            Welcome to My Binder. Here, you will find cards you have purchased, as well as cards have added from your own personal inventory. Helps to keep track of what you currently have in your binder.
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <a id="sellToggle">💰 Sell Cards</a>
+          <div id="sellInfo" class="sidebar-content">
+            Looking to sell us your cards? Our team of Graders will verify the condition of each card and give you the highest market rate out of any other retailer for your NM editions. Coming soon!
+          </div>
+        </div>
       </div>
     </div>
   </div>
     <script src="fetchCardImages.js"></script>
+    <script src="app.js"></script>
     <script>
       fetchCardImages();
     </script>
