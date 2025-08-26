@@ -130,16 +130,16 @@ function buildCard() {
   return { card, stack, price, condition, buttons };
 }
 
-test('changeVariant reorders stack and updates labels', () => {
+test('changeVariant reorders stack and updates labels', async () => {
   const { card, stack, price, condition, buttons } = buildCard();
 
-  changeVariant(buttons[2], 'EX', '$19.99');
+  await changeVariant(buttons[2], 'EX', '$19.99');
   assert.equal(stack.lastElementChild.dataset.condition, 'EX');
   assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'EX');
   assert.equal(price.textContent, 'Price: $19.99');
   assert.equal(condition.textContent, 'Condition: EX');
 
-  changeVariant(buttons[3], 'G', '$9.99');
+  await changeVariant(buttons[3], 'G', '$9.99');
   assert.equal(stack.lastElementChild.dataset.condition, 'G');
   assert.equal(stack.querySelector('.variant-image.active').dataset.condition, 'G');
   assert.equal(price.textContent, 'Price: $9.99');
