@@ -28,9 +28,9 @@ const inventory = {
 function applyOffsets(stack) {
   const images = Array.from(stack.querySelectorAll('.variant-image'));
   const preset = [
-    { x: -20, y: -20, r: -4 },
-    { x: -10, y: 10, r: -2 },
-    { x: 10, y: -10, r: 2 },
+    { x: -12, y: -12, r: -3 },
+    { x: -6, y: 6, r: -1.5 },
+    { x: 6, y: -6, r: 1.5 },
     { x: 0, y: 0, r: 0 }
   ];
 

@@ -111,8 +111,8 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+      gap: 40px;
       padding: 20px;
       justify-content: center;
     }
@@ -121,7 +121,7 @@
       width: 100%;
       max-width: 512px;
       aspect-ratio: 512 / 716;
-      overflow: hidden;
+      overflow: visible;
       margin: 0 auto 20px;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
@@ -153,6 +153,7 @@
       cursor: pointer;
       z-index: 1;
       backface-visibility: hidden;
+      box-shadow: 0 0 0 2px #fff;
     }
     .variant-image.active {
       z-index: 5;
@@ -199,6 +200,10 @@
       .content {
         flex-direction: column;
         align-items: center;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
       }
       .right-sidebar {
         width: 100%;
