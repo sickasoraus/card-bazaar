@@ -78,16 +78,21 @@ async function fetchCardImages() {
     if (initialActive) stack.appendChild(initialActive);
     applyOffsets(stack);
 
+    stack.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cycleVariant(stack);
+    });
+
     stack.querySelectorAll('.variant-image').forEach(img => {
       img.addEventListener('click', (e) => {
         e.stopPropagation();
-        changeVariant(img, img.dataset.condition, img.dataset.price);
+        animateToCondition(cardDiv, img.dataset.condition);
       });
     });
     cardDiv.querySelectorAll('.condition-buttons button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        changeVariant(btn, btn.dataset.condition, btn.dataset.price);
+        animateToCondition(cardDiv, btn.dataset.condition);
       });
     });
 
@@ -95,17 +100,13 @@ async function fetchCardImages() {
   }
 }
 
-function changeVariant(button, condition, price) {
+async function changeVariant(button, condition, price) {
   const card = button.closest('.card');
-  const stack = card.querySelector('.card-stack');
-  const images = Array.from(stack.querySelectorAll('.variant-image'));
-  const target = images.find(img => img.dataset.condition === condition);
-  images.forEach(img => img.classList.remove('active'));
-  target.classList.add('active');
-  stack.appendChild(target);
-  card.querySelector('.price').textContent = `Price: ${price}`;
-  card.querySelector('.condition').textContent = `Condition: ${condition}`;
-  applyOffsets(stack);
+  await animateToCondition(card, condition);
+  if (card) {
+    card.querySelector('.price').textContent = `Price: ${price}`;
+    card.querySelector('.condition').textContent = `Condition: ${condition}`;
+  }
 }
 
   function cycleVariant(stack) {
@@ -157,10 +158,11 @@ function changeVariant(button, condition, price) {
 
 // UMD-style export so function is available in browser and Node tests
 if (typeof module !== 'undefined') {
-  module.exports = { fetchCardImages, cardNames, changeVariant, cycleVariant };
+  module.exports = { fetchCardImages, cardNames, changeVariant, cycleVariant, animateToCondition };
 } else {
   window.fetchCardImages = fetchCardImages;
   window.cardNames = cardNames;
   window.changeVariant = changeVariant;
   window.cycleVariant = cycleVariant;
+  window.animateToCondition = animateToCondition;
 }
