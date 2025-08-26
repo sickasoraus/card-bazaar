@@ -78,7 +78,6 @@ async function fetchCardImages() {
         <button data-condition="VG" data-price="${prices.VG}">VG (${inventory.VG})</button>
         <button data-condition="EX" data-price="${prices.EX}">EX (${inventory.EX})</button>
         <button data-condition="G" data-price="${prices.G}">G (${inventory.G})</button>
-        <button class="add-to-cart">Add to Cart</button>
       </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
@@ -87,9 +86,14 @@ async function fetchCardImages() {
     if (initialActive) stack.appendChild(initialActive);
     applyOffsets(stack);
 
+    let clickTimer;
     stack.addEventListener('click', (e) => {
       e.stopPropagation();
-      cycleVariant(stack);
+      if (clickTimer) clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => {
+        cycleVariant(stack);
+        clickTimer = null;
+      }, 200);
     });
 
     stack.querySelectorAll('.variant-image').forEach(img => {
@@ -101,15 +105,17 @@ async function fetchCardImages() {
     cardDiv.querySelectorAll('.condition-buttons button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (btn.classList.contains('add-to-cart')) {
-          const active = cardDiv.querySelector('.variant-image.active');
-          if (active && typeof addToCart === 'function') {
-            addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
-          }
-        } else {
-          animateToCondition(cardDiv, btn.dataset.condition);
-        }
+        animateToCondition(cardDiv, btn.dataset.condition);
       });
+    });
+
+    cardDiv.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+      const active = cardDiv.querySelector('.variant-image.active');
+      if (active && typeof addToCart === 'function') {
+        addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
+      }
     });
 
     grid.appendChild(cardDiv);

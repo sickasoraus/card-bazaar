@@ -8,6 +8,7 @@ and displays them in a two-column grid with interactive hover overlays showing p
 - Fetches MTG card art from the Scryfall API
 - Hover overlay showing placeholder price, rarity, condition, and inventory data
 - Variant selector for different conditions/prices
+- Double-click card art to add it to your cart and remove items from the cart menu
 
 *Future versions aim to source real pricing and inventory data.*
 
