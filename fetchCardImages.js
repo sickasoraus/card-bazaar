@@ -74,6 +74,7 @@ async function fetchCardImages() {
         <div class="condition">Condition: NM</div>
       </div>
       <div class="condition-buttons">
+        <button class="add-cart-btn">Add to Cart</button>
         <button data-condition="NM" data-price="${prices.NM}">NM (${inventory.NM})</button>
         <button data-condition="VG" data-price="${prices.VG}">VG (${inventory.VG})</button>
         <button data-condition="EX" data-price="${prices.EX}">EX (${inventory.EX})</button>
@@ -105,7 +106,14 @@ async function fetchCardImages() {
     cardDiv.querySelectorAll('.condition-buttons button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        animateToCondition(cardDiv, btn.dataset.condition);
+        if (btn.classList.contains('add-cart-btn')) {
+          const active = cardDiv.querySelector('.variant-image.active');
+          if (active && typeof addToCart === 'function') {
+            addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
+          }
+        } else {
+          animateToCondition(cardDiv, btn.dataset.condition);
+        }
       });
     });
 
