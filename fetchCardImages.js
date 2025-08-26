@@ -33,14 +33,22 @@ function applyOffsets(stack) {
     { x: 10, y: -10, r: 2 },
     { x: 0, y: 0, r: 0 }
   ];
+
+  // Rotate preset each time so the top card lands in a new spot
+  const shift = stack._offsetShift || 0;
+  const rotated = preset.slice(shift).concat(preset.slice(0, shift));
+
   images.forEach((img, i) => {
-    const off = preset[i] || preset[preset.length - 1];
+    const off = rotated[i] || rotated[rotated.length - 1];
     img.dataset.offsetX = off.x;
     img.dataset.offsetY = off.y;
     img.dataset.rotate = off.r;
     img.style.transform = `translate(${off.x}px, ${off.y}px) rotate(${off.r}deg)`;
     img.style.zIndex = i + 1;
   });
+
+  stack._offsetShift = (shift + 1) % preset.length;
+
   const active = stack.querySelector('.variant-image.active');
   if (active && active.style) active.style.zIndex = images.length + 10;
 }
