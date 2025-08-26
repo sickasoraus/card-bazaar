@@ -78,6 +78,7 @@ async function fetchCardImages() {
         <button data-condition="VG" data-price="${prices.VG}">VG (${inventory.VG})</button>
         <button data-condition="EX" data-price="${prices.EX}">EX (${inventory.EX})</button>
         <button data-condition="G" data-price="${prices.G}">G (${inventory.G})</button>
+        <button class="add-to-cart">Add to Cart</button>
       </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
@@ -100,7 +101,14 @@ async function fetchCardImages() {
     cardDiv.querySelectorAll('.condition-buttons button').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        animateToCondition(cardDiv, btn.dataset.condition);
+        if (btn.classList.contains('add-to-cart')) {
+          const active = cardDiv.querySelector('.variant-image.active');
+          if (active && typeof addToCart === 'function') {
+            addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
+          }
+        } else {
+          animateToCondition(cardDiv, btn.dataset.condition);
+        }
       });
     });
 
