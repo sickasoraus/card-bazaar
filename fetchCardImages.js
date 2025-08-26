@@ -53,6 +53,13 @@ function applyOffsets(stack) {
   if (active && active.style) active.style.zIndex = images.length + 10;
 }
 
+function resetOffsets(stack) {
+  const images = Array.from(stack.querySelectorAll('.variant-image'));
+  images.forEach(img => {
+    img.style.transform = 'translate(0px, 0px) rotate(0deg)';
+  });
+}
+
 async function fetchCardImages() {
   const grid = document.getElementById("cardGrid");
   for (let name of cardNames) {
@@ -86,6 +93,18 @@ async function fetchCardImages() {
     const initialActive = stack.querySelector('.variant-image.active');
     if (initialActive) stack.appendChild(initialActive);
     applyOffsets(stack);
+    resetOffsets(stack);
+    stack._hovered = false;
+
+    cardDiv.addEventListener('mouseenter', () => {
+      stack._hovered = true;
+      applyOffsets(stack);
+    });
+
+    cardDiv.addEventListener('mouseleave', () => {
+      stack._hovered = false;
+      resetOffsets(stack);
+    });
 
     let clickTimer;
     stack.addEventListener('click', (e) => {
@@ -185,6 +204,7 @@ async function changeVariant(button, condition, price) {
           card.querySelector('.condition').textContent = `Condition: ${next.dataset.condition}`;
         }
         applyOffsets(stack);
+        if (!stack._hovered) resetOffsets(stack);
         resolve();
       }, 300);
     });
