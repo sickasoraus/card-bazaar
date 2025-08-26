@@ -111,18 +111,18 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-      padding: 20px;
-      justify-content: center;
+      grid-template-columns: repeat(2, 512px);
+      gap: 40px;
+      padding: 20px 40px 60px 40px;
+      justify-content: start;
+      background-color: #ffffff;
     }
     .card {
       position: relative;
-      width: 100%;
-      max-width: 512px;
-      aspect-ratio: 512 / 716;
-      overflow: hidden;
-      margin: 0 auto 20px;
+      width: 512px;
+      height: 716px;
+      overflow: visible;
+      margin-bottom: 20px;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
     .card img {
@@ -183,6 +183,22 @@
     .condition-buttons button:hover,
     .add-cart-btn:hover {
       background: rgba(255, 255, 255, 0.4);
+    }
+
+    @media (max-width: 1200px) {
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        padding: 20px;
+        justify-content: center;
+      }
+      .card {
+        width: 100%;
+        max-width: 512px;
+        height: auto;
+        aspect-ratio: 512 / 716;
+        margin: 0 auto 20px;
+      }
     }
 
     @media (max-width: 768px) {
