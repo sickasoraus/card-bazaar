@@ -94,6 +94,63 @@
       padding: 12px 0;
       box-sizing: border-box;
     }
+    /* Email capture modal */
+    .cb-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .cb-modal {
+      background: #fff;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      padding: 20px;
+    }
+    .cb-modal h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+    .cb-modal p {
+      margin: 0 0 16px;
+      font-size: 14px;
+      color: #555;
+    }
+    .cb-modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .cb-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .cb-btn-primary {
+      background: linear-gradient(45deg, #d92626, #ff7e5f);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .cb-btn-secondary {
+      background: #f3f3f3;
+      color: #333;
+      border: 1px solid #ddd;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
     #loginBtn {
       background: linear-gradient(45deg, #d92626, #ff7e5f);
       color: #fff;
@@ -298,6 +355,19 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+  <!-- Email Capture Modal (injected content target) -->
+  <div id="cbEmailOverlay" class="cb-modal-overlay" aria-hidden="true">
+    <div class="cb-modal" role="dialog" aria-labelledby="cbEmailTitle" aria-modal="true">
+      <h3 id="cbEmailTitle">Join the Card Bazaar waitlist</h3>
+      <p>Be first to know about card drops, promos, and features.</p>
+      <input type="email" id="cbEmailInput" class="cb-input" placeholder="Enter your email" aria-label="Email address">
+      <div class="cb-modal-actions">
+        <button id="cbEmailSubmit" class="cb-btn-primary">Join Waitlist</button>
+        <button id="cbEmailDismiss" class="cb-btn-secondary">No thanks</button>
+      </div>
+      <div id="cbEmailMessage" style="margin-top:8px;font-size:14px;color:#2e7d32;display:none;"></div>
     </div>
   </div>
     <script src="fetchCardImages.js"></script>
