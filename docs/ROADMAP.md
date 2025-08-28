@@ -93,14 +93,13 @@ Next (foundational, heavier lift)
 
 Later (ops-heavy or experimental)
 9. 4) High‑res scans (H/H)
-10. 3) Daily wheel (M/M)
-11. 5) Out‑of‑stock celebration (L–M/L–M)
-12. 6) Last‑copy excitement (L–M/M)
-13. 9) Ads to sister site (M/L–M)
-14. 17) Same‑day delivery (M/H)
-15. 8) Scan → binder → sell (H/VH)
-16. 14) Scanning app + mobile storefront (H/VH)
-17. 19) Magic ETF (H/VH)
+10. 5) Out‑of‑stock celebration (L–M/L–M) — (in test - currently merged, 2025-08-28)
+11. 6) Last‑copy excitement (L–M/M) — (in test - currently merged, 2025-08-28)
+12. 9) Ads to sister site (M/L–M)
+13. 17) Same‑day delivery (M/H)
+14. 8) Scan → binder → sell (H/VH)
+15. 14) Scanning app + mobile storefront (H/VH)
+16. 19) Magic ETF (H/VH)
 
 ---
 
