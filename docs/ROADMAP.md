@@ -86,8 +86,9 @@ Legend:
 - 10) Card testimonials — 2025-08-28
 - 7) Related cards — tabled and reverted on 2025-08-28
 - UI: Header CTAs + 3-column grid + sidebar removal — 2025-08-28
- - 16) Binder UI (basic) — 2025-08-28
+ - 16) Binder UI (grid + drag) — 2025-08-28
  - 15) Binder valuation (summary total) — 2025-08-28
+ - 12) Checkout flow (prototype: modal + credit + guest) — 2025-08-28
 
 ## Priority Order (Impact vs. Difficulty)
 
