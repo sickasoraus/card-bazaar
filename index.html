@@ -514,6 +514,26 @@
             <input type="checkbox" id="applyStoreCredit"> Apply store credit
             <span id="availableCredit" style="color:#d92626; font-weight:700;"></span>
           </label>
+          <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; margin-bottom:12px;">
+            <div style="grid-column: 1 / -1; font-weight:800;">Shipping Address</div>
+            <input id="shipName" placeholder="Full Name" class="cb-input" style="background:#fff; color:#333; border:1px solid #ccc;">
+            <input id="shipAddr" placeholder="Address" class="cb-input" style="background:#fff; color:#333; border:1px solid #ccc;">
+            <input id="shipCity" placeholder="City" class="cb-input" style="background:#fff; color:#333; border:1px solid #ccc;">
+            <input id="shipState" placeholder="State" class="cb-input" style="background:#fff; color:#333; border:1px solid #ccc;">
+            <input id="shipZip" placeholder="ZIP" class="cb-input" style="background:#fff; color:#333; border:1px solid #ccc;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <div style="font-weight:800; margin-bottom:6px;">Delivery Options</div>
+            <label style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+              <input type="radio" name="shipMethod" id="shipStandard" checked>
+              <span>Standard Shipping — $0.00</span>
+            </label>
+            <label id="sameDayRow" style="display:none; align-items:center; gap:8px;">
+              <input type="radio" name="shipMethod" id="shipSameDay">
+              <span>Same-Day Delivery (Uber) — $9.99</span>
+            </label>
+            <div id="sameDayNote" style="font-size:12px; color:#555; margin-top:4px; display:none;">Same-day delivery available for Seattle ZIPs (981xx).</div>
+          </div>
           <div class="cb-modal-actions">
             <button id="checkoutPlaceBtn" class="cb-btn-primary">Place Order</button>
             <button id="checkoutCancelBtn" class="cb-btn-secondary">Cancel</button>

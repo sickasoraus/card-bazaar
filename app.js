@@ -206,6 +206,100 @@
     alert(`Sold pack to store for $${credit.toFixed(2)} credit.`);
   });
 
+  // --- Checkout Modal (re‑add logic) ---
+  const checkoutOverlay = document.getElementById('checkoutOverlay');
+  const checkoutPlaceBtn = document.getElementById('checkoutPlaceBtn');
+  const checkoutCancelBtn = document.getElementById('checkoutCancelBtn');
+  const checkoutSummary = document.getElementById('checkoutSummary');
+  const applyStoreCredit = document.getElementById('applyStoreCredit');
+  const availableCredit = document.getElementById('availableCredit');
+  const shipName = document.getElementById('shipName');
+  const shipAddr = document.getElementById('shipAddr');
+  const shipCity = document.getElementById('shipCity');
+  const shipState = document.getElementById('shipState');
+  const shipZip = document.getElementById('shipZip');
+  const shipStandard = document.getElementById('shipStandard');
+  const shipSameDay = document.getElementById('shipSameDay');
+  const sameDayRow = document.getElementById('sameDayRow');
+  const sameDayNote = document.getElementById('sameDayNote');
+
+  let shippingCost = 0;
+  function zipAllowsSameDay(zip) { return /^981\d{2}$/.test(zip || ''); }
+  function updateSameDayAvailability() {
+    const zip = shipZip && shipZip.value || '';
+    const allowed = zipAllowsSameDay(zip);
+    if (sameDayRow) sameDayRow.style.display = allowed ? 'flex' : 'none';
+    if (sameDayNote) sameDayNote.style.display = allowed ? 'block' : 'none';
+    if (!allowed && shipSameDay) shipSameDay.checked = false;
+    recalcCheckoutSummary();
+  }
+  function recalcCheckoutSummary() {
+    if (!checkoutSummary) return;
+    const itemsTotal = cart.reduce((s,i)=>s+i.price,0);
+    shippingCost = (shipSameDay && shipSameDay.checked) ? 9.99 : 0;
+    let total = itemsTotal + shippingCost;
+    let creditApplied = 0;
+    if (applyStoreCredit && applyStoreCredit.checked && storeCredit > 0) {
+      creditApplied = Math.min(storeCredit, total);
+      total = Math.max(0, total - creditApplied);
+    }
+    checkoutSummary.textContent = `Items: ${cart.length} • Items Total: $${itemsTotal.toFixed(2)} • Shipping: $${shippingCost.toFixed(2)} • Credit Applied: $${creditApplied.toFixed(2)} • Pay: $${total.toFixed(2)}`;
+    if (availableCredit) availableCredit.textContent = `(Available: $${storeCredit.toFixed(2)})`;
+  }
+  function openCheckout() {
+    if (!checkoutOverlay) return;
+    if (!cart.length) { alert('Your cart is empty.'); return; }
+    // reset defaults
+    if (shipStandard) shipStandard.checked = true;
+    if (shipSameDay) shipSameDay.checked = false;
+    applyStoreCredit.checked = storeCredit > 0;
+    updateSameDayAvailability();
+    recalcCheckoutSummary();
+    checkoutOverlay.style.display = 'flex';
+    checkoutOverlay.setAttribute('aria-hidden','false');
+  }
+  function closeCheckout() {
+    if (!checkoutOverlay) return;
+    checkoutOverlay.style.display = 'none';
+    checkoutOverlay.setAttribute('aria-hidden','true');
+  }
+  if (checkoutCancelBtn) checkoutCancelBtn.addEventListener('click', closeCheckout);
+  if (applyStoreCredit) applyStoreCredit.addEventListener('change', recalcCheckoutSummary);
+  if (shipStandard) shipStandard.addEventListener('change', recalcCheckoutSummary);
+  if (shipSameDay) shipSameDay.addEventListener('change', recalcCheckoutSummary);
+  if (shipZip) shipZip.addEventListener('input', updateSameDayAvailability);
+  if (checkoutPlaceBtn) checkoutPlaceBtn.addEventListener('click', () => {
+    const nameOk = shipName && shipName.value;
+    const addrOk = shipAddr && shipAddr.value;
+    const cityOk = shipCity && shipCity.value;
+    const stateOk = shipState && shipState.value;
+    const zipOk = shipZip && shipZip.value;
+    if (!(nameOk && addrOk && cityOk && stateOk && zipOk)) {
+      alert('Please enter a shipping name, address, city, state, and ZIP.');
+      return;
+    }
+    // recompute order totals
+    const itemsTotal = cart.reduce((s,i)=>s+i.price,0);
+    shippingCost = (shipSameDay && shipSameDay.checked) ? 9.99 : 0;
+    let total = itemsTotal + shippingCost;
+    if (applyStoreCredit && applyStoreCredit.checked && storeCredit > 0) {
+      const applied = Math.min(storeCredit, total);
+      storeCredit -= applied;
+      total = Math.max(0, total - applied);
+      try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_) {}
+    }
+    if (user) {
+      cart.forEach(it => binder.push({ name: it.name, condition: it.condition, price: it.price, image: it.image || '' }));
+      saveBinder();
+      renderBinder();
+    }
+    cart.length = 0;
+    renderCart();
+    closeCheckout();
+    alert(user ? 'Order placed! Items added to your binder.' : 'Order placed! Create an account to track purchases in your binder next time.');
+  });
+  if (checkoutBtn) checkoutBtn.addEventListener('click', (e)=>{ e.preventDefault(); openCheckout(); });
+
   function renderCart() {
     cartItemsEl.innerHTML = '';
     cart.forEach((item, idx) => {

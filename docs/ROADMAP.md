@@ -145,3 +145,23 @@ Next sprint candidates:
 - Mobile UX improvements (Feature 13): tighten responsive grid, image sizes, tap interactions.
 - Email capture (Feature 18): modal + provider hookup (e.g., Mailchimp, ConvertKit) or simple webhook.
 
+## Feature Status Summary (Original 19)
+- 1) Login + guest + perks — Prototype merged (2025-08-28). Permissive login, Binder, suggestions, store credit.
+- 2) Real-time card price — Merged (2025-08-28).
+- 3) Daily spin-the-wheel — Merged (one-time per user) (2025-08-28).
+- 4) Live scanned images — Prototype via Scryfall high‑res viewer (2025-08-28). Full scanning pipeline: Not started.
+- 5) Out-of-stock celebration — Merged (2025-08-28).
+- 6) Last-copy excitement — Merged (2025-08-28).
+- 7) Related cards — Tabled (reverted on 2025-08-28).
+- 8) Scan collection app → binder → sell — Not started.
+- 9) Ads to sister Database site — Banner merged (2025-08-28).
+- 10) Card testimonials — Merged (2025-08-28).
+- 11) Open a pack — Prototype merged (2025-08-28).
+- 12) Integrated checkout (Stripe etc.) — Not started (UI checkout prototype merged 2025-08-28).
+- 13) Mobile friendly — Merged (2025-08-28).
+- 14) Card scanning app + mobile storefront — Not started.
+- 15) Binder valuation (up/down) — Summary valuation merged (2025-08-28).
+- 16) Binder UI (actual binder display) — Grid + drag merged (2025-08-28).
+- 17) Same‑day delivery (Seattle via Uber) — Prototype shipping option merged (2025-08-28).
+- 18) Email capture popup — Merged (2025-08-28).
+- 19) Magic ETF — Not started.
