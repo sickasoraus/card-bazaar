@@ -472,7 +472,36 @@
       <div id="binderSummary" style="font-weight:700; font-size:14px;"></div>
     </div>
     <div id="binderListEmpty" style="font-size:14px; color:#555;">Your binder is empty. Check out while logged in to add purchases here.</div>
-    <ul id="binderList" style="list-style:none; padding-left:0; margin:8px 0; max-height:280px; overflow:auto;"></ul>
+    <div id="binderGrid" class="binder-grid" style="display:grid; grid-template-columns: repeat(3, 120px); gap: 12px; max-height: 300px; overflow:auto;"></div>
+  </div>
+  <style>
+    .binder-item { position: relative; width: 120px; }
+    .binder-item img { width: 100%; height: 168px; object-fit: cover; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .binder-item .meta { font-size: 12px; margin-top: 4px; display: flex; justify-content: space-between; }
+    .binder-item .actions { display:flex; gap:4px; margin-top:4px; }
+    .binder-item[draggable="true"] { cursor: grab; }
+  </style>
+
+  <!-- Checkout Modal -->
+  <div id="checkoutOverlay" class="cb-modal-overlay" aria-hidden="true">
+    <div class="cb-modal" role="dialog" aria-labelledby="cbCheckoutTitle" aria-modal="true" style="max-width:720px;">
+      <div class="cb-modal-grid" style="min-height: 0;">
+        <div class="cb-modal-body" style="flex: 1 1 100%; background: #fff; color:#333;">
+          <div style="font-family:'Bangers', Impact, Charcoal, sans-serif; font-size:36px; color:#d92626; text-shadow:1px 1px #000;">CARD BAZAAR</div>
+          <h3 id="cbCheckoutTitle" style="color:#111;">Checkout</h3>
+          <div id="checkoutSummary" style="margin-bottom:12px; font-size:16px; color:#333;"></div>
+          <label style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+            <input type="checkbox" id="applyStoreCredit"> Apply store credit
+            <span id="availableCredit" style="color:#d92626; font-weight:700;"></span>
+          </label>
+          <div class="cb-modal-actions">
+            <button id="checkoutPlaceBtn" class="cb-btn-primary">Place Order</button>
+            <button id="checkoutCancelBtn" class="cb-btn-secondary">Cancel</button>
+          </div>
+          <div class="cb-footnote" style="color:#555;">Simulated checkout for prototype. No payment is processed.</div>
+        </div>
+      </div>
+    </div>
   </div>
   <div id="sellInfoPopup" style="display:none; position:fixed; top:96px; right:24px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); width:360px; padding:16px; z-index:1400;">
     Looking to sell us your cards? Our team of Graders will verify the condition of each card and give you the highest market rate out of any other retailer for your NM editions. Coming soon!

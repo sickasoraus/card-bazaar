@@ -316,7 +316,7 @@ async function fetchCardImages() {
           if (active && typeof window.addToCart === 'function') {
             // adjust inventory + celebrations
             const proceed = handleAddForActive();
-            if (proceed) window.addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
+            if (proceed) window.addToCart({ name, condition: active.dataset.condition, price: active.dataset.price, image: active.getAttribute('src') });
           }
         } else {
           animateToCondition(cardDiv, btn.dataset.condition);
@@ -332,7 +332,7 @@ async function fetchCardImages() {
       const active = cardDiv.querySelector('.variant-image.active');
       if (active && typeof window.addToCart === 'function') {
         const proceed = handleAddForActive();
-        if (proceed) window.addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
+        if (proceed) window.addToCart({ name, condition: active.dataset.condition, price: active.dataset.price, image: active.getAttribute('src') });
       }
     });
 

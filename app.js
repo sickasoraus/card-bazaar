@@ -27,33 +27,52 @@
   }
 
   function renderBinder() {
-    if (!binderListEl || !binderSummaryEl) return;
-    binderListEl.innerHTML = '';
+    if (!binderGrid || !binderSummaryEl) return;
+    binderGrid.innerHTML = '';
     let total = 0;
     binder.forEach((it, idx) => {
       total += it.price;
-      const li = document.createElement('li');
-      li.style.marginBottom = '6px';
-      li.textContent = `${it.name} (${it.condition}) - $${it.price.toFixed(2)}`;
-      const sell = document.createElement('button');
-      sell.textContent = 'Sell to Store (70%)';
-      sell.style.marginLeft = '8px';
-      sell.addEventListener('click', () => {
+      const card = document.createElement('div');
+      card.className = 'binder-item';
+      card.setAttribute('draggable','true');
+      card.dataset.index = String(idx);
+      card.innerHTML = `
+        <img src="${it.image || ''}" alt="${it.name}">
+        <div class="meta"><span>${it.condition}</span><span>$${it.price.toFixed(2)}</span></div>
+        <div class="actions">
+          <button class="sell-btn">Sell 70%</button>
+          <button class="rm-btn">Remove</button>
+        </div>
+      `;
+      card.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', String(idx));
+      });
+      card.addEventListener('dragover', (e) => e.preventDefault());
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const from = parseInt(e.dataTransfer.getData('text/plain'));
+        const to = idx;
+        if (!Number.isFinite(from) || from === to) return;
+        const [moved] = binder.splice(from, 1);
+        binder.splice(to, 0, moved);
+        saveBinder();
+        renderBinder();
+      });
+      card.querySelector('.sell-btn').addEventListener('click', () => {
         const credit = Math.round(it.price * 0.7 * 100) / 100;
         storeCredit += credit;
         try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_) {}
-        binder.splice(idx, 1);
+        binder.splice(idx,1);
         saveBinder();
         renderBinder();
         renderCart();
       });
-      const remove = document.createElement('button');
-      remove.textContent = 'Remove';
-      remove.style.marginLeft = '6px';
-      remove.addEventListener('click', () => { binder.splice(idx,1); saveBinder(); renderBinder(); });
-      li.appendChild(sell);
-      li.appendChild(remove);
-      binderListEl.appendChild(li);
+      card.querySelector('.rm-btn').addEventListener('click', () => {
+        binder.splice(idx,1);
+        saveBinder();
+        renderBinder();
+      });
+      binderGrid.appendChild(card);
     });
     if (binderListEmptyEl) binderListEmptyEl.style.display = binder.length ? 'none' : 'block';
     binderSummaryEl.textContent = binder.length ? `${binder.length} cards • $${total.toFixed(2)}` : '';
@@ -383,21 +402,6 @@
   }
 
   // --- Checkout -> move cart items to binder when logged in
-  if (checkoutBtn) {
-    checkoutBtn.addEventListener('click', () => {
-      if (!user) {
-        alert('Please log in to add purchases to your binder.');
-        return;
-      }
-      if (!cart.length) return;
-      cart.forEach(it => binder.push({ name: it.name, condition: it.condition, price: it.price }));
-      cart.length = 0;
-      saveBinder();
-      renderBinder();
-      renderCart();
-      if (headerCartPopup) headerCartPopup.style.display = 'none';
-      alert('Purchase complete! Added to your binder.');
-    });
-  }
+  // replaced by modal-driven checkout; see below
 })();
 
