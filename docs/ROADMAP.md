@@ -91,6 +91,7 @@ Legend:
 - 12) Checkout flow (prototype: modal + credit + guest) — 2025-08-28
 - 1) Personalized suggestions (prototype) — 2025-08-28
 - 9) Ads to sister site banner — 2025-08-28
+- 11) Open a pack (prototype) — 2025-08-28
 
 ## Priority Order (Impact vs. Difficulty)
 

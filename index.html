@@ -445,6 +445,13 @@
         <div class="auth-row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
           <button id="sellHeaderBtn" class="btn-cta" style="width: 260px;">Sell Cards</button>
           <button id="binderHeaderBtn" class="btn-cta" style="display:none; width: 260px;">My Binder</button>
+          <!-- Banner to sister site below My Binder -->
+          <div id="dbBanner" style="margin-top:8px; background: linear-gradient(90deg, #0b1a2b, #142d4c); color:#fff; border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; width: 260px;">
+            <div style="font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 22px; color:#ff6b6b; text-shadow:1px 1px #000;">Card Bazaar Database</div>
+            <div style="opacity:0.9; font-size:13px;">News • Set Spoilers • Reviews • Promos</div>
+            <a id="dbBannerLink" href="#" target="_blank" class="btn-cta" style="font-size:14px; padding:8px 10px; text-align:center;">Read Now</a>
+          </div>
+          <button id="openPackBtn" class="btn-ghost" style="width: 260px;">Open a Pack</button>
         </div>
         <div id="loginForm">
           <input type="email" id="loginEmail" placeholder="Email">
@@ -454,24 +461,16 @@
       </div>
     </div>
     <div class="content">
-      <!-- Personalized Suggestions -->
-      <div id="suggestSection" style="padding: 12px 24px 0 24px; display:none;">
+      <div class="grid" id="cardGrid">
+        <!-- Cards will be populated here -->
+      </div>
+      <!-- Personalized Suggestions (moved to bottom) -->
+      <div id="suggestSection" style="padding: 12px 24px 24px 24px; display:none;">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
           <div style="font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 28px; color:#d92626; text-shadow:1px 1px #000;">Suggested for You</div>
           <button id="refreshSuggest" class="btn-ghost" style="font-size:14px; padding:6px 10px;">Refresh</button>
         </div>
         <div id="suggestRow" class="suggest-row" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:8px;"></div>
-      </div>
-      <!-- Top Banner Ad to DB site -->
-      <div id="dbBanner" style="margin: 8px 24px; background: linear-gradient(90deg, #0b1a2b, #142d4c); color:#fff; border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div style="font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 24px; color:#ff6b6b; text-shadow:1px 1px #000;">Card Bazaar Database</div>
-          <div style="opacity:0.9; font-size:14px;">News • Set Spoilers • Reviews • Promos</div>
-        </div>
-        <a id="dbBannerLink" href="#" target="_blank" class="btn-cta" style="font-size:16px; padding:10px 14px;">Read Now</a>
-      </div>
-      <div class="grid" id="cardGrid">
-        <!-- Cards will be populated here -->
       </div>
     </div>
   </div>
@@ -520,6 +519,35 @@
             <button id="checkoutCancelBtn" class="cb-btn-secondary">Cancel</button>
           </div>
           <div class="cb-footnote" style="color:#555;">Simulated checkout for prototype. No payment is processed.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Pack Opener Modal -->
+  <div id="packOverlay" class="cb-modal-overlay" aria-hidden="true">
+    <div class="cb-modal" role="dialog" aria-labelledby="packTitle" aria-modal="true" style="max-width:980px;">
+      <div class="cb-modal-grid" style="min-height:0;">
+        <div class="cb-modal-body" style="flex: 1 1 100%; background: #fff; color:#333;">
+          <div style="font-family:'Bangers', Impact, Charcoal, sans-serif; font-size:36px; color:#d92626; text-shadow:1px 1px #000;">CARD BAZAAR</div>
+          <h3 id="packTitle" style="color:#111;">Open a Pack</h3>
+          <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            Set:
+            <select id="packSetSelect">
+              <option value="dom">Dominaria</option>
+              <option value="dmu">Dominaria United</option>
+              <option value="mh2">Modern Horizons 2</option>
+              <option value="mom">March of the Machine</option>
+            </select>
+          </label>
+          <div class="cb-modal-actions">
+            <button id="openPackGo" class="cb-btn-primary">Open Pack</button>
+            <button id="packCloseBtn" class="cb-btn-secondary">Close</button>
+          </div>
+          <div id="packGrid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-top:12px;"></div>
+          <div class="cb-modal-actions" style="margin-top:12px;">
+            <button id="packAddAll" class="btn-cta">Add All to Cart</button>
+            <button id="packSellAll" class="btn-ghost">Sell All (70%)</button>
+          </div>
         </div>
       </div>
     </div>

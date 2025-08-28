@@ -144,6 +144,68 @@
   if (refreshSuggest) refreshSuggest.addEventListener('click', buildSuggestions);
   try { buildSuggestions(); } catch(_) {}
 
+  // --- Pack Opener ---
+  const openPackBtn = document.getElementById('openPackBtn');
+  const packOverlay = document.getElementById('packOverlay');
+  const packCloseBtn = document.getElementById('packCloseBtn');
+  const openPackGo = document.getElementById('openPackGo');
+  const packSetSelect = document.getElementById('packSetSelect');
+  const packGrid = document.getElementById('packGrid');
+  let packCards = [];
+
+  function openPackModal() { if (!packOverlay) return; packOverlay.style.display='flex'; packOverlay.setAttribute('aria-hidden','false'); packGrid.innerHTML=''; packCards=[]; }
+  function closePackModal() { if (!packOverlay) return; packOverlay.style.display='none'; packOverlay.setAttribute('aria-hidden','true'); }
+  if (openPackBtn) openPackBtn.addEventListener('click', openPackModal);
+  if (packCloseBtn) packCloseBtn.addEventListener('click', closePackModal);
+  if (packOverlay) packOverlay.addEventListener('click', (e)=>{ if(e.target===packOverlay) closePackModal(); });
+
+  async function fetchRandomFromSet(setCode) {
+    const url = `https://api.scryfall.com/cards/random?q=e%3A${encodeURIComponent(setCode)}+game%3Apaper+-is%3Afunny`;
+    const res = await fetch(url);
+    return res.json();
+  }
+
+  async function openPack() {
+    if (!packGrid) return;
+    packGrid.innerHTML = '';
+    packCards = [];
+    const set = packSetSelect ? packSetSelect.value : 'dmu';
+    // Simple 10-card pack for prototype
+    for (let i=0;i<10;i++) {
+      try {
+        const c = await fetchRandomFromSet(set);
+        const img = (c.image_uris && (c.image_uris.normal || c.image_uris.small)) || (c.card_faces && c.card_faces[0] && c.card_faces[0].image_uris && (c.card_faces[0].image_uris.normal || c.card_faces[0].image_uris.small)) || '';
+        const price = (c.prices && (parseFloat(c.prices.usd) || parseFloat(c.prices.usd_foil) || parseFloat(c.prices.usd_etched))) || 0;
+        packCards.push({ name: c.name, img, price });
+        const cell = document.createElement('div');
+        cell.innerHTML = `
+          <div style="border-radius:10px; overflow:hidden; box-shadow:0 6px 14px rgba(0,0,0,0.25);">
+            <img src="${img}" alt="${c.name}" style="width:100%; height:180px; object-fit:cover; display:block;">
+          </div>
+          <div style="font-size:12px; font-weight:700; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${c.name}</div>
+          <div style="font-size:12px; color:#444;">NM $${price.toFixed(2)}</div>
+        `;
+        packGrid.appendChild(cell);
+      } catch(_) {}
+    }
+  }
+  if (openPackGo) openPackGo.addEventListener('click', openPack);
+  const packAddAll = document.getElementById('packAddAll');
+  const packSellAll = document.getElementById('packSellAll');
+  if (packAddAll) packAddAll.addEventListener('click', ()=>{
+    if (!packCards.length) return;
+    packCards.forEach(c => { if (typeof window.addToCart === 'function') window.addToCart({ name: c.name, condition: 'NM', price: `$${(c.price||0).toFixed(2)}`, image: c.img }); });
+    alert('All pack cards added to cart.');
+  });
+  if (packSellAll) packSellAll.addEventListener('click', ()=>{
+    if (!packCards.length) return;
+    let total = packCards.reduce((s,c)=>s+(c.price||0),0);
+    const credit = Math.round(total*0.7*100)/100;
+    storeCredit += credit; try{ localStorage.setItem('cb_store_credit', String(storeCredit)); }catch(_){ }
+    renderCart();
+    alert(`Sold pack to store for $${credit.toFixed(2)} credit.`);
+  });
+
   function renderCart() {
     cartItemsEl.innerHTML = '';
     cart.forEach((item, idx) => {
