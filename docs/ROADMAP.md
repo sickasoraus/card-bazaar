@@ -76,6 +76,16 @@ Legend:
 
 ---
 
+## Recently Merged (in test)
+- 2) Real-time card prices — 2025-08-28
+- 13) Mobile friendly — 2025-08-28
+- 18) Email capture popup — 2025-08-28
+- 3) Daily spin-the-wheel — 2025-08-28
+- 5) Out-of-stock celebration — 2025-08-28
+- 6) Last-copy excitement — 2025-08-28
+- 10) Card testimonials — 2025-08-28
+- 7) Related cards — tabled and reverted on 2025-08-28
+
 ## Priority Order (Impact vs. Difficulty)
 
 Top (fast impact, manageable complexity)
