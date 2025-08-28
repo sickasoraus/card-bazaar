@@ -10,10 +10,10 @@ Legend:
 - 12) Fully integrated checkout (Stripe + multiple wallets)
   - Impact: High
   - Difficulty: Very High (PCI concerns, provider integrations, webhooks, testing)
-- 13) Make the website mobile friendly
+- 13) Make the website mobile friendly (in test - currently merged, 2025-08-28)
   - Impact: High
   - Difficulty: Medium (responsive layout, touch UX, performance)
-- 2) Real-time card price on each card
+- 2) Real-time card price on each card (in test - currently merged, 2025-08-28)
   - Impact: High
   - Difficulty: Medium (use Scryfall/partner pricing; caching, fallbacks)
 
