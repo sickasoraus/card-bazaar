@@ -111,4 +111,123 @@
   }
   updateAuthDisplay();
 
+  // --- Email capture modal (waitlist) ---
+  const EMAIL_CAPTURE_ENDPOINT = null; // set to a backend URL later; null = simulate
+  const overlay = document.getElementById('cbEmailOverlay');
+  const submitBtn = document.getElementById('cbEmailSubmit');
+  const dismissBtn = document.getElementById('cbEmailDismiss');
+  const inputEl = document.getElementById('cbEmailInput');
+  const msgEl = document.getElementById('cbEmailMessage');
+  const modalArt = document.getElementById('cbModalArt');
+  const modalStack = document.getElementById('cbModalStack');
+
+  function shouldShowEmailCapture() {
+    try {
+      if (!overlay) return false;
+      if (user) return false; // logged-in users skip
+      const optedOut = localStorage.getItem('cb_email_capture_opted_out') === '1';
+      const submitted = localStorage.getItem('cb_email_capture_submitted');
+      return !optedOut && !submitted;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function showEmailCapture() {
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden', 'false');
+    setTimeout(() => { try { inputEl && inputEl.focus(); } catch(_){} }, 50);
+  }
+
+  function hideEmailCapture() {
+    if (!overlay) return;
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  function validEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  async function submitEmail() {
+    const email = (inputEl && inputEl.value || '').trim();
+    if (!validEmail(email)) {
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#c62828';
+        msgEl.textContent = 'Please enter a valid email.';
+      }
+      return;
+    }
+    try {
+      if (EMAIL_CAPTURE_ENDPOINT) {
+        await fetch(EMAIL_CAPTURE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, ts: Date.now() })
+        });
+      }
+      localStorage.setItem('cb_email_capture_submitted', JSON.stringify({ email, ts: Date.now() }));
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#2e7d32';
+        msgEl.textContent = 'Thanks! You\'re on the waitlist.';
+      }
+      setTimeout(hideEmailCapture, 1200);
+    } catch (_) {
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#c62828';
+        msgEl.textContent = 'Something went wrong. Please try again later.';
+      }
+    }
+  }
+
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      try { localStorage.setItem('cb_email_capture_opted_out', '1'); } catch(_){ }
+      hideEmailCapture();
+    });
+  }
+  if (submitBtn) {
+    submitBtn.addEventListener('click', submitEmail);
+  }
+  if (inputEl) {
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitEmail();
+      }
+    });
+  }
+
+  // Show after short delay on first visit
+  setTimeout(() => {
+    if (shouldShowEmailCapture()) showEmailCapture();
+  }, 2000);
+
+  // Fetch Teferi art for the modal background
+  (async function setTeferiArt(){
+    try {
+      const res = await fetch('https://api.scryfall.com/cards/named?exact=' + encodeURIComponent('Teferi, Hero of Dominaria'));
+      const data = await res.json();
+      const img = (data.image_uris && data.image_uris.normal) ||
+                  (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris && data.card_faces[0].image_uris.normal);
+      if (img && modalStack) {
+        modalStack.innerHTML = [
+          `<img class="cb-variant-image cb-bottom" src="${img}" alt="Teferi card (bottom)">`,
+          `<img class="cb-variant-image cb-mid" src="${img}" alt="Teferi card (middle)">`,
+          `<img class="cb-variant-image cb-top" src="${img}" alt="Teferi card (top)">`,
+        ].join('');
+      } else if (modalArt) {
+        // Fallback to background if stacking container missing
+        modalArt.style.backgroundImage = img ? `url(${img})` : 'none';
+        if (!img) modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+      }
+    } catch (_) {
+      if (modalArt) modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+    }
+  })();
+
 })();

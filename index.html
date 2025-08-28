@@ -94,6 +94,146 @@
       padding: 12px 0;
       box-sizing: border-box;
     }
+    /* Email capture modal */
+    .cb-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .cb-modal {
+      background: #fff;
+      width: 90vw;
+      max-width: 960px;
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    .cb-modal-grid {
+      display: flex;
+      min-height: 520px;
+    }
+    .cb-modal-img {
+      flex: 1 1 55%;
+      background: #0b1a2b;
+      min-height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    /* Modal card stack */
+    .cb-card-frame {
+      position: relative;
+      width: 92%;
+      max-width: 520px;
+      aspect-ratio: 512 / 716;
+    }
+    .cb-card-frame::before {
+      content: '';
+      display: block;
+      padding-top: calc(716 / 512 * 100%);
+    }
+    .cb-card-stack {
+      position: absolute;
+      inset: 0;
+    }
+    .cb-card-stack .cb-variant-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      backface-visibility: hidden;
+    }
+    .cb-card-stack .cb-bottom { transform: translate(-12px, -12px) rotate(-4deg) scale(0.98); z-index: 1; filter: brightness(0.92); }
+    .cb-card-stack .cb-mid    { transform: translate(10px, -6px) rotate(2deg) scale(0.99);  z-index: 2; filter: brightness(0.96); }
+    .cb-card-stack .cb-top    { transform: translate(0px, 0px) rotate(0deg) scale(1.0);     z-index: 3; }
+    .cb-modal-body {
+      flex: 1 1 45%;
+      background: linear-gradient(180deg, #0b1a2b 0%, #0b1a2b 60%, #142d4c 100%);
+      color: #fff;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      text-align: left;
+    }
+    .cb-modal h3 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: 0.5px;
+    }
+    .cb-modal .cb-brand {
+      font-family: 'Bangers', Impact, Charcoal, sans-serif;
+      font-size: 40px;
+      color: #ff6b6b;
+      text-shadow: 2px 2px #000;
+      margin-bottom: 8px;
+    }
+    .cb-modal p {
+      margin: 0 0 16px;
+      font-size: 16px;
+      color: #e6e6e6;
+    }
+    .cb-modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .cb-input {
+      width: 100%;
+      padding: 14px 14px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 18px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .cb-input::placeholder { color: rgba(255,255,255,0.8); }
+    .cb-btn-primary {
+      background: linear-gradient(45deg, #d92626, #ff7e5f);
+      color: #fff;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .cb-btn-secondary {
+      background: transparent;
+      color: #e6e6e6;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .cb-modal .cb-footnote {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #cfd8dc;
+      opacity: 0.9;
+    }
+    @media (max-width: 768px) {
+      .cb-modal { width: 94vw; }
+      .cb-modal-grid { flex-direction: column; min-height: 0; }
+      .cb-modal-img { min-height: 260px; }
+      .cb-modal-body { padding: 20px; }
+      .cb-modal .cb-brand { font-size: 34px; }
+      .cb-modal h3 { font-size: 24px; }
+    }
     #loginBtn {
       background: linear-gradient(45deg, #d92626, #ff7e5f);
       color: #fff;
@@ -160,6 +300,21 @@
     .variant-image.active {
       z-index: 5;
       pointer-events: none;
+    }
+    /* Related images behind the stack */
+    .related-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 24px;
+      filter: brightness(0.8) saturate(0.9);
+      z-index: 0;
+      pointer-events: none;
+      transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+      opacity: 0.95;
     }
     .card:hover .card-stack {
       transform: translateY(-5px) rotate(-1deg);
@@ -296,6 +451,30 @@
           <div id="sellInfo" class="sidebar-content">
             Looking to sell us your cards? Our team of Graders will verify the condition of each card and give you the highest market rate out of any other retailer for your NM editions. Coming soon!
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Email Capture Modal (injected content target) -->
+  <div id="cbEmailOverlay" class="cb-modal-overlay" aria-hidden="true">
+    <div class="cb-modal" role="dialog" aria-labelledby="cbEmailTitle" aria-modal="true">
+      <div class="cb-modal-grid">
+        <div class="cb-modal-img">
+          <div class="cb-card-frame">
+            <div class="cb-card-stack" id="cbModalStack"></div>
+          </div>
+        </div>
+        <div class="cb-modal-body">
+          <div class="cb-brand">CARD BAZAAR</div>
+          <h3 id="cbEmailTitle">Join the waitlist</h3>
+          <p>Be first to know about card drops, promos, and new features.</p>
+          <input type="email" id="cbEmailInput" class="cb-input" placeholder="Best Email" aria-label="Email address">
+          <div class="cb-modal-actions">
+            <button id="cbEmailSubmit" class="cb-btn-primary">CONTINUE</button>
+            <button id="cbEmailDismiss" class="cb-btn-secondary">No thanks</button>
+          </div>
+          <div class="cb-footnote">We’ll send occasional updates. Unsubscribe anytime.</div>
+          <div id="cbEmailMessage" style="margin-top:10px;font-size:14px;color:#a5d6a7;display:none;"></div>
         </div>
       </div>
     </div>

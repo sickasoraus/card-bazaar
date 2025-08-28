@@ -60,6 +60,57 @@ function resetOffsets(stack) {
   });
 }
 
+function applyRelatedOffsets(stack) {
+  const rel = Array.from(stack.querySelectorAll('.related-image'));
+  if (!rel.length) return;
+  const patterns = [
+    { x: -36, y: -28, r: -6, s: 0.98 },
+    { x: 26, y: -16, r: 3, s: 0.985 },
+    { x: -18, y: 20, r: -2, s: 0.99 },
+    { x: 18, y: 24, r: 2, s: 0.99 },
+    { x: -8, y: -6, r: -1, s: 0.995 },
+  ];
+  rel.forEach((img, i) => {
+    const p = patterns[i % patterns.length];
+    img.style.transform = `translate(${p.x}px, ${p.y}px) rotate(${p.r}deg) scale(${p.s})`;
+    img.style.zIndex = i + 1; // still behind variant images (which start > this by class)
+  });
+}
+
+async function fetchRelatedImagesForCard({ name, type_line, color_identity }) {
+  // Determine a coarse type token
+  const tl = (type_line || '').toLowerCase();
+  let type = 'card';
+  const types = ['planeswalker','creature','instant','sorcery','artifact','enchantment','land'];
+  for (const t of types) { if (tl.includes(t)) { type = t; break; } }
+  const ci = Array.isArray(color_identity) && color_identity.length ? color_identity.join('').toLowerCase() : '';
+  const parts = [
+    `type:${type}`,
+    ci ? `ci:${ci}` : '',
+    `-name:"${name.replace(/"/g,'\\"')}"`,
+    'game:paper',
+    '-is:funny',
+    'unique:prints',
+    'order:edhrec'
+  ].filter(Boolean);
+  const q = parts.join(' ');
+  const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data || !Array.isArray(data.data)) return [];
+    const images = [];
+    for (const c of data.data) {
+      const uri = c.image_uris && c.image_uris.normal;
+      if (uri) images.push({ src: uri, name: c.name });
+      if (images.length >= 5) break;
+    }
+    return images;
+  } catch (_) {
+    return [];
+  }
+}
+
 function formatPrice(n) {
   const num = Number.isFinite(n) ? n : 0;
   return `$${num.toFixed(2)}`;
@@ -148,6 +199,7 @@ async function fetchCardImages() {
       </div>
       <div class="condition-buttons" style="display:none;">
         <button class="add-cart-btn">Add to Cart</button>
+        <button class="related-btn" title="Cycle related">Related</button>
         <button data-condition="NM" data-price="${priceStrings.NM}">
           NM (${inventory.NM}) — <span class="price-span" style="${colors.NM ? `color:${colors.NM}` : ''}">${priceStrings.NM}</span>
         </button>
@@ -224,6 +276,13 @@ async function fetchCardImages() {
           if (active && typeof addToCart === 'function') {
             addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
           }
+        } else if (btn.classList.contains('related-btn')) {
+          // Move the last related image to the front to simulate cycling
+          const rel = Array.from(stack.querySelectorAll('.related-image'));
+          if (rel.length) {
+            stack.insertBefore(rel[rel.length - 1], stack.firstChild);
+            applyRelatedOffsets(stack);
+          }
         } else {
           animateToCondition(cardDiv, btn.dataset.condition);
         }
@@ -240,6 +299,24 @@ async function fetchCardImages() {
     });
 
     grid.appendChild(cardDiv);
+
+    // Fetch and render related images behind the stack
+    try {
+      const related = await fetchRelatedImagesForCard({ name, type_line: data.type_line, color_identity: data.color_identity });
+      if (related.length) {
+        const frag = document.createDocumentFragment();
+        related.forEach(({ src, name: rname }) => {
+          const img = document.createElement('img');
+          img.className = 'related-image';
+          img.src = src;
+          img.alt = `Related: ${rname}`;
+          frag.appendChild(img);
+        });
+        // Insert behind variant images by prepending
+        stack.insertBefore(frag, stack.firstChild);
+        applyRelatedOffsets(stack);
+      }
+    } catch (_) {}
   }
 }
 
