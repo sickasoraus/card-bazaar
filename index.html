@@ -454,6 +454,22 @@
       </div>
     </div>
     <div class="content">
+      <!-- Personalized Suggestions -->
+      <div id="suggestSection" style="padding: 12px 24px 0 24px; display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 28px; color:#d92626; text-shadow:1px 1px #000;">Suggested for You</div>
+          <button id="refreshSuggest" class="btn-ghost" style="font-size:14px; padding:6px 10px;">Refresh</button>
+        </div>
+        <div id="suggestRow" class="suggest-row" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:8px;"></div>
+      </div>
+      <!-- Top Banner Ad to DB site -->
+      <div id="dbBanner" style="margin: 8px 24px; background: linear-gradient(90deg, #0b1a2b, #142d4c); color:#fff; border-radius:12px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 24px; color:#ff6b6b; text-shadow:1px 1px #000;">Card Bazaar Database</div>
+          <div style="opacity:0.9; font-size:14px;">News • Set Spoilers • Reviews • Promos</div>
+        </div>
+        <a id="dbBannerLink" href="#" target="_blank" class="btn-cta" style="font-size:16px; padding:10px 14px;">Read Now</a>
+      </div>
       <div class="grid" id="cardGrid">
         <!-- Cards will be populated here -->
       </div>

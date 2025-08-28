@@ -88,7 +88,9 @@ Legend:
 - UI: Header CTAs + 3-column grid + sidebar removal — 2025-08-28
  - 16) Binder UI (grid + drag) — 2025-08-28
  - 15) Binder valuation (summary total) — 2025-08-28
- - 12) Checkout flow (prototype: modal + credit + guest) — 2025-08-28
+- 12) Checkout flow (prototype: modal + credit + guest) — 2025-08-28
+- 1) Personalized suggestions (prototype) — 2025-08-28
+- 9) Ads to sister site banner — 2025-08-28
 
 ## Priority Order (Impact vs. Difficulty)
 

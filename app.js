@@ -80,6 +80,70 @@
   // Initial draw
   try { renderBinder(); } catch(_) {}
 
+  // --- Personalized Suggestions ---
+  const suggestSection = document.getElementById('suggestSection');
+  const suggestRow = document.getElementById('suggestRow');
+  const refreshSuggest = document.getElementById('refreshSuggest');
+
+  async function fetchCardByName(n) {
+    const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}`);
+    return res.json();
+  }
+
+  async function suggestFromSeed(seedName) {
+    try {
+      const base = await fetchCardByName(seedName);
+      const typeLine = (base.type_line || '').toLowerCase();
+      const types = ['planeswalker','creature','instant','sorcery','artifact','enchantment','land'];
+      let type = 'card'; for (const t of types) { if (typeLine.includes(t)) { type = t; break; } }
+      const ci = Array.isArray(base.color_identity) && base.color_identity.length ? base.color_identity.join('').toLowerCase() : '';
+      const parts = [`type:${type}`, ci ? `ci:${ci}` : '', `-name:\"${seedName}\"`, 'game:paper', '-is:funny', 'unique:prints', 'order:edhrec'];
+      const q = parts.filter(Boolean).join(' ');
+      const url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data || !Array.isArray(data.data)) return [];
+      return data.data.slice(0, 10);
+    } catch(_) { return []; }
+  }
+
+  function formatUSD(v) { return `$${(Number(v)||0).toFixed(2)}`; }
+
+  async function buildSuggestions() {
+    if (!suggestRow || !suggestSection) return;
+    suggestRow.innerHTML = '';
+    let seed = null;
+    if (binder && binder.length) seed = binder[0].name;
+    if (!seed && window.cardNames && window.cardNames.length) {
+      seed = window.cardNames[Math.floor(Math.random()*window.cardNames.length)];
+    }
+    if (!seed) { suggestSection.style.display = 'none'; return; }
+    const list = await suggestFromSeed(seed);
+    if (!list.length) { suggestSection.style.display = 'none'; return; }
+    suggestSection.style.display = 'block';
+    list.forEach(card => {
+      const img = (card.image_uris && (card.image_uris.small || card.image_uris.normal)) || (card.card_faces && card.card_faces[0] && card.card_faces[0].image_uris && (card.card_faces[0].image_uris.small || card.card_faces[0].image_uris.normal)) || '';
+      const price = (card.prices && (parseFloat(card.prices.usd) || parseFloat(card.prices.usd_foil) || parseFloat(card.prices.usd_etched))) || 0;
+      const tile = document.createElement('div');
+      tile.style.width = '160px';
+      tile.style.flex = '0 0 auto';
+      tile.innerHTML = `
+        <div style="position:relative; border-radius:10px; overflow:hidden; box-shadow:0 6px 14px rgba(0,0,0,0.25);">
+          <img src="${img}" alt="${card.name}" style="width:100%; height:220px; object-fit:cover; display:block;">
+        </div>
+        <div style="font-size:14px; font-weight:700; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${card.name}</div>
+        <div style="font-size:13px; color:#444;">NM ${formatUSD(price)}</div>
+        <button class="btn-cta" style="margin-top:6px; width:100%; font-size:14px; padding:8px 10px;">Add to Cart</button>
+      `;
+      tile.querySelector('button').addEventListener('click', () => {
+        if (typeof window.addToCart === 'function') window.addToCart({ name: card.name, condition: 'NM', price: formatUSD(price), image: img });
+      });
+      suggestRow.appendChild(tile);
+    });
+  }
+  if (refreshSuggest) refreshSuggest.addEventListener('click', buildSuggestions);
+  try { buildSuggestions(); } catch(_) {}
+
   function renderCart() {
     cartItemsEl.innerHTML = '';
     cart.forEach((item, idx) => {
