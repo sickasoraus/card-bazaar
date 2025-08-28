@@ -119,10 +119,42 @@
     .cb-modal-img {
       flex: 1 1 55%;
       background: #0b1a2b;
-      background-size: cover;
-      background-position: center;
       min-height: 520px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
     }
+    /* Modal card stack */
+    .cb-card-frame {
+      position: relative;
+      width: 92%;
+      max-width: 520px;
+      aspect-ratio: 512 / 716;
+    }
+    .cb-card-frame::before {
+      content: '';
+      display: block;
+      padding-top: calc(716 / 512 * 100%);
+    }
+    .cb-card-stack {
+      position: absolute;
+      inset: 0;
+    }
+    .cb-card-stack .cb-variant-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      backface-visibility: hidden;
+    }
+    .cb-card-stack .cb-bottom { transform: translate(-12px, -12px) rotate(-4deg) scale(0.98); z-index: 1; filter: brightness(0.92); }
+    .cb-card-stack .cb-mid    { transform: translate(10px, -6px) rotate(2deg) scale(0.99);  z-index: 2; filter: brightness(0.96); }
+    .cb-card-stack .cb-top    { transform: translate(0px, 0px) rotate(0deg) scale(1.0);     z-index: 3; }
     .cb-modal-body {
       flex: 1 1 45%;
       background: linear-gradient(180deg, #0b1a2b 0%, #0b1a2b 60%, #142d4c 100%);
@@ -412,7 +444,11 @@
   <div id="cbEmailOverlay" class="cb-modal-overlay" aria-hidden="true">
     <div class="cb-modal" role="dialog" aria-labelledby="cbEmailTitle" aria-modal="true">
       <div class="cb-modal-grid">
-        <div class="cb-modal-img" id="cbModalArt"></div>
+        <div class="cb-modal-img">
+          <div class="cb-card-frame">
+            <div class="cb-card-stack" id="cbModalStack"></div>
+          </div>
+        </div>
         <div class="cb-modal-body">
           <div class="cb-brand">CARD BAZAAR</div>
           <h3 id="cbEmailTitle">Join the waitlist</h3>

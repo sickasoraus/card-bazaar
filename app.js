@@ -119,6 +119,7 @@
   const inputEl = document.getElementById('cbEmailInput');
   const msgEl = document.getElementById('cbEmailMessage');
   const modalArt = document.getElementById('cbModalArt');
+  const modalStack = document.getElementById('cbModalStack');
 
   function shouldShowEmailCapture() {
     try {
@@ -208,19 +209,24 @@
 
   // Fetch Teferi art for the modal background
   (async function setTeferiArt(){
-    if (!modalArt) return;
     try {
       const res = await fetch('https://api.scryfall.com/cards/named?exact=' + encodeURIComponent('Teferi, Hero of Dominaria'));
       const data = await res.json();
       const img = (data.image_uris && data.image_uris.normal) ||
                   (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris && data.card_faces[0].image_uris.normal);
-      if (img) {
-        modalArt.style.backgroundImage = `url(${img})`;
-      } else {
-        modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+      if (img && modalStack) {
+        modalStack.innerHTML = [
+          `<img class="cb-variant-image cb-bottom" src="${img}" alt="Teferi card (bottom)">`,
+          `<img class="cb-variant-image cb-mid" src="${img}" alt="Teferi card (middle)">`,
+          `<img class="cb-variant-image cb-top" src="${img}" alt="Teferi card (top)">`,
+        ].join('');
+      } else if (modalArt) {
+        // Fallback to background if stacking container missing
+        modalArt.style.backgroundImage = img ? `url(${img})` : 'none';
+        if (!img) modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
       }
     } catch (_) {
-      modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+      if (modalArt) modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
     }
   })();
 
