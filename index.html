@@ -106,50 +106,101 @@
     }
     .cb-modal {
       background: #fff;
-      width: 90%;
-      max-width: 420px;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      padding: 20px;
+      width: 90vw;
+      max-width: 960px;
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+    .cb-modal-grid {
+      display: flex;
+      min-height: 520px;
+    }
+    .cb-modal-img {
+      flex: 1 1 55%;
+      background: #0b1a2b;
+      background-size: cover;
+      background-position: center;
+      min-height: 520px;
+    }
+    .cb-modal-body {
+      flex: 1 1 45%;
+      background: linear-gradient(180deg, #0b1a2b 0%, #0b1a2b 60%, #142d4c 100%);
+      color: #fff;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: stretch;
+      text-align: left;
     }
     .cb-modal h3 {
-      margin: 0 0 10px;
-      font-size: 22px;
+      margin: 0 0 6px;
+      font-size: 28px;
+      letter-spacing: 0.5px;
+    }
+    .cb-modal .cb-brand {
+      font-family: 'Bangers', Impact, Charcoal, sans-serif;
+      font-size: 40px;
+      color: #ff6b6b;
+      text-shadow: 2px 2px #000;
+      margin-bottom: 8px;
     }
     .cb-modal p {
       margin: 0 0 16px;
-      font-size: 14px;
-      color: #555;
+      font-size: 16px;
+      color: #e6e6e6;
     }
     .cb-modal-actions {
       display: flex;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 10px;
+      margin-top: 14px;
     }
     .cb-input {
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
+      padding: 14px 14px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 18px;
       box-sizing: border-box;
+      outline: none;
     }
+    .cb-input::placeholder { color: rgba(255,255,255,0.8); }
     .cb-btn-primary {
       background: linear-gradient(45deg, #d92626, #ff7e5f);
       color: #fff;
       border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 700;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      font-size: 18px;
       cursor: pointer;
     }
     .cb-btn-secondary {
-      background: #f3f3f3;
-      color: #333;
-      border: 1px solid #ddd;
-      padding: 10px 16px;
-      border-radius: 8px;
+      background: transparent;
+      color: #e6e6e6;
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 16px;
       cursor: pointer;
+    }
+    .cb-modal .cb-footnote {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #cfd8dc;
+      opacity: 0.9;
+    }
+    @media (max-width: 768px) {
+      .cb-modal { width: 94vw; }
+      .cb-modal-grid { flex-direction: column; min-height: 0; }
+      .cb-modal-img { min-height: 260px; }
+      .cb-modal-body { padding: 20px; }
+      .cb-modal .cb-brand { font-size: 34px; }
+      .cb-modal h3 { font-size: 24px; }
     }
     #loginBtn {
       background: linear-gradient(45deg, #d92626, #ff7e5f);
@@ -360,14 +411,21 @@
   <!-- Email Capture Modal (injected content target) -->
   <div id="cbEmailOverlay" class="cb-modal-overlay" aria-hidden="true">
     <div class="cb-modal" role="dialog" aria-labelledby="cbEmailTitle" aria-modal="true">
-      <h3 id="cbEmailTitle">Join the Card Bazaar waitlist</h3>
-      <p>Be first to know about card drops, promos, and features.</p>
-      <input type="email" id="cbEmailInput" class="cb-input" placeholder="Enter your email" aria-label="Email address">
-      <div class="cb-modal-actions">
-        <button id="cbEmailSubmit" class="cb-btn-primary">Join Waitlist</button>
-        <button id="cbEmailDismiss" class="cb-btn-secondary">No thanks</button>
+      <div class="cb-modal-grid">
+        <div class="cb-modal-img" id="cbModalArt"></div>
+        <div class="cb-modal-body">
+          <div class="cb-brand">CARD BAZAAR</div>
+          <h3 id="cbEmailTitle">Join the waitlist</h3>
+          <p>Be first to know about card drops, promos, and new features.</p>
+          <input type="email" id="cbEmailInput" class="cb-input" placeholder="Best Email" aria-label="Email address">
+          <div class="cb-modal-actions">
+            <button id="cbEmailSubmit" class="cb-btn-primary">CONTINUE</button>
+            <button id="cbEmailDismiss" class="cb-btn-secondary">No thanks</button>
+          </div>
+          <div class="cb-footnote">We’ll send occasional updates. Unsubscribe anytime.</div>
+          <div id="cbEmailMessage" style="margin-top:10px;font-size:14px;color:#a5d6a7;display:none;"></div>
+        </div>
       </div>
-      <div id="cbEmailMessage" style="margin-top:8px;font-size:14px;color:#2e7d32;display:none;"></div>
     </div>
   </div>
     <script src="fetchCardImages.js"></script>

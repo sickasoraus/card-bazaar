@@ -118,6 +118,7 @@
   const dismissBtn = document.getElementById('cbEmailDismiss');
   const inputEl = document.getElementById('cbEmailInput');
   const msgEl = document.getElementById('cbEmailMessage');
+  const modalArt = document.getElementById('cbModalArt');
 
   function shouldShowEmailCapture() {
     try {
@@ -204,5 +205,23 @@
   setTimeout(() => {
     if (shouldShowEmailCapture()) showEmailCapture();
   }, 2000);
+
+  // Fetch Teferi art for the modal background
+  (async function setTeferiArt(){
+    if (!modalArt) return;
+    try {
+      const res = await fetch('https://api.scryfall.com/cards/named?exact=' + encodeURIComponent('Teferi, Hero of Dominaria'));
+      const data = await res.json();
+      const img = (data.image_uris && data.image_uris.normal) ||
+                  (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris && data.card_faces[0].image_uris.normal);
+      if (img) {
+        modalArt.style.backgroundImage = `url(${img})`;
+      } else {
+        modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+      }
+    } catch (_) {
+      modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+    }
+  })();
 
 })();
