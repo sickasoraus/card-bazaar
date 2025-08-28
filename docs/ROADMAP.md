@@ -79,10 +79,10 @@ Legend:
 ## Priority Order (Impact vs. Difficulty)
 
 Top (fast impact, manageable complexity)
-1. 2) Real-time card prices (H/M)
-2. 13) Mobile friendly (H/M)
-3. 18) Email capture popup (M/L)
-4. 7) Related cards (M/M)
+1. 2) Real-time card prices (H/M) — (in test - currently merged, 2025-08-28)
+2. 13) Mobile friendly (H/M) — (in test - currently merged, 2025-08-28)
+3. 18) Email capture popup (M/L) — (in test - currently merged, 2025-08-28)
+4. 7) Related cards (M/M) — (in test - currently merged, 2025-08-28)
 
 Next (foundational, heavier lift)
 5. 1) Login + guest + perks (H/H)
