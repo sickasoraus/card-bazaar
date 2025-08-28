@@ -17,19 +17,21 @@
     }
     .header {
       background-color: #ffffff;
-      padding: 40px 20px;
-      display: flex;
-      align-items: center;
+      padding: 24px 24px 12px 24px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      align-items: start;
+      gap: 16px;
       border-bottom: none;
       box-shadow: none;
     }
     .logo {
       font-family: 'Bangers', Impact, Charcoal, sans-serif;
-      font-size: 120px;
+      font-size: 96px;
       color: #d92626;
       letter-spacing: 2px;
       text-shadow: 3px 3px #000000;
-      flex: 1;
+      line-height: 1;
     }
     .content { display: block; }
     /* Sidebar removed in favor of header CTAs */
@@ -47,8 +49,9 @@
     #checkoutBtn {
       margin-top: 8px;
     }
-    .auth { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-    .auth-row { display: flex; align-items: center; gap: 12px; }
+    .auth { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 320px; }
+    .auth-row { display: flex; align-items: center; gap: 12px; width: 100%; justify-content: flex-end; }
+    #headerCartBtn { width: 100%; justify-content: space-between; }
     #loginForm {
       display: none;
       margin-top: 8px;
@@ -234,7 +237,7 @@
       display: grid;
       grid-template-columns: repeat(3, 512px);
       gap: 40px;
-      padding: 20px 40px 60px 40px;
+      padding: 12px 40px 60px 40px;
       justify-content: start;
       background-color: #ffffff;
       width: 100%;
