@@ -31,31 +31,9 @@
       text-shadow: 3px 3px #000000;
       flex: 1;
     }
-    .content {
-      display: flex;
-    }
-    .right-sidebar {
-      width: 180px;
-      padding-left: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .right-sidebar a {
-      color: #444;
-      text-decoration: none;
-      font-size: 20px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .right-sidebar .sidebar-section {
-      margin-bottom: 24px;
-    }
-    .sidebar-content {
-      font-size: 14px;
-      margin-top: 8px;
-      display: none;
-    }
+    .content { display: block; }
+    /* Sidebar removed in favor of header CTAs */
+    .right-sidebar { display: none !important; }
     #cartItems {
       list-style: none;
       padding-left: 0;
@@ -69,11 +47,8 @@
     #checkoutBtn {
       margin-top: 8px;
     }
-    .auth {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
+    .auth { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .auth-row { display: flex; align-items: center; gap: 12px; }
     #loginForm {
       display: none;
       margin-top: 8px;
@@ -249,24 +224,14 @@
       .cb-modal .cb-brand { font-size: 34px; }
       .cb-modal h3 { font-size: 24px; }
     }
-    #loginBtn {
-      background: linear-gradient(45deg, #d92626, #ff7e5f);
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    #loginBtn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    }
+    .btn-cta { background: linear-gradient(45deg, #d92626, #ff7e5f); color: #fff; border: none; padding: 14px 22px; border-radius: 14px; font-size: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.35); }
+    .btn-ghost { background: #fff; color: #d92626; border: 2px solid #d92626; padding: 14px 22px; border-radius: 14px; font-size: 20px; font-weight: 800; cursor: pointer; }
+    .badge { background: #000; color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 12px; margin-left: 8px; }
+    .small-note { font-size: 14px; font-weight: 700; opacity: 0.9; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(2, 512px);
+      grid-template-columns: repeat(3, 512px);
       gap: 40px;
       padding: 20px 40px 60px 40px;
       justify-content: start;
@@ -428,16 +393,7 @@
         margin-bottom: 10px;
         text-align: center;
       }
-      .content {
-        flex-direction: column;
-        align-items: center;
-      }
-      .right-sidebar {
-        width: 100%;
-        padding-left: 0;
-        align-items: center;
-        margin-top: 20px;
-      }
+      .content { display: block; }
       .grid {
         padding: 12px;
         width: 100%;
@@ -475,9 +431,20 @@
     <div class="header">
       <div class="logo">CARD BAZAAR</div>
       <div class="auth">
-        <span id="userStatus"></span>
-        <button id="loginBtn">Log In/Create My Account</button>
-        <button id="dailySpinBtn" class="cb-btn-secondary" style="margin-top:8px;">Daily Spin</button>
+        <div class="auth-row">
+          <button id="headerCartBtn" class="btn-ghost" aria-haspopup="true" aria-expanded="false">
+            <span>My Cart</span>
+            <span id="headerCartTotal" class="small-note">$0.00</span>
+            <span id="headerCartCount" class="badge">0</span>
+          </button>
+          <span id="userStatus"></span>
+          <button id="loginBtn" class="btn-cta">Log In</button>
+        </div>
+        <div class="auth-row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
+          <button id="binderHeaderBtn" class="btn-ghost" style="display:none; width: 260px;">My Binder</button>
+          <button id="sellHeaderBtn" class="btn-ghost" style="width: 260px;">Sell Cards</button>
+          <button id="dailySpinBtn" class="btn-ghost" style="width: 260px;">Daily Spin</button>
+        </div>
         <div id="loginForm">
           <input type="email" id="loginEmail" placeholder="Email">
           <input type="password" id="loginPassword" placeholder="Password">
@@ -512,6 +479,19 @@
         </div>
       </div>
     </div>
+  </div>
+  <!-- Header Cart Popup -->
+  <div id="headerCartPopup" style="display:none; position:fixed; top:96px; right:24px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); width:320px; padding:12px; z-index:1500;">
+    <ul id="cartItems" style="list-style:none; padding-left:0; max-height:240px; overflow:auto;"></ul>
+    <div id="cartTotal" style="font-weight:800; margin-top:8px;"></div>
+    <button id="checkoutBtn" class="btn-cta" style="width:100%; margin-top:8px; display:none;">Proceed to Checkout</button>
+  </div>
+  <!-- Binder & Sell popups -->
+  <div id="binderInfoPopup" style="display:none; position:fixed; top:96px; right:24px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); width:360px; padding:16px; z-index:1400;">
+    Welcome to My Binder. Here, you will find cards you have purchased, as well as cards have added from your own personal inventory. Helps to keep track of what you currently have in your binder.
+  </div>
+  <div id="sellInfoPopup" style="display:none; position:fixed; top:96px; right:24px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); width:360px; padding:16px; z-index:1400;">
+    Looking to sell us your cards? Our team of Graders will verify the condition of each card and give you the highest market rate out of any other retailer for your NM editions. Coming soon!
   </div>
   <!-- Email Capture Modal (injected content target) -->
   <div id="cbEmailOverlay" class="cb-modal-overlay" aria-hidden="true">
