@@ -18,7 +18,7 @@ const CONDITION_MULTIPLIERS = {
   VG: 0.75,
 };
 
-// Simple demo inventory counts for visible conditions
+// Simple demo inventory counts for visible conditions (starting values)
 const inventory = {
   NM: 4,
   EX: 6,
@@ -143,6 +143,7 @@ async function fetchCardImages() {
         <img class="variant-image active" data-condition="NM" data-price="${priceStrings.NM}" src="${image}" alt="${name} NM">
         <img class="variant-image" data-condition="EX" data-price="${priceStrings.EX}" src="${image}" alt="${name} EX">
         <img class="variant-image" data-condition="VG" data-price="${priceStrings.VG}" src="${image}" alt="${name} VG">
+        <div class="lastcopy-badge" aria-hidden="true">LAST COPY</div>
       </div>
       <div class="info" style="display:none;">
         <div class="price">Price: ${priceStrings.NM}</div>
@@ -165,10 +166,77 @@ async function fetchCardImages() {
     // ensure the initially active image is the last child so it sits on top
     const initialActive = stack.querySelector('.variant-image.active');
     if (initialActive) stack.appendChild(initialActive);
+    // Attach per-card inventory snapshot
+    cardDiv._inv = { NM: inventory.NM, EX: inventory.EX, VG: inventory.VG };
     applyOffsets(stack);
     resetOffsets(stack);
     stack._hovered = false;
     const buttonsBar = cardDiv.querySelector('.condition-buttons');
+    const lastBadge = cardDiv.querySelector('.lastcopy-badge');
+
+    function labelFor(cond, count, priceStr) {
+      return `${cond} (${count}) — <span class="price-span">${priceStr}</span>`;
+    }
+
+    function updateButtons() {
+      ['NM','EX','VG'].forEach(c => {
+        const btn = cardDiv.querySelector(`.condition-buttons button[data-condition="${c}"]`);
+        if (!btn) return;
+        const cnt = cardDiv._inv[c];
+        const priceStr = priceStrings[c];
+        btn.innerHTML = labelFor(c, cnt, priceStr);
+        btn.classList.toggle('disabled', cnt <= 0);
+      });
+      // Show/hide last copy badge if active condition has 1 left
+      const active = cardDiv.querySelector('.variant-image.active');
+      if (active && lastBadge) {
+        const c = active.dataset.condition;
+        lastBadge.classList.toggle('show', cardDiv._inv[c] === 1);
+      }
+    }
+
+    function showBanner(text) {
+      const banner = document.createElement('div');
+      banner.className = 'celebrate-banner';
+      banner.textContent = text;
+      cardDiv.appendChild(banner);
+      // trigger fade-in
+      requestAnimationFrame(() => banner.classList.add('show'));
+      setTimeout(() => {
+        banner.classList.remove('show');
+        setTimeout(() => banner.remove(), 250);
+      }, 1800);
+    }
+
+    function markSoldOut(condition) {
+      // dim active image if sold out and disable add to cart for that condition
+      const img = stack.querySelector(`.variant-image[data-condition="${condition}"]`);
+      if (img) img.classList.add('sold-out');
+      updateButtons();
+    }
+
+    function handleAddForActive() {
+      const active = cardDiv.querySelector('.variant-image.active');
+      if (!active) return false;
+      const cond = active.dataset.condition;
+      const remaining = cardDiv._inv[cond];
+      if (remaining <= 0) {
+        showBanner('Sold out for this condition');
+        return false;
+      }
+      const wasTwo = remaining === 2;
+      const wasOne = remaining === 1;
+      cardDiv._inv[cond] = Math.max(0, remaining - 1);
+      updateButtons();
+      if (wasTwo) {
+        if (lastBadge) lastBadge.classList.add('show');
+      }
+      if (wasOne) {
+        markSoldOut(cond);
+        showBanner('No longer in stock because of you. Lucky find!');
+      }
+      return true;
+    }
 
     // Desktop: hover shows condition bar
     cardDiv.addEventListener('mouseenter', () => {
@@ -224,10 +292,14 @@ async function fetchCardImages() {
         if (btn.classList.contains('add-cart-btn')) {
           const active = cardDiv.querySelector('.variant-image.active');
           if (active && typeof addToCart === 'function') {
-            addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
+            // adjust inventory + celebrations
+            const proceed = handleAddForActive();
+            if (proceed) addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
           }
         } else {
           animateToCondition(cardDiv, btn.dataset.condition);
+          // update last-copy badge visibility after animation completes
+          setTimeout(updateButtons, 320);
         }
       });
     });
@@ -237,7 +309,8 @@ async function fetchCardImages() {
       if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
       const active = cardDiv.querySelector('.variant-image.active');
       if (active && typeof addToCart === 'function') {
-        addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
+        const proceed = handleAddForActive();
+        if (proceed) addToCart({ name, condition: active.dataset.condition, price: active.dataset.price });
       }
     });
 
@@ -305,6 +378,7 @@ async function changeVariant(button, condition, price) {
         }
         applyOffsets(stack);
         if (!stack._hovered) resetOffsets(stack);
+        updateButtons();
         resolve();
       }, 300);
     });
