@@ -15,6 +15,10 @@ and displays them in a two-column grid with interactive hover overlays showing p
 Notes:
 - Prices are refreshed on page load; last-seen comparison is stored locally per browser.
 
+## Mobile Friendly
+- Responsive layout: single-column grid on smaller screens.
+- Touch behavior: tap a card to reveal condition buttons (desktop uses hover).
+
 ## Local Development
 - Recommended: Use VS Code with the Live Server or Live Preview extension.
 - Or serve locally via terminal:

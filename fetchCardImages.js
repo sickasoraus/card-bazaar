@@ -101,6 +101,10 @@ function priceColorDelta(name, condition, value) {
 
 async function fetchCardImages() {
   const grid = document.getElementById("cardGrid");
+  const isCoarse = (typeof window !== 'undefined') && (
+    ('matchMedia' in window && window.matchMedia('(pointer: coarse)').matches) ||
+    ('ontouchstart' in window)
+  );
   for (let name of cardNames) {
     const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
     const data = await res.json();
@@ -164,27 +168,47 @@ async function fetchCardImages() {
     stack._hovered = false;
     const buttonsBar = cardDiv.querySelector('.condition-buttons');
 
+    // Desktop: hover shows condition bar
     cardDiv.addEventListener('mouseenter', () => {
+      if (isCoarse) return;
       stack._hovered = true;
       applyOffsets(stack);
       if (buttonsBar) buttonsBar.style.display = 'flex';
     });
 
     cardDiv.addEventListener('mouseleave', () => {
+      if (isCoarse) return;
       stack._hovered = false;
       resetOffsets(stack);
       if (buttonsBar) buttonsBar.style.display = 'none';
     });
 
     let clickTimer;
-    stack.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (clickTimer) clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => {
-        cycleVariant(stack);
-        clickTimer = null;
-      }, 200);
-    });
+    if (isCoarse) {
+      // Mobile/tablet: tap toggles condition bar; no click-to-cycle
+      stack.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!buttonsBar) return;
+        const visible = buttonsBar.style.display === 'flex';
+        buttonsBar.style.display = visible ? 'none' : 'flex';
+      });
+      // Hide bars when tapping elsewhere
+      document.addEventListener('click', (ev) => {
+        if (!cardDiv.contains(ev.target)) {
+          if (buttonsBar) buttonsBar.style.display = 'none';
+        }
+      });
+    } else {
+      // Desktop: click cycles variants (existing behavior)
+      stack.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (clickTimer) clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+          cycleVariant(stack);
+          clickTimer = null;
+        }, 200);
+      });
+    }
 
     stack.querySelectorAll('.variant-image').forEach(img => {
       img.addEventListener('click', (e) => {
