@@ -161,6 +161,10 @@ async function fetchCardImages() {
           VG (${inventory.VG}) — <span class="price-span" style="${colors.VG ? `color:${colors.VG}` : ''}">${priceStrings.VG}</span>
         </button>
       </div>
+      <div class="card-meta">
+        <span class="testimonial-user"></span>
+        <span class="testimonial-sold"></span>
+      </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
     // ensure the initially active image is the last child so it sits on top
@@ -168,6 +172,21 @@ async function fetchCardImages() {
     if (initialActive) stack.appendChild(initialActive);
     // Attach per-card inventory snapshot
     cardDiv._inv = { NM: inventory.NM, EX: inventory.EX, VG: inventory.VG };
+    // Seeded testimonial data per card
+    function seededRandom(seed) {
+      let x = Math.sin(seed) * 10000; return x - Math.floor(x);
+    }
+    const seed = Array.from(name).reduce((a,c)=>a+c.charCodeAt(0),0);
+    const userId = Math.floor(seededRandom(seed) * 9000) + 1000;
+    const initialSold = Math.floor(seededRandom(seed+42) * 120) + 5;
+    cardDiv._soldCount = initialSold;
+    const userEl = cardDiv.querySelector('.testimonial-user');
+    const soldEl = cardDiv.querySelector('.testimonial-sold');
+    function updateTestimonial() {
+      if (userEl) userEl.textContent = `Sold to us by: User ${userId}`;
+      if (soldEl) soldEl.textContent = `${cardDiv._soldCount} copies sold`;
+    }
+    updateTestimonial();
     applyOffsets(stack);
     resetOffsets(stack);
     stack._hovered = false;
@@ -235,6 +254,9 @@ async function fetchCardImages() {
         markSoldOut(cond);
         showBanner('No longer in stock because of you. Lucky find!');
       }
+      // increment public sold count
+      cardDiv._soldCount += 1;
+      updateTestimonial();
       return true;
     }
 
