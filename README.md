@@ -6,11 +6,25 @@ and displays them in a two-column grid with interactive hover overlays showing p
 
 ## Features
 - Fetches MTG card art from the Scryfall API
-- Hover overlay showing placeholder price, rarity, condition, and inventory data
+- Real-time pricing from Scryfall (USD) with condition multipliers (NM=1.00, EX=0.85, VG=0.75)
+- Prices are shown only when a card is hovered/selected, integrated into condition buttons (NM/EX/VG)
+- Price trend color on condition buttons (green if up since last seen, red if down)
 - Variant selector for different conditions/prices
 - Double-click card art to add it to your cart and remove items from the cart menu
 
-*Future versions aim to source real pricing and inventory data.*
+Notes:
+- Prices are refreshed on page load; last-seen comparison is stored locally per browser.
+
+## Local Development
+- Recommended: Use VS Code with the Live Server or Live Preview extension.
+- Or serve locally via terminal:
+  - Node: `npx http-server -p 5173` then open http://localhost:5173
+  - Python: `py -m http.server 5173` then open http://localhost:5173
+- Tests: `npm test` (Node 18+)
+
+## Roadmap & Planning
+- See `docs/ROADMAP.md` for categorized features, impact/difficulty, and priorities.
+- Contribution and workflow guidance: see `CONTRIBUTING.md`.
 
 ## Live Demo
 (Once GitHub Pages is enabled, the link will appear here.)

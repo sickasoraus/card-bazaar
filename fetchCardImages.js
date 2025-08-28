@@ -11,27 +11,27 @@ const cardNames = [
   "Ossification"
 ];
 
-const prices = {
-  NM: '$29.99',
-  VG: '$24.99',
-  EX: '$19.99',
-  G: '$9.99'
+// Pricing multipliers per condition; base price comes from Scryfall (USD)
+const CONDITION_MULTIPLIERS = {
+  NM: 1.0,
+  EX: 0.85,
+  VG: 0.75,
 };
 
+// Simple demo inventory counts for visible conditions
 const inventory = {
   NM: 4,
-  VG: 3,
   EX: 6,
-  G: 2
+  VG: 3,
 };
 
 function applyOffsets(stack) {
   const images = Array.from(stack.querySelectorAll('.variant-image'));
+  // Three-card stack presets (NM/EX/VG)
   const preset = [
-    { x: -20, y: -20, r: -4 },
-    { x: -10, y: 10, r: -2 },
-    { x: 10, y: -10, r: 2 },
-    { x: 0, y: 0, r: 0 }
+    { x: -18, y: -18, r: -4 },
+    { x: 10, y: -8, r: 2 },
+    { x: 0, y: 0, r: 0 },
   ];
 
   // Rotate preset each time so the top card lands in a new spot
@@ -60,32 +60,99 @@ function resetOffsets(stack) {
   });
 }
 
+function formatPrice(n) {
+  const num = Number.isFinite(n) ? n : 0;
+  return `$${num.toFixed(2)}`;
+}
+
+function getBaseUsdPrice(cardData) {
+  const p = (cardData && cardData.prices) || {};
+  const raw = p.usd || p.usd_foil || p.usd_etched || null;
+  const n = raw != null ? parseFloat(raw) : NaN;
+  return Number.isFinite(n) ? n : 0;
+}
+
+function lastSeenPrice(name, condition) {
+  try {
+    const key = `cb_price_${name}__${condition}`;
+    const v = localStorage.getItem(key);
+    if (!v) return null;
+    const n = parseFloat(v);
+    return Number.isFinite(n) ? n : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveSeenPrice(name, condition, value) {
+  try {
+    const key = `cb_price_${name}__${condition}`;
+    localStorage.setItem(key, String(value));
+  } catch (_) {}
+}
+
+function priceColorDelta(name, condition, value) {
+  const prev = lastSeenPrice(name, condition);
+  if (prev == null) return '';
+  if (value > prev) return '#7CFC9A'; // slight green
+  if (value < prev) return '#FF7A7A'; // slight red
+  return '';
+}
+
 async function fetchCardImages() {
   const grid = document.getElementById("cardGrid");
   for (let name of cardNames) {
     const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
     const data = await res.json();
-    const image = data.image_uris.normal;
+    const image = data.image_uris && data.image_uris.normal ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
+
+    // Compute real-time prices per condition from Scryfall USD
+    const base = getBaseUsdPrice(data);
+    const computed = {
+      NM: base * CONDITION_MULTIPLIERS.NM,
+      EX: base * CONDITION_MULTIPLIERS.EX,
+      VG: base * CONDITION_MULTIPLIERS.VG,
+    };
+
+    const priceStrings = {
+      NM: formatPrice(computed.NM),
+      EX: formatPrice(computed.EX),
+      VG: formatPrice(computed.VG),
+    };
+
+    // Determine per-condition color deltas vs. last seen and persist
+    const colors = {
+      NM: priceColorDelta(name, 'NM', computed.NM),
+      EX: priceColorDelta(name, 'EX', computed.EX),
+      VG: priceColorDelta(name, 'VG', computed.VG),
+    };
+    saveSeenPrice(name, 'NM', computed.NM);
+    saveSeenPrice(name, 'EX', computed.EX);
+    saveSeenPrice(name, 'VG', computed.VG);
 
     const cardDiv = document.createElement("div");
     cardDiv.className = "card";
     cardDiv.innerHTML = `
       <div class="card-stack">
-        <img class="variant-image active" data-condition="NM" data-price="${prices.NM}" src="${image}" alt="${name} NM">
-        <img class="variant-image" data-condition="VG" data-price="${prices.VG}" src="${image}" alt="${name} VG">
-        <img class="variant-image" data-condition="EX" data-price="${prices.EX}" src="${image}" alt="${name} EX">
-        <img class="variant-image" data-condition="G" data-price="${prices.G}" src="${image}" alt="${name} G">
+        <img class="variant-image active" data-condition="NM" data-price="${priceStrings.NM}" src="${image}" alt="${name} NM">
+        <img class="variant-image" data-condition="EX" data-price="${priceStrings.EX}" src="${image}" alt="${name} EX">
+        <img class="variant-image" data-condition="VG" data-price="${priceStrings.VG}" src="${image}" alt="${name} VG">
       </div>
       <div class="info" style="display:none;">
-        <div class="price">Price: ${prices.NM}</div>
+        <div class="price">Price: ${priceStrings.NM}</div>
         <div class="condition">Condition: NM</div>
       </div>
-      <div class="condition-buttons">
+      <div class="condition-buttons" style="display:none;">
         <button class="add-cart-btn">Add to Cart</button>
-        <button data-condition="NM" data-price="${prices.NM}">NM (${inventory.NM})</button>
-        <button data-condition="VG" data-price="${prices.VG}">VG (${inventory.VG})</button>
-        <button data-condition="EX" data-price="${prices.EX}">EX (${inventory.EX})</button>
-        <button data-condition="G" data-price="${prices.G}">G (${inventory.G})</button>
+        <button data-condition="NM" data-price="${priceStrings.NM}">
+          NM (${inventory.NM}) — <span class="price-span" style="${colors.NM ? `color:${colors.NM}` : ''}">${priceStrings.NM}</span>
+        </button>
+        <button data-condition="EX" data-price="${priceStrings.EX}">
+          EX (${inventory.EX}) — <span class="price-span" style="${colors.EX ? `color:${colors.EX}` : ''}">${priceStrings.EX}</span>
+        </button>
+        <button data-condition="VG" data-price="${priceStrings.VG}">
+          VG (${inventory.VG}) — <span class="price-span" style="${colors.VG ? `color:${colors.VG}` : ''}">${priceStrings.VG}</span>
+        </button>
       </div>
     `;
     const stack = cardDiv.querySelector('.card-stack');
@@ -95,15 +162,18 @@ async function fetchCardImages() {
     applyOffsets(stack);
     resetOffsets(stack);
     stack._hovered = false;
+    const buttonsBar = cardDiv.querySelector('.condition-buttons');
 
     cardDiv.addEventListener('mouseenter', () => {
       stack._hovered = true;
       applyOffsets(stack);
+      if (buttonsBar) buttonsBar.style.display = 'flex';
     });
 
     cardDiv.addEventListener('mouseleave', () => {
       stack._hovered = false;
       resetOffsets(stack);
+      if (buttonsBar) buttonsBar.style.display = 'none';
     });
 
     let clickTimer;
@@ -200,8 +270,10 @@ async function changeVariant(button, condition, price) {
         stack.insertBefore(active, stack.firstChild);
         next.classList.add('active');
         if (card) {
-          card.querySelector('.price').textContent = `Price: ${next.dataset.price}`;
-          card.querySelector('.condition').textContent = `Condition: ${next.dataset.condition}`;
+          const priceEl = card.querySelector('.price');
+          const condEl = card.querySelector('.condition');
+          if (priceEl) priceEl.textContent = `Price: ${next.dataset.price}`;
+          if (condEl) condEl.textContent = `Condition: ${next.dataset.condition}`;
         }
         applyOffsets(stack);
         if (!stack._hovered) resetOffsets(stack);
