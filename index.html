@@ -343,6 +343,49 @@
     .add-cart-btn:hover {
       background: rgba(255, 255, 255, 0.4);
     }
+    .condition-buttons button.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+    /* Celebration overlays */
+    .celebrate-banner {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      letter-spacing: .4px;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity .25s ease;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    }
+    .celebrate-banner.show { opacity: 1; }
+    .lastcopy-badge {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      background: #d92626;
+      color: #fff;
+      padding: 6px 10px;
+      font-size: 14px;
+      font-weight: 900;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 20;
+      animation: pulse 1.2s ease-in-out infinite;
+      display: none;
+    }
+    .lastcopy-badge.show { display: block; }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    .variant-image.sold-out { filter: grayscale(0.9) brightness(0.7); }
 
     @media (max-width: 1200px) {
       .grid {
