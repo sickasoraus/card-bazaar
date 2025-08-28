@@ -111,6 +111,7 @@ async function fetchCardImages() {
     const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
     const data = await res.json();
     const image = data.image_uris && data.image_uris.normal ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
+    const hires = data.image_uris && (data.image_uris.png || data.image_uris.large) ? (data.image_uris.png || data.image_uris.large) : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? (data.card_faces[0].image_uris.png || data.card_faces[0].image_uris.large) : '');
 
     // Compute real-time prices per condition from Scryfall USD
     const base = getBaseUsdPrice(data);
@@ -151,6 +152,7 @@ async function fetchCardImages() {
       </div>
       <div class="condition-buttons" style="display:none;">
         <button class="add-cart-btn">Add to Cart</button>
+        <button class="hires-btn" ${hires ? '' : 'disabled'}>View Scan</button>
         <button data-condition="NM" data-price="${priceStrings.NM}">
           NM (${inventory.NM}) — <span class="price-span" style="${colors.NM ? `color:${colors.NM}` : ''}">${priceStrings.NM}</span>
         </button>
@@ -318,6 +320,8 @@ async function fetchCardImages() {
             const proceed = handleAddForActive();
             if (proceed) window.addToCart({ name, condition: active.dataset.condition, price: active.dataset.price, image: active.getAttribute('src') });
           }
+        } else if (btn.classList.contains('hires-btn')) {
+          if (hires && typeof window.showHires === 'function') window.showHires(hires);
         } else {
           animateToCondition(cardDiv, btn.dataset.condition);
           // update last-copy badge visibility after animation completes

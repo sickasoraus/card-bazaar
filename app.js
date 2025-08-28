@@ -322,6 +322,25 @@
     }
   })();
 
+  // --- High-res image overlay helpers ---
+  const hiresOverlay = document.getElementById('hiresOverlay');
+  const hiresImage = document.getElementById('hiresImage');
+  const hiresClose = document.getElementById('hiresClose');
+  function showHires(url) {
+    if (!hiresOverlay || !hiresImage) return;
+    hiresImage.src = url;
+    hiresOverlay.style.display = 'flex';
+    hiresOverlay.setAttribute('aria-hidden','false');
+  }
+  function hideHires() {
+    if (!hiresOverlay) return;
+    hiresOverlay.style.display = 'none';
+    hiresOverlay.setAttribute('aria-hidden','true');
+  }
+  if (hiresClose) hiresClose.addEventListener('click', hideHires);
+  if (hiresOverlay) hiresOverlay.addEventListener('click', (e) => { if (e.target === hiresOverlay) hideHires(); });
+  window.showHires = showHires;
+
   // --- Daily Spin logic ---
   const spinOverlay = document.getElementById('cbWheelOverlay');
   const spinBtn = document.getElementById('cbWheelSpin');
