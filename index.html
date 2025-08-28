@@ -226,6 +226,21 @@
       color: #cfd8dc;
       opacity: 0.9;
     }
+    /* Daily Spin Modal */
+    .cb-wheel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: none; align-items: center; justify-content: center; z-index: 1200; }
+    .cb-wheel-modal { background: #0b1a2b; color: #fff; width: 92vw; max-width: 980px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.45); overflow: hidden; }
+    .cb-wheel-grid { display: flex; flex-wrap: wrap; }
+    .cb-wheel-left { flex: 1 1 50%; min-width: 320px; padding: 28px; display:flex; align-items:center; justify-content:center; }
+    .cb-wheel-right { flex: 1 1 50%; min-width: 320px; padding: 28px; background: linear-gradient(180deg,#0b1a2b,#142d4c); display:flex; flex-direction:column; justify-content:center; }
+    .cb-wheel-brand { font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 44px; color: #ff6b6b; text-shadow: 2px 2px #000; margin-bottom: 8px; }
+    .cb-wheel-title { font-size: 26px; margin: 6px 0 12px; }
+    .cb-wheel-legend { font-size: 14px; color: #dfe6ee; margin-bottom: 14px; }
+    .cb-wheel-controls { display:flex; gap:10px; margin-top: 10px; }
+    .cb-wheel-container { position: relative; width: 320px; height: 320px; }
+    .cb-wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #fff; box-shadow: 0 12px 30px rgba(0,0,0,0.5); transition: transform 4s cubic-bezier(.17,.67,.26,1.2); background: conic-gradient(#ff6b6b 0 90deg, #42a5f5 90deg 180deg, #66bb6a 180deg 270deg, #ffd54f 270deg 360deg); }
+    .cb-pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-bottom: 18px solid #fff; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4)); }
+    .cb-result { margin-top: 10px; font-size: 16px; color: #a5d6a7; min-height: 24px; }
+    @media (max-width: 768px) { .cb-wheel-left { padding: 20px; } .cb-wheel-container { width: 260px; height: 260px; } .cb-wheel-brand { font-size: 36px; } .cb-wheel-title { font-size: 22px; } }
     @media (max-width: 768px) {
       .cb-modal { width: 94vw; }
       .cb-modal-grid { flex-direction: column; min-height: 0; }
@@ -406,6 +421,7 @@
       <div class="auth">
         <span id="userStatus"></span>
         <button id="loginBtn">Log In/Create My Account</button>
+        <button id="dailySpinBtn" class="cb-btn-secondary" style="margin-top:8px;">Daily Spin</button>
         <div id="loginForm">
           <input type="email" id="loginEmail" placeholder="Email">
           <input type="password" id="loginPassword" placeholder="Password">
@@ -461,6 +477,29 @@
           </div>
           <div class="cb-footnote">We’ll send occasional updates. Unsubscribe anytime.</div>
           <div id="cbEmailMessage" style="margin-top:10px;font-size:14px;color:#a5d6a7;display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Daily Spin Modal -->
+  <div id="cbWheelOverlay" class="cb-wheel-overlay" aria-hidden="true">
+    <div class="cb-wheel-modal" role="dialog" aria-labelledby="cbWheelTitle" aria-modal="true">
+      <div class="cb-wheel-grid">
+        <div class="cb-wheel-left">
+          <div class="cb-wheel-container">
+            <div class="cb-pointer"></div>
+            <div id="cbWheel" class="cb-wheel"></div>
+          </div>
+        </div>
+        <div class="cb-wheel-right">
+          <div class="cb-wheel-brand">CARD BAZAAR</div>
+          <div id="cbWheelTitle" class="cb-wheel-title">Spin the wheel</div>
+          <div class="cb-wheel-legend">Possible rewards: $10 store credit, free shipping, Card Bazaar points, a free card.</div>
+          <div class="cb-wheel-controls">
+            <button id="cbWheelSpin" class="cb-btn-primary">SPIN</button>
+            <button id="cbWheelDismiss" class="cb-btn-secondary">Not now</button>
+          </div>
+          <div id="cbWheelResult" class="cb-result"></div>
         </div>
       </div>
     </div>

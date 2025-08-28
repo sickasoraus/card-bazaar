@@ -97,6 +97,7 @@
       user = { email: loginEmail.value };
       localStorage.setItem('user', JSON.stringify(user));
       updateAuthDisplay();
+      try { maybeShowDailySpin('login'); } catch (_) {}
     }
   });
 
@@ -110,6 +111,8 @@
     user = null;
   }
   updateAuthDisplay();
+  // If already logged in on load, consider showing the daily spin
+  setTimeout(() => { try { maybeShowDailySpin('autoload'); } catch(_){} }, 1200);
 
   // --- Email capture modal (waitlist) ---
   const EMAIL_CAPTURE_ENDPOINT = null; // set to a backend URL later; null = simulate
@@ -120,6 +123,13 @@
   const msgEl = document.getElementById('cbEmailMessage');
   const modalArt = document.getElementById('cbModalArt');
   const modalStack = document.getElementById('cbModalStack');
+  // Daily Spin elements
+  const spinOverlay = document.getElementById('cbWheelOverlay');
+  const spinBtn = document.getElementById('cbWheelSpin');
+  const spinDismiss = document.getElementById('cbWheelDismiss');
+  const spinResult = document.getElementById('cbWheelResult');
+  const spinWheel = document.getElementById('cbWheel');
+  const dailySpinBtn = document.getElementById('dailySpinBtn');
 
   function shouldShowEmailCapture() {
     try {
@@ -230,4 +240,95 @@
     }
   })();
 
+  // --- Daily Spin logic ---
+  const REWARDS = [
+    { id: 'credit10', label: '$10 Store Credit' },
+    { id: 'ship_free', label: 'Free Shipping' },
+    { id: 'points100', label: '100 CB Points' },
+    { id: 'free_card', label: 'A Free Card' },
+  ];
+
+  function todayKey() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function hasSpunToday() {
+    try {
+      const rec = JSON.parse(localStorage.getItem('cb_spin_record') || 'null');
+      return rec && rec.date === todayKey();
+    } catch (_) { return false; }
+  }
+
+  function setSpunToday(reward) {
+    try { localStorage.setItem('cb_spin_record', JSON.stringify({ date: todayKey(), reward })); } catch(_){}
+  }
+
+  function appendRewardLedger(entry) {
+    try {
+      const key = 'cb_rewards_ledger';
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.push({ ...entry, ts: Date.now() });
+      localStorage.setItem(key, JSON.stringify(arr));
+    } catch(_){}
+  }
+
+  function showSpinOverlay() {
+    if (!spinOverlay) return;
+    spinOverlay.style.display = 'flex';
+    spinOverlay.setAttribute('aria-hidden', 'false');
+    if (spinResult) { spinResult.textContent = ''; }
+    if (spinWheel) { spinWheel.style.transform = 'rotate(0deg)'; }
+  }
+  function hideSpinOverlay() {
+    if (!spinOverlay) return;
+    spinOverlay.style.display = 'none';
+    spinOverlay.setAttribute('aria-hidden', 'true');
+  }
+
+  function maybeShowDailySpin(reason) {
+    // Show only for logged-in users; do not auto-open for guests
+    if (!user) return;
+    if (!hasSpunToday()) {
+      showSpinOverlay();
+    }
+  }
+
+  // Header manual trigger
+  if (dailySpinBtn) {
+    dailySpinBtn.addEventListener('click', () => {
+      showSpinOverlay();
+      if (hasSpunToday()) {
+        const rec = JSON.parse(localStorage.getItem('cb_spin_record') || 'null');
+        if (rec && spinResult) spinResult.textContent = `Already spun today: ${rec.reward.label}`;
+      }
+    });
+  }
+
+  if (spinDismiss) spinDismiss.addEventListener('click', hideSpinOverlay);
+
+  let spinning = false;
+  if (spinBtn && spinWheel) {
+    spinBtn.addEventListener('click', () => {
+      if (spinning || hasSpunToday()) return;
+      spinning = true;
+      const idx = Math.floor(Math.random() * REWARDS.length);
+      // 4 segments, centers at 45, 135, 225, 315 deg (pointer at top)
+      const centers = [45,135,225,315];
+      const base = centers[idx];
+      const turns = 5;
+      const totalDeg = 360 * turns + (360 - base);
+      spinWheel.style.transform = `rotate(${totalDeg}deg)`;
+      const chosen = REWARDS[idx];
+      setTimeout(() => {
+        setSpunToday(chosen);
+        appendRewardLedger({ kind: 'daily_spin', reward: chosen });
+        if (spinResult) spinResult.textContent = `You won: ${chosen.label}!`;
+        spinning = false;
+      }, 4200);
+    });
+  }
 })();
