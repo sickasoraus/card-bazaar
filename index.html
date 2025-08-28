@@ -466,8 +466,13 @@
     <button id="checkoutBtn" class="btn-cta" style="width:100%; margin-top:8px; display:none;">Proceed to Checkout</button>
   </div>
   <!-- Binder & Sell popups -->
-  <div id="binderInfoPopup" style="display:none; position:fixed; top:96px; right:24px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); width:360px; padding:16px; z-index:1400;">
-    Welcome to My Binder. Here, you will find cards you have purchased, as well as cards have added from your own personal inventory. Helps to keep track of what you currently have in your binder.
+  <div id="binderInfoPopup" style="display:none; position:fixed; top:96px; right:24px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); width:420px; padding:16px; z-index:1400;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <div style="font-weight:800; font-size:18px;">My Binder</div>
+      <div id="binderSummary" style="font-weight:700; font-size:14px;"></div>
+    </div>
+    <div id="binderListEmpty" style="font-size:14px; color:#555;">Your binder is empty. Check out while logged in to add purchases here.</div>
+    <ul id="binderList" style="list-style:none; padding-left:0; margin:8px 0; max-height:280px; overflow:auto;"></ul>
   </div>
   <div id="sellInfoPopup" style="display:none; position:fixed; top:96px; right:24px; background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); width:360px; padding:16px; z-index:1400;">
     Looking to sell us your cards? Our team of Graders will verify the condition of each card and give you the highest market rate out of any other retailer for your NM editions. Coming soon!

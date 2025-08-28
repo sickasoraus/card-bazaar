@@ -14,6 +14,53 @@
   const headerStoreCredit = document.getElementById('headerStoreCredit');
   let storeCredit = 0; try { storeCredit = parseFloat(localStorage.getItem('cb_store_credit') || '0'); } catch(_) {}
 
+  // --- Binder state ---
+  const binderPopup = document.getElementById('binderInfoPopup');
+  const binderListEl = document.getElementById('binderList');
+  const binderListEmptyEl = document.getElementById('binderListEmpty');
+  const binderSummaryEl = document.getElementById('binderSummary');
+  let binder = [];
+  try { binder = JSON.parse(localStorage.getItem('cb_binder') || '[]'); } catch(_) { binder = []; }
+
+  function saveBinder() {
+    try { localStorage.setItem('cb_binder', JSON.stringify(binder)); } catch(_) {}
+  }
+
+  function renderBinder() {
+    if (!binderListEl || !binderSummaryEl) return;
+    binderListEl.innerHTML = '';
+    let total = 0;
+    binder.forEach((it, idx) => {
+      total += it.price;
+      const li = document.createElement('li');
+      li.style.marginBottom = '6px';
+      li.textContent = `${it.name} (${it.condition}) - $${it.price.toFixed(2)}`;
+      const sell = document.createElement('button');
+      sell.textContent = 'Sell to Store (70%)';
+      sell.style.marginLeft = '8px';
+      sell.addEventListener('click', () => {
+        const credit = Math.round(it.price * 0.7 * 100) / 100;
+        storeCredit += credit;
+        try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_) {}
+        binder.splice(idx, 1);
+        saveBinder();
+        renderBinder();
+        renderCart();
+      });
+      const remove = document.createElement('button');
+      remove.textContent = 'Remove';
+      remove.style.marginLeft = '6px';
+      remove.addEventListener('click', () => { binder.splice(idx,1); saveBinder(); renderBinder(); });
+      li.appendChild(sell);
+      li.appendChild(remove);
+      binderListEl.appendChild(li);
+    });
+    if (binderListEmptyEl) binderListEmptyEl.style.display = binder.length ? 'none' : 'block';
+    binderSummaryEl.textContent = binder.length ? `${binder.length} cards • $${total.toFixed(2)}` : '';
+  }
+  // Initial draw
+  try { renderBinder(); } catch(_) {}
+
   function renderCart() {
     cartItemsEl.innerHTML = '';
     cart.forEach((item, idx) => {
@@ -70,7 +117,9 @@
     const content = document.getElementById(contentId);
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      content.style.display = content.style.display === 'block' ? 'none' : 'block';
+      const showing = content.style.display === 'block';
+      content.style.display = showing ? 'none' : 'block';
+      if (!showing && contentId === 'binderInfoPopup') { renderBinder(); }
     });
   }
 
@@ -126,6 +175,8 @@
     loginBtn.classList.remove('expanded');
     // Trigger one-time daily spin for logged-in user
     try { maybeShowDailySpin('login'); } catch(_){}
+    // Hide email capture if it was open
+    try { const ov = document.getElementById('cbEmailOverlay'); if (ov) { ov.style.display = 'none'; ov.setAttribute('aria-hidden','true'); } } catch(_){}
   });
 
   // load existing user
@@ -328,6 +379,24 @@
         if (spinResult) spinResult.textContent = `You won: ${chosen.label}!`;
         spinning = false;
       }, 4200);
+    });
+  }
+
+  // --- Checkout -> move cart items to binder when logged in
+  if (checkoutBtn) {
+    checkoutBtn.addEventListener('click', () => {
+      if (!user) {
+        alert('Please log in to add purchases to your binder.');
+        return;
+      }
+      if (!cart.length) return;
+      cart.forEach(it => binder.push({ name: it.name, condition: it.condition, price: it.price }));
+      cart.length = 0;
+      saveBinder();
+      renderBinder();
+      renderCart();
+      if (headerCartPopup) headerCartPopup.style.display = 'none';
+      alert('Purchase complete! Added to your binder.');
     });
   }
 })();
