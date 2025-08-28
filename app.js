@@ -11,6 +11,8 @@
   const checkoutBtn = document.getElementById('checkoutBtn');
   const headerCartTotal = document.getElementById('headerCartTotal');
   const headerCartCount = document.getElementById('headerCartCount');
+  const headerStoreCredit = document.getElementById('headerStoreCredit');
+  let storeCredit = 0; try { storeCredit = parseFloat(localStorage.getItem('cb_store_credit') || '0'); } catch(_) {}
 
   function renderCart() {
     cartItemsEl.innerHTML = '';
@@ -28,6 +30,7 @@
     checkoutBtn.style.display = cart.length ? 'block' : 'none';
     if (headerCartTotal) headerCartTotal.textContent = `$${total.toFixed(2)}`;
     if (headerCartCount) headerCartCount.textContent = String(cart.length);
+    if (headerStoreCredit) headerStoreCredit.textContent = `+$${storeCredit.toFixed(2)} credit`;
   }
 
   function addToCart(item) {
@@ -153,7 +156,9 @@
   const spinWheel = document.getElementById('cbWheel');
   const dailySpinBtn = document.getElementById('dailySpinBtn');
 
-  function shouldShowEmailCapture() { return !!overlay; }
+  function shouldShowEmailCapture() {
+    try { return !!overlay && !user; } catch(_) { return !user; }
+  }
 
   function showEmailCapture() {
     if (!overlay) return;
@@ -251,6 +256,11 @@
   })();
 
   // --- Daily Spin logic ---
+  const spinOverlay = document.getElementById('cbWheelOverlay');
+  const spinBtn = document.getElementById('cbWheelSpin');
+  const spinDismiss = document.getElementById('cbWheelDismiss');
+  const spinResult = document.getElementById('cbWheelResult');
+  const spinWheel = document.getElementById('cbWheel');
   const REWARDS = [
     { id: 'credit10', label: '$10 Store Credit' },
     { id: 'ship_free', label: 'Free Shipping' },
@@ -258,23 +268,11 @@
     { id: 'free_card', label: 'A Free Card' },
   ];
 
-  function todayKey() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,'0');
-    const day = String(d.getDate()).padStart(2,'0');
-    return `${y}-${m}-${day}`;
+  function hasSpunOnce() {
+    try { if (!user) return false; const rec = JSON.parse(localStorage.getItem('cb_spin_once')||'{}'); return !!rec[user.email]; } catch(_) { return false; }
   }
-
-  function hasSpunToday() {
-    try {
-      const rec = JSON.parse(localStorage.getItem('cb_spin_record') || 'null');
-      return rec && rec.date === todayKey();
-    } catch (_) { return false; }
-  }
-
-  function setSpunToday(reward) {
-    try { localStorage.setItem('cb_spin_record', JSON.stringify({ date: todayKey(), reward })); } catch(_){}
+  function setSpunOnce(reward) {
+    try { if (!user) return; const key='cb_spin_once'; const rec = JSON.parse(localStorage.getItem(key)||'{}'); rec[user.email] = { ts: Date.now(), reward }; localStorage.setItem(key, JSON.stringify(rec)); } catch(_){}
   }
 
   function appendRewardLedger(entry) {
@@ -300,30 +298,19 @@
   }
 
   function maybeShowDailySpin(reason) {
-    // Show only for logged-in users; do not auto-open for guests
     if (!user) return;
-    if (!hasSpunToday()) {
-      showSpinOverlay();
-    }
+    if (!hasSpunOnce()) showSpinOverlay();
   }
 
   // Header manual trigger
-  if (dailySpinBtn) {
-    dailySpinBtn.addEventListener('click', () => {
-      showSpinOverlay();
-      if (hasSpunToday()) {
-        const rec = JSON.parse(localStorage.getItem('cb_spin_record') || 'null');
-        if (rec && spinResult) spinResult.textContent = `Already spun today: ${rec.reward.label}`;
-      }
-    });
-  }
+  // no header spin button
 
   if (spinDismiss) spinDismiss.addEventListener('click', hideSpinOverlay);
 
   let spinning = false;
   if (spinBtn && spinWheel) {
     spinBtn.addEventListener('click', () => {
-      if (spinning || hasSpunToday()) return;
+      if (spinning || hasSpunOnce()) return;
       spinning = true;
       const idx = Math.floor(Math.random() * REWARDS.length);
       // 4 segments, centers at 45, 135, 225, 315 deg (pointer at top)
@@ -334,11 +321,17 @@
       spinWheel.style.transform = `rotate(${totalDeg}deg)`;
       const chosen = REWARDS[idx];
       setTimeout(() => {
-        setSpunToday(chosen);
+        setSpunOnce(chosen);
         appendRewardLedger({ kind: 'daily_spin', reward: chosen });
+        if (chosen.id === 'credit10') {
+          storeCredit = (storeCredit || 0) + 10;
+          try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_){}
+          renderCart();
+        }
         if (spinResult) spinResult.textContent = `You won: ${chosen.label}!`;
         spinning = false;
       }, 4200);
     });
   }
 })();
+

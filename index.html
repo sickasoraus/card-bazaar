@@ -8,7 +8,7 @@
     body {
       margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f4f4;
+      background-color: #ffffff;
       color: #333;
     }
     .container {
@@ -20,8 +20,8 @@
       padding: 40px 20px;
       display: flex;
       align-items: center;
-      border-bottom: 2px solid #e0e0e0;
-      box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+      border-bottom: none;
+      box-shadow: none;
     }
     .logo {
       font-family: 'Bangers', Impact, Charcoal, sans-serif;
@@ -435,6 +435,7 @@
           <button id="headerCartBtn" class="btn-ghost" aria-haspopup="true" aria-expanded="false">
             <span>My Cart</span>
             <span id="headerCartTotal" class="small-note">$0.00</span>
+            <span id="headerStoreCredit" class="small-note" style="color:#ff8a80; margin-left:6px;">+$0.00 credit</span>
             <span id="headerCartCount" class="badge">0</span>
           </button>
           <span id="userStatus"></span>
@@ -443,7 +444,6 @@
         <div class="auth-row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
           <button id="binderHeaderBtn" class="btn-ghost" style="display:none; width: 260px;">My Binder</button>
           <button id="sellHeaderBtn" class="btn-ghost" style="width: 260px;">Sell Cards</button>
-          <button id="dailySpinBtn" class="btn-ghost" style="width: 260px;">Daily Spin</button>
         </div>
         <div id="loginForm">
           <input type="email" id="loginEmail" placeholder="Email">
@@ -455,28 +455,6 @@
     <div class="content">
       <div class="grid" id="cardGrid">
         <!-- Cards will be populated here -->
-      </div>
-      <div class="right-sidebar">
-        <div class="sidebar-section">
-          <a id="cartToggle">🛒 My Cart</a>
-          <div id="cartMenu" class="sidebar-content">
-            <ul id="cartItems"></ul>
-            <div id="cartTotal"></div>
-            <button id="checkoutBtn" style="display:none;">Proceed to Checkout</button>
-          </div>
-        </div>
-        <div class="sidebar-section">
-          <a id="binderToggle">📘 My Binder</a>
-          <div id="binderInfo" class="sidebar-content">
-            Welcome to My Binder. Here, you will find cards you have purchased, as well as cards have added from your own personal inventory. Helps to keep track of what you currently have in your binder.
-          </div>
-        </div>
-        <div class="sidebar-section">
-          <a id="sellToggle">💰 Sell Cards</a>
-          <div id="sellInfo" class="sidebar-content">
-            Looking to sell us your cards? Our team of Graders will verify the condition of each card and give you the highest market rate out of any other retailer for your NM editions. Coming soon!
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -547,3 +525,4 @@
     </script>
 </body>
 </html>
+
