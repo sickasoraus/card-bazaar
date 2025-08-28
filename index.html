@@ -227,6 +227,7 @@
     .btn-cta { background: linear-gradient(45deg, #d92626, #ff7e5f); color: #fff; border: none; padding: 14px 22px; border-radius: 14px; font-size: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
     .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.35); }
     .btn-ghost { background: #fff; color: #d92626; border: 2px solid #d92626; padding: 14px 22px; border-radius: 14px; font-size: 20px; font-weight: 800; cursor: pointer; }
+    #loginBtn.expanded { padding: 18px 28px; font-size: 22px; border-radius: 16px; }
     .badge { background: #000; color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 12px; margin-left: 8px; }
     .small-note { font-size: 14px; font-weight: 700; opacity: 0.9; }
     .grid {
@@ -442,8 +443,8 @@
           <button id="loginBtn" class="btn-cta">Log In</button>
         </div>
         <div class="auth-row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
-          <button id="binderHeaderBtn" class="btn-ghost" style="display:none; width: 260px;">My Binder</button>
-          <button id="sellHeaderBtn" class="btn-ghost" style="width: 260px;">Sell Cards</button>
+          <button id="sellHeaderBtn" class="btn-cta" style="width: 260px;">Sell Cards</button>
+          <button id="binderHeaderBtn" class="btn-cta" style="display:none; width: 260px;">My Binder</button>
         </div>
         <div id="loginForm">
           <input type="email" id="loginEmail" placeholder="Email">

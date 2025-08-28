@@ -108,16 +108,24 @@
       localStorage.removeItem('user');
       updateAuthDisplay();
     } else {
-      loginForm.style.display = loginForm.style.display === 'block' ? 'none' : 'block';
+      const showing = loginForm.style.display === 'block';
+      loginForm.style.display = showing ? 'none' : 'block';
+      if (!showing) {
+        loginBtn.classList.add('expanded');
+      } else {
+        loginBtn.classList.remove('expanded');
+      }
     }
   });
 
   loginSubmit.addEventListener('click', () => {
-    if (loginEmail.value && loginPassword.value) {
-      user = { email: loginEmail.value };
-      localStorage.setItem('user', JSON.stringify(user));
-      updateAuthDisplay();
-    }
+    // Accept any input for now
+    user = { email: loginEmail.value || 'user@example.com' };
+    try { localStorage.setItem('user', JSON.stringify(user)); } catch(_){}
+    updateAuthDisplay();
+    loginBtn.classList.remove('expanded');
+    // Trigger one-time daily spin for logged-in user
+    try { maybeShowDailySpin('login'); } catch(_){}
   });
 
   // load existing user
@@ -130,6 +138,8 @@
     user = null;
   }
   updateAuthDisplay();
+  // If already logged in, show the daily spin once
+  setTimeout(() => { try { maybeShowDailySpin('autoload'); } catch(_){} }, 800);
   // Daily spin auto-open disabled
 
   // --- Email capture modal (waitlist) ---
@@ -142,19 +152,6 @@
   const modalArt = document.getElementById('cbModalArt');
   const modalStack = document.getElementById('cbModalStack');
   // Daily Spin elements
-  const spinOverlay = document.getElementById('cbWheelOverlay');
-  const spinBtn = document.getElementById('cbWheelSpin');
-  const spinDismiss = document.getElementById('cbWheelDismiss');
-  const spinResult = document.getElementById('cbWheelResult');
-  const spinWheel = document.getElementById('cbWheel');
-  const dailySpinBtn = document.getElementById('dailySpinBtn');
-  // Daily Spin elements
-  const spinOverlay = document.getElementById('cbWheelOverlay');
-  const spinBtn = document.getElementById('cbWheelSpin');
-  const spinDismiss = document.getElementById('cbWheelDismiss');
-  const spinResult = document.getElementById('cbWheelResult');
-  const spinWheel = document.getElementById('cbWheel');
-  const dailySpinBtn = document.getElementById('dailySpinBtn');
 
   function shouldShowEmailCapture() {
     try { return !!overlay && !user; } catch(_) { return !user; }
@@ -229,7 +226,7 @@
     });
   }
 
-  // Show after short delay on first visit
+  // Show after short delay when not logged in
   setTimeout(() => { if (shouldShowEmailCapture()) showEmailCapture(); }, 1200);
 
   // Fetch Teferi art for the modal background
