@@ -85,6 +85,7 @@ Legend:
 - 6) Last-copy excitement — 2025-08-28
 - 10) Card testimonials — 2025-08-28
 - 7) Related cards — tabled and reverted on 2025-08-28
+ - UI: Header CTAs + 3-column grid + sidebar removal — 2025-08-28
 
 ## Priority Order (Impact vs. Difficulty)
 

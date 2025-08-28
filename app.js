@@ -4,11 +4,13 @@
 
   // --- Cart logic ---
   const cart = [];
-  const cartToggle = document.getElementById('cartToggle');
-  const cartMenu = document.getElementById('cartMenu');
+  const headerCartBtn = document.getElementById('headerCartBtn');
+  const headerCartPopup = document.getElementById('headerCartPopup');
   const cartItemsEl = document.getElementById('cartItems');
   const cartTotalEl = document.getElementById('cartTotal');
   const checkoutBtn = document.getElementById('checkoutBtn');
+  const headerCartTotal = document.getElementById('headerCartTotal');
+  const headerCartCount = document.getElementById('headerCartCount');
 
   function renderCart() {
     cartItemsEl.innerHTML = '';
@@ -24,14 +26,16 @@
     const total = cart.reduce((sum, i) => sum + i.price, 0);
     cartTotalEl.textContent = `Total: $${total.toFixed(2)}`;
     checkoutBtn.style.display = cart.length ? 'block' : 'none';
+    if (headerCartTotal) headerCartTotal.textContent = `$${total.toFixed(2)}`;
+    if (headerCartCount) headerCartCount.textContent = String(cart.length);
   }
 
   function addToCart(item) {
     const priceNum = parseFloat(item.price.replace('$', ''));
     cart.push({ ...item, price: priceNum });
     renderCart();
-    if (cartMenu.style.display !== 'block') {
-      cartMenu.style.display = 'block';
+    if (headerCartPopup && headerCartPopup.style.display !== 'block') {
+      headerCartPopup.style.display = 'block';
     }
   }
 
@@ -40,10 +44,19 @@
     renderCart();
   }
 
-  cartToggle.addEventListener('click', (e) => {
-    e.preventDefault();
-    cartMenu.style.display = cartMenu.style.display === 'block' ? 'none' : 'block';
-  });
+  if (headerCartBtn) {
+    headerCartBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!headerCartPopup) return;
+      const visible = headerCartPopup.style.display === 'block';
+      headerCartPopup.style.display = visible ? 'none' : 'block';
+    });
+    document.addEventListener('click', (ev) => {
+      if (!headerCartPopup || !headerCartBtn) return;
+      const within = headerCartPopup.contains(ev.target) || headerCartBtn.contains(ev.target);
+      if (!within) headerCartPopup.style.display = 'none';
+    });
+  }
 
   // expose globally for fetchCardImages.js
   window.addToCart = addToCart;
@@ -58,11 +71,13 @@
     });
   }
 
-  setupToggle('binderToggle', 'binderInfo');
-  setupToggle('sellToggle', 'sellInfo');
+  // New header popups
+  setupToggle('binderHeaderBtn', 'binderInfoPopup');
+  setupToggle('sellHeaderBtn', 'sellInfoPopup');
 
   // --- Simple authentication ---
   const loginBtn = document.getElementById('loginBtn');
+  const binderHeaderBtn = document.getElementById('binderHeaderBtn');
   const loginForm = document.getElementById('loginForm');
   const loginSubmit = document.getElementById('loginSubmit');
   const loginEmail = document.getElementById('loginEmail');
@@ -76,9 +91,11 @@
       userStatus.textContent = `Logged in as ${user.email}`;
       loginBtn.textContent = 'Log Out';
       loginForm.style.display = 'none';
+      if (binderHeaderBtn) binderHeaderBtn.style.display = 'inline-block';
     } else {
       userStatus.textContent = '';
-      loginBtn.textContent = 'Log In/Create My Account';
+      loginBtn.textContent = 'Log In';
+      if (binderHeaderBtn) binderHeaderBtn.style.display = 'none';
     }
   }
 
@@ -97,7 +114,6 @@
       user = { email: loginEmail.value };
       localStorage.setItem('user', JSON.stringify(user));
       updateAuthDisplay();
-      try { maybeShowDailySpin('login'); } catch (_) {}
     }
   });
 
@@ -111,8 +127,7 @@
     user = null;
   }
   updateAuthDisplay();
-  // If already logged in on load, consider showing the daily spin
-  setTimeout(() => { try { maybeShowDailySpin('autoload'); } catch(_){} }, 1200);
+  // Daily spin auto-open disabled
 
   // --- Email capture modal (waitlist) ---
   const EMAIL_CAPTURE_ENDPOINT = null; // set to a backend URL later; null = simulate
@@ -130,18 +145,15 @@
   const spinResult = document.getElementById('cbWheelResult');
   const spinWheel = document.getElementById('cbWheel');
   const dailySpinBtn = document.getElementById('dailySpinBtn');
+  // Daily Spin elements
+  const spinOverlay = document.getElementById('cbWheelOverlay');
+  const spinBtn = document.getElementById('cbWheelSpin');
+  const spinDismiss = document.getElementById('cbWheelDismiss');
+  const spinResult = document.getElementById('cbWheelResult');
+  const spinWheel = document.getElementById('cbWheel');
+  const dailySpinBtn = document.getElementById('dailySpinBtn');
 
-  function shouldShowEmailCapture() {
-    try {
-      if (!overlay) return false;
-      if (user) return false; // logged-in users skip
-      const optedOut = localStorage.getItem('cb_email_capture_opted_out') === '1';
-      const submitted = localStorage.getItem('cb_email_capture_submitted');
-      return !optedOut && !submitted;
-    } catch (_) {
-      return true;
-    }
-  }
+  function shouldShowEmailCapture() { return !!overlay; }
 
   function showEmailCapture() {
     if (!overlay) return;
@@ -213,9 +225,7 @@
   }
 
   // Show after short delay on first visit
-  setTimeout(() => {
-    if (shouldShowEmailCapture()) showEmailCapture();
-  }, 2000);
+  setTimeout(() => { if (shouldShowEmailCapture()) showEmailCapture(); }, 1200);
 
   // Fetch Teferi art for the modal background
   (async function setTeferiArt(){
