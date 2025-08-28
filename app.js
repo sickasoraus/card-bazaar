@@ -317,6 +317,14 @@
     if (headerCartTotal) headerCartTotal.textContent = `$${total.toFixed(2)}`;
     if (headerCartCount) headerCartCount.textContent = String(cart.length);
     if (headerStoreCredit) headerStoreCredit.textContent = `+$${storeCredit.toFixed(2)} credit`;
+    try {
+      const railCartTotal = document.getElementById('railCartTotal');
+      const railCartCount = document.getElementById('railCartCount');
+      const railStoreCredit = document.getElementById('railStoreCredit');
+      if (railCartTotal) railCartTotal.textContent = `$${total.toFixed(2)}`;
+      if (railCartCount) railCartCount.textContent = String(cart.length);
+      if (railStoreCredit) railStoreCredit.textContent = `+$${storeCredit.toFixed(2)}`;
+    } catch(_) {}
   }
 
   function addToCart(item) {
@@ -339,7 +347,17 @@
       if (!headerCartPopup) return;
       const visible = headerCartPopup.style.display === 'block';
       headerCartPopup.style.display = visible ? 'none' : 'block';
+    }
+  const railCartBtn = document.getElementById('railCartBtn');
+  if (railCartBtn) {
+    railCartBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (!headerCartPopup) return;
+      const visible = headerCartPopup.style.display === 'block';
+      headerCartPopup.style.display = visible ? 'none' : 'block';
     });
+  }
+);
     document.addEventListener('click', (ev) => {
       if (!headerCartPopup || !headerCartBtn) return;
       const within = headerCartPopup.contains(ev.target) || headerCartBtn.contains(ev.target);
@@ -365,6 +383,13 @@
   // New header popups
   setupToggle('binderHeaderBtn', 'binderInfoPopup');
   setupToggle('sellHeaderBtn', 'sellInfoPopup');
+  const railBinderBtn = document.getElementById('railBinderBtn');
+  const railSellBtn = document.getElementById('railSellBtn');
+  const railLoginBtn = document.getElementById('railLoginBtn');
+  if (railBinderBtn) railBinderBtn.addEventListener('click', (e)=>{ e.preventDefault(); const el=document.getElementById('binderInfoPopup'); if(!el) return; const show = el.style.display==='block'; el.style.display = show?'none':'block'; if (!show) try{ renderBinder(); }catch(_){} });
+  if (railSellBtn) railSellBtn.addEventListener('click', (e)=>{ e.preventDefault(); const el=document.getElementById('sellInfoPopup'); if(!el) return; const show = el.style.display==='block'; el.style.display = show?'none':'block'; });
+  if (railLoginBtn) railLoginBtn.addEventListener('click', ()=>{ if (user) { user=null; localStorage.removeItem('user'); updateAuthDisplay(); } else { const loginForm=document.getElementById('loginForm'); const loginBtn=document.getElementById('loginBtn'); const showing = loginForm.style.display==='block'; loginForm.style.display = showing?'none':'block'; if (!showing) loginBtn.classList.add('expanded'); else loginBtn.classList.remove('expanded'); } });
+
 
   // --- Simple authentication ---
   const loginBtn = document.getElementById('loginBtn');
@@ -643,4 +668,7 @@
   // --- Checkout -> move cart items to binder when logged in
   // replaced by modal-driven checkout; see below
 })();
+
+
+
 
