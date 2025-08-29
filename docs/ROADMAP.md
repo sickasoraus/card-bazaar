@@ -1,167 +1,70 @@
-# Card Bazaar Roadmap
+# Card Bazaar Roadmap (Updated)
 
-This document organizes the requested features by category, estimates impact and difficulty, and proposes a practical build order. Ratings are directional to help planning, not precise time commitments.
+This roadmap reflects what exists in the repo today and what remains. It also suggests a near-term sequence to turn prototypes into production features.
 
 Legend:
 - Impact: High / Medium / Low (value to users/business)
 - Difficulty: Low / Medium / High / Very High (engineering + ops complexity)
 
-## Core Commerce
-- 12) Fully integrated checkout (Stripe + multiple wallets)
-  - Impact: High
-  - Difficulty: Very High (PCI concerns, provider integrations, webhooks, testing)
-- 13) Make the website mobile friendly (in test - currently merged, 2025-08-28)
-  - Impact: High
-  - Difficulty: Medium (responsive layout, touch UX, performance)
-- 2) Real-time card price on each card (in test - currently merged, 2025-08-28)
-  - Impact: High
-  - Difficulty: Medium (use Scryfall/partner pricing; caching, fallbacks)
+## Added (Shipped in v1.3 prototype)
+- Real-time pricing per card (NM/EX/VG) from Scryfall, with trend color vs last seen.
+- Mobile-friendly UI: responsive grid, touch-first condition bar on mobile.
+- Email capture popup (waitlist) with basic validation and local gating.
+- Daily Spin modal (once per user) with rewards; credits ledger stored locally.
+- Out-of-stock celebration banner and “LAST COPY” badge with per-condition inventory.
+- Card testimonials row per card (user seed + copies sold; increments on add-to-cart).
+- High-res image viewer overlay for each card (uses Scryfall large/png).
+- Header cart with popup, add/remove items; store credit display.
+- Binder UI: grid display, drag-and-drop reordering, per-item “Sell 70%” to store credit.
+- Binder summary total (valuation at current add-to-cart prices).
+- “Open a Pack” modal (prototype) with random pulls by set; add/sell-all actions.
+- Personalized “Suggested for You” row (type + color-identity heuristic via Scryfall).
+- Same-day delivery option surfaced in checkout for Seattle ZIPs (981xx) as a prototype.
 
-## Accounts & Personalization
-- 1) Login + guest checkout + perks (binder, personalized suggestions, selling)
-  - Impact: High
-  - Difficulty: High (auth, profiles, personalization, binder linkage)
-- 15) Binder value up/down tracking
-  - Impact: High
-  - Difficulty: High (portfolio-like valuations, price feed, deltas)
-- 16) Show cards in an actual binder UI
-  - Impact: Medium
-  - Difficulty: Medium (grid layout, drag/drop, animations)
+## Prototypes / Partial Implementations
+- Authentication: permissive local login only; no backend, no sessions.
+- Checkout: modal-only flow with address capture; no payment integration. Applies store credit and moves purchased items into Binder when logged in.
+- Binder valuation “up/down”: summary total exists, but no time-series tracking of value changes.
+- Ads banner to sister “Card Bazaar Database”: UI present; link/config TBD.
 
-## Engagement & Growth
-- 18) Email capture popup for waitlist
-  - Impact: Medium
-  - Difficulty: Low (modal + backend list or provider)
-- 3) Daily spin-the-wheel reward
-  - Impact: Medium
-  - Difficulty: Medium (eligibility, reward issuance, anti-abuse)
-- 7) Related cards after add-to-cart / behind stack
-  - Impact: Medium
-  - Difficulty: Medium (similarity heuristic, UI surfacing)
-- 10) Card testimonials (e.g., sold counts, seller notes)
-  - Impact: Medium
-  - Difficulty: Medium (submission + moderation + display)
-- 5) “Out of stock because of you” celebration animation
-  - Impact: Low–Medium
-  - Difficulty: Low–Medium (UX polish, stock state)
-- 6) “Last copy, imperfect condition” excitement moment
-  - Impact: Low–Medium
-  - Difficulty: Medium (inventory-aware UX rules)
+## Not Added Yet
+- Related cards (post add-to-cart or stacked behind main image).
+- Fully integrated checkout (Stripe or wallets), webhooks, order history, receipts.
+- Production auth (accounts, sessions, password reset, OAuth), guest→account merge.
+- Live high-res scanning pipeline (own scans, storage, CDN) beyond Scryfall images.
+- Phone scanning app + mobile storefront; collection ingest and pricing to “sell to us.”
+- Binder valuation time-series and P/L deltas.
+- Same-day delivery integration with Uber (real carrier integration + ops flow).
+- “Magic ETF” fractionalized basket experiment.
 
-## Inventory, Content & Ads
-- 4) Live scanned high‑res images for inventory
-  - Impact: High (trust, conversion)
-  - Difficulty: High (scanning pipeline, storage, CDN)
-- 9) Ads to sister “Card Bazaar Database” (editorial/news)
-  - Impact: Medium
-  - Difficulty: Low–Medium (placement, tracking, cross‑site)
+## Suggested Near-Term Order
+1) Payments and Orders (H/VH): Stripe checkout session with basic order record; email receipt.
+2) Accounts (H/H): Real auth + guest→account merge; persistent cart and binder.
+3) Inventory (H/H): Server-backed stock counts; reserve on add-to-cart; fulfill on paid.
+4) Related Cards (M/M): Reinstate with simple similarity heuristic (type/color) and measure CTR.
+5) Binder Valuation (H/M): Daily snapshot service; show 7/30-day deltas and P/L since purchase.
+6) Email/CRM (M/L): Wire email capture to provider; double opt-in + segments.
 
-## Mobile & External Apps
-- 14) Card scanning app + mobile storefront
-  - Impact: High
-  - Difficulty: Very High (native app(s) or PWA, vision/ML, sync)
-- 8) Scan collection with app → binder → sell to us
-  - Impact: High
-  - Difficulty: Very High (end‑to‑end ingestion, pricing, offers, logistics)
+## Impact vs. Difficulty (Directional)
+- Real-time pricing: High / Medium — shipped.
+- Mobile-friendly UI: High / Medium — shipped.
+- Email capture: Medium / Low — shipped (backend needed).
+- Daily Spin: Medium / Medium — shipped (UI-only).
+- Out-of-stock + last copy: Low–Medium / Low–Medium — shipped.
+- Testimonials: Medium / Medium — shipped (demo data).
+- Related cards: Medium / Medium — not started (tabled previously).
+- Integrated checkout: High / Very High — not started.
+- Auth + perks: High / High — prototype only.
+- High-res scans: High / High — not started (viewer only).
+- Ads to sister site: Medium / Low–Medium — UI shipped.
+- Open a pack: Medium / Low–Medium — prototype shipped.
+- Binder valuation up/down: High / High — partial (summary only).
+- Binder UI: Medium / Medium — shipped.
+- Same-day delivery (Seattle): Medium / High — prototype only.
+- Email capture popup: Medium / Low — shipped.
+- “Magic ETF”: High / Very High — not started.
 
-## Logistics & Operations
-- 17) Same‑day delivery in Seattle via Uber Eats
-  - Impact: Medium (delight, local growth)
-  - Difficulty: High (Ops/fulfillment + integration)
+## Notes
+- Version shown in UI: “Card Bazaar 1.3 FIXED” (index.html). Dates in prior drafts referenced 2025-08-28; this update reflects current main.
+- All Scryfall usage is client-side; server components are intentionally stubbed to keep scope in-repo.
 
-## Financial Experiments
-- 19) “Magic ETF” fractionalized basket
-  - Impact: High (novelty, engagement)
-  - Difficulty: Very High (regulatory, custody, pricing, liquidity, compliance)
-
----
-
-## Recently Merged (in test)
-- 2) Real-time card prices — 2025-08-28
-- 13) Mobile friendly — 2025-08-28
-- 18) Email capture popup — 2025-08-28
-- 3) Daily spin-the-wheel — 2025-08-28
-- 5) Out-of-stock celebration — 2025-08-28
-- 6) Last-copy excitement — 2025-08-28
-- 10) Card testimonials — 2025-08-28
-- 7) Related cards — tabled and reverted on 2025-08-28
-- UI: Header CTAs + 3-column grid + sidebar removal — 2025-08-28
- - 16) Binder UI (grid + drag) — 2025-08-28
- - 15) Binder valuation (summary total) — 2025-08-28
-- 12) Checkout flow (prototype: modal + credit + guest) — 2025-08-28
-- 1) Personalized suggestions (prototype) — 2025-08-28
-- 9) Ads to sister site banner — 2025-08-28
-- 11) Open a pack (prototype) — 2025-08-28
-
-## Priority Order (Impact vs. Difficulty)
-
-Top (fast impact, manageable complexity)
-1. 2) Real-time card prices (H/M) — (in test - currently merged, 2025-08-28)
-2. 13) Mobile friendly (H/M) — (in test - currently merged, 2025-08-28)
-3. 18) Email capture popup (M/L) — (in test - currently merged, 2025-08-28)
-4. 3) Daily spin-the-wheel (M/M) — (in test - currently merged, 2025-08-28)
-5. 7) Related cards (M/M) — (tabled; reverted on 2025-08-28)
-
-Next (foundational, heavier lift)
-5. 1) Login + guest + perks (H/H)
-6. 12) Integrated checkout (H/VH)
-7. 15) Binder valuation (H/H)
-8. 16) Binder UI (M/M)
-
-Later (ops-heavy or experimental)
-9. 4) High‑res scans (H/H)
-10. 5) Out‑of‑stock celebration (L–M/L–M) — (in test - currently merged, 2025-08-28)
-11. 6) Last‑copy excitement (L–M/M) — (in test - currently merged, 2025-08-28)
-12. 9) Ads to sister site (M/L–M)
-13. 17) Same‑day delivery (M/H)
-14. 8) Scan → binder → sell (H/VH)
-15. 14) Scanning app + mobile storefront (H/VH)
-16. 19) Magic ETF (H/VH)
-
----
-
-## First Scrum Suggestion: Real‑Time Pricing (Feature 2)
-
-Why first:
-- High user value and visible on every product.
-- Leverages existing Scryfall requests already in the codebase.
-- Constrains nicely to a 1–2 sprint slice without backend commitments.
-
-Proposed scope (acceptance criteria):
-- Show current USD price for each card variant on load.
-- Fetch from Scryfall price fields with graceful fallback when missing.
-- Display timestamp/“as of” label; refresh price on page reload.
-- If variant‑specific pricing is unavailable, apply clear “estimates” with a simple, declared multiplier per condition (e.g., NM=1.00, VG=0.85, EX=0.75, G=0.50) so the UI remains consistent.
-- Handle network errors with a user‑friendly message and cached last‑known value (optional stretch).
-
-Tasks:
-1) Extend fetch to read `data.prices` from Scryfall.
-2) Compute condition pricing with multipliers when needed.
-3) Render price + condition; add “as of” tooltip.
-4) Add unit tests for price transform logic.
-5) Document pricing source and multipliers.
-
-Next sprint candidates:
-- Mobile UX improvements (Feature 13): tighten responsive grid, image sizes, tap interactions.
-- Email capture (Feature 18): modal + provider hookup (e.g., Mailchimp, ConvertKit) or simple webhook.
-
-## Feature Status Summary (Original 19)
-- 1) Login + guest + perks — Prototype merged (2025-08-28). Permissive login, Binder, suggestions, store credit.
-- 2) Real-time card price — Merged (2025-08-28).
-- 3) Daily spin-the-wheel — Merged (one-time per user) (2025-08-28).
-- 4) Live scanned images — Prototype via Scryfall high‑res viewer (2025-08-28). Full scanning pipeline: Not started.
-- 5) Out-of-stock celebration — Merged (2025-08-28).
-- 6) Last-copy excitement — Merged (2025-08-28).
-- 7) Related cards — Tabled (reverted on 2025-08-28).
-- 8) Scan collection app → binder → sell — Not started.
-- 9) Ads to sister Database site — Banner merged (2025-08-28).
-- 10) Card testimonials — Merged (2025-08-28).
-- 11) Open a pack — Prototype merged (2025-08-28).
-- 12) Integrated checkout (Stripe etc.) — Not started (UI checkout prototype merged 2025-08-28).
-- 13) Mobile friendly — Merged (2025-08-28).
-- 14) Card scanning app + mobile storefront — Not started.
-- 15) Binder valuation (up/down) — Summary valuation merged (2025-08-28).
-- 16) Binder UI (actual binder display) — Grid + drag merged (2025-08-28).
-- 17) Same‑day delivery (Seattle via Uber) — Prototype shipping option merged (2025-08-28).
-- 18) Email capture popup — Merged (2025-08-28).
-- 19) Magic ETF — Not started.
