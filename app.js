@@ -45,7 +45,12 @@
   const headerCartTotal = document.getElementById('headerCartTotal');
   const headerCartCount = document.getElementById('headerCartCount');
   const headerStoreCredit = document.getElementById('headerStoreCredit');
-  let storeCredit = 0; try { storeCredit = parseFloat(localStorage.getItem('cb_store_credit') || '0'); } catch(_) {}
+  let storeCredit = 0;
+  function getMap(key){ try { return JSON.parse(localStorage.getItem(key)||'{}'); } catch(_) { return {}; } }
+  function setMap(key, obj){ try { localStorage.setItem(key, JSON.stringify(obj)); } catch(_){} }
+  function getUserKey(){ return (user && user.email) ? user.email : null; }
+  function loadStoreCreditForCurrentUser(){ const u=getUserKey(); if (u){ const m=getMap('cb_store_credit_map'); storeCredit = Math.max(0, +m[u] || 0); if (headerStoreCredit) { headerStoreCredit.style.display='inline'; headerStoreCredit.textContent = `+$${storeCredit.toFixed(2)} credit`; } } else { storeCredit = 0; if (headerStoreCredit) headerStoreCredit.style.display='none'; } }
+  function saveStoreCreditForCurrentUser(){ const u=getUserKey(); if (!u) return; const m=getMap('cb_store_credit_map'); m[u] = Math.max(0, +storeCredit || 0); setMap('cb_store_credit_map', m); if (headerStoreCredit) headerStoreCredit.textContent = `+$${storeCredit.toFixed(2)} credit`; }
 
   async function loadCartFromServer() {
     const data = await apiGet('/api/cart');
@@ -133,7 +138,7 @@
       card.querySelector('.sell-btn').addEventListener('click', async () => {
         const credit = Math.round(it.price * 0.7 * 100) / 100;
         storeCredit += credit;
-        try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_) {}
+        saveStoreCreditForCurrentUser();
         const removed = binder.splice(idx,1);
         try { if (removed[0] && removed[0].id) await serverBinderRemove(removed[0].id); } catch(_){}
         saveBinder();
@@ -275,7 +280,7 @@
     if (!packCards.length) return;
     let total = packCards.reduce((s,c)=>s+(c.price||0),0);
     const credit = Math.round(total*0.7*100)/100;
-    storeCredit += credit; try{ localStorage.setItem('cb_store_credit', String(storeCredit)); }catch(_){ }
+    storeCredit += credit; saveStoreCreditForCurrentUser();
     renderCart();
     alert(`Sold pack to store for $${credit.toFixed(2)} credit.`);
   });
@@ -475,11 +480,13 @@
         await loadCartFromServer();
         await loadBinderFromServer();
       } else {
-        // keep any local user fallback
+        // not logged in
+        user = null;
       }
     } catch(_){}
     // Always hydrate cart for guest sessions, too
     try { await loadCartFromServer(); } catch(_){}
+    loadStoreCreditForCurrentUser();
   }
 
   function updateAuthDisplay() {
@@ -488,11 +495,13 @@
       if (loginLabel) loginLabel.textContent = `Log Out — ${user.email}`;
       if (loginBtn) { setLoginOpen(false); }
       if (binderHeaderBtn) binderHeaderBtn.style.display = 'inline-block';
+      loadStoreCreditForCurrentUser();
       try { refreshSpinButtonUI(); } catch(_){}
     } else {
       userStatus.textContent = '';
       if (loginLabel) loginLabel.textContent = 'Log In';
       if (binderHeaderBtn) binderHeaderBtn.style.display = 'none';
+      loadStoreCreditForCurrentUser();
       try { refreshSpinButtonUI(); } catch(_){}
     }
   }
@@ -852,7 +861,7 @@
         appendRewardLedger({ kind: 'daily_spin', reward: chosen });
         if (chosen.id === 'credit10') {
           storeCredit = (storeCredit || 0) + 10;
-          try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_){}
+          saveStoreCreditForCurrentUser();
           renderCart();
         }
         if (chosen.id === 'ship_free') { grantFreeShippingOnce(); }
