@@ -228,6 +228,20 @@
     .btn-cta:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.35); }
     .btn-ghost { background: #fff; color: #d92626; border: 2px solid #d92626; padding: 14px 22px; border-radius: 14px; font-size: 20px; font-weight: 800; cursor: pointer; }
     #loginBtn.expanded { padding: 18px 28px; font-size: 22px; border-radius: 16px; }
+    /* Login button expansion */
+    .login-cta { position: relative; display: inline-block; width: 260px; }
+    .login-cta .login-inner { display:flex; align-items:center; justify-content:center; gap:8px; }
+    .login-cta .login-panel { position:absolute; right:100%; top:50%; transform: translateY(-50%); width: 0; height: 164px; overflow: hidden; transition: width 0.28s ease; pointer-events: none; z-index: 1600; }
+    .login-cta.open .login-panel { width: 520px; pointer-events: auto; }
+    .login-cta .login-box { background:#fff; color:#333; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.25); padding:12px; animation: none; }
+    .login-cta .login-box input { width:100%; margin-bottom:6px; }
+    .login-cta .login-box .btn-cta { width:100%; margin-top:6px; }
+    .login-cta .alt-line { margin-top:6px; text-align:right; }
+    .login-cta.open .login-box { animation: panelBounceLeft 320ms cubic-bezier(.34,1.56,.64,1); }
+    @keyframes panelBounceLeft { 0% { transform: translateX(0) scale(0.98); } 60% { transform: translateX(-10px) scale(1.01); } 100% { transform: translateX(0) scale(1); } }
+    /* Fixed right-side action stack */
+    #authStack { position: fixed; right: 24px; top: 120px; width: 260px; display: flex; flex-direction: column; gap: 8px; z-index: 1400; align-items: flex-end; }
+    .btn-cta.disabled { opacity: .6; cursor: default; }
     .badge { background: #000; color: #fff; border-radius: 999px; padding: 2px 8px; font-size: 12px; margin-left: 8px; }
     .small-note { font-size: 14px; font-weight: 700; opacity: 0.9; }
     .grid {
@@ -440,24 +454,36 @@
             <span id="headerCartCount" class="badge">0</span>
           </button>
           <span id="userStatus"></span>
-          <button id="loginBtn" class="btn-cta">Log In</button>
+          
+          <div id="loginBtn" class="btn-cta login-cta" role="button" aria-expanded="false" tabindex="0">
+            <div class="login-inner"><span id="loginLabel">Log In</span></div>
+            <div id="loginForm" class="login-panel">
+              <div class="login-box">
+                <input type="email" id="loginEmail" placeholder="Email">
+                <input type="password" id="loginPassword" placeholder="Password">
+                <button id="loginSubmit" type="button" class="btn-cta">Submit</button>
+                <div id="authAltLine" class="alt-line">
+                  <span id="createAccountText" style="font-weight:800; color:#d92626; cursor:pointer;">Create an account</span>
+                  <span id="backToLoginText" style="display:none; font-weight:800; color:#d92626; cursor:pointer;">Back to login</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="auth-row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
+        <div id="authStack" class="auth-row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
           <button id="sellHeaderBtn" class="btn-cta" style="width: 260px;">Sell Cards</button>
           <button id="binderHeaderBtn" class="btn-cta" style="display:none; width: 260px;">My Binder</button>
-          <!-- Banner to sister site below My Binder -->
+          <button id="openPackBtn" class="btn-cta" style="width: 260px;">Open a Pack</button>
+          <button id="spinStackBtn" class="btn-cta" style="width: 260px;">Daily Spin<div id="spinSub" style="font-size:12px; opacity:0.9;"></div></button>
+          <!-- Banner to sister site below all -->
           <div id="dbBanner" style="margin-top:8px; background: linear-gradient(90deg, #0b1a2b, #142d4c); color:#fff; border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; width: 260px;">
             <div style="font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 22px; color:#ff6b6b; text-shadow:1px 1px #000;">Card Bazaar Database</div>
             <div style="opacity:0.9; font-size:13px;">News • Set Spoilers • Reviews • Promos</div>
             <a id="dbBannerLink" href="#" target="_blank" class="btn-cta" style="font-size:14px; padding:8px 10px; text-align:center;">Read Now</a>
           </div>
-          <button id="openPackBtn" class="btn-ghost" style="width: 260px;">Open a Pack</button>
+          
         </div>
-        <div id="loginForm">
-          <input type="email" id="loginEmail" placeholder="Email">
-          <input type="password" id="loginPassword" placeholder="Password">
-          <button id="loginSubmit" type="button">Submit</button>
-        </div>
+        
       </div>
     </div>
     <div class="content">

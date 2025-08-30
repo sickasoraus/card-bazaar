@@ -20,11 +20,14 @@ Notes:
 - Touch behavior: tap a card to reveal condition buttons (desktop uses hover).
 
 ## Local Development
-- Recommended: Use VS Code with the Live Server or Live Preview extension.
-- Or serve locally via terminal:
-  - Node: `npx http-server -p 5173` then open http://localhost:5173
-  - Python: `py -m http.server 5173` then open http://localhost:5173
+- Install: `npm install`
+- Run app + API: `npm start` then open http://localhost:5173
 - Tests: `npm test` (Node 18+)
+
+Notes:
+- The Express server serves the static UI and provides minimal APIs for accounts, session cart, and binder persistence (SQLite in `./data/app.db`).
+- UI layout and interactions remain the same; the site now persists cart/binder per session/user.
+- Dev email: Without SMTP env, emails (verification/reset) are written to `./data/outbox/*.eml` and logged to console.
 
 ## Roadmap & Planning
 - See `docs/ROADMAP.md` for categorized features, impact/difficulty, and priorities.

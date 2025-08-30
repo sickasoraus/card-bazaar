@@ -4,6 +4,39 @@
 
   // --- Cart logic ---
   const cart = [];
+  // Minimal API helper (same-origin)
+  const API_BASE = '';
+  async function ensureApiReachable() {
+    try {
+      const r = await fetch(API_BASE + '/api/health', { credentials: 'include' });
+      if (r && r.ok) return true;
+    } catch (_) {}
+    const want = `http://${location.hostname}:5173`;
+    if (location.origin !== want) {
+      const go = confirm('The backend API is not reachable from this address.\n\nClick OK to open the app at ' + want + ' (recommended).');
+      if (go) {
+        location.href = want;
+      }
+    }
+    return false;
+  }
+  async function apiGet(path) {
+    try {
+      const r = await fetch(API_BASE + path, { credentials: 'include' });
+      return await r.json();
+    } catch (_) { return null; }
+  }
+  async function apiPost(path, body) {
+    try {
+      const r = await fetch(API_BASE + path, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      return await r.json();
+    } catch (_) { return null; }
+  }
   const headerCartBtn = document.getElementById('headerCartBtn');
   const headerCartPopup = document.getElementById('headerCartPopup');
   const cartItemsEl = document.getElementById('cartItems');
@@ -14,6 +47,24 @@
   const headerStoreCredit = document.getElementById('headerStoreCredit');
   let storeCredit = 0; try { storeCredit = parseFloat(localStorage.getItem('cb_store_credit') || '0'); } catch(_) {}
 
+  async function loadCartFromServer() {
+    const data = await apiGet('/api/cart');
+    if (!data || !data.cart || !Array.isArray(data.cart.items)) return;
+    cart.length = 0;
+    data.cart.items.forEach(it => {
+      cart.push({ name: it.name, condition: it.condition, price: (it.unit_price_cents || 0) / 100, image: it.image || '' });
+    });
+    renderCart();
+  }
+  async function serverAddToCart(item) {
+    const cents = Math.round((item.price || 0) * 100);
+    await apiPost('/api/cart/add', { name: item.name, condition: item.condition, unit_price_cents: cents, image: item.image || '' });
+  }
+  async function serverRemoveFromCart(item) {
+    const cents = Math.round((item.price || 0) * 100);
+    await apiPost('/api/cart/remove_one', { name: item.name, condition: item.condition, unit_price_cents: cents });
+  }
+
   // --- Binder state ---
   const binderPopup = document.getElementById('binderInfoPopup');
   const binderListEl = document.getElementById('binderList');
@@ -21,6 +72,25 @@
   const binderSummaryEl = document.getElementById('binderSummary');
   let binder = [];
   try { binder = JSON.parse(localStorage.getItem('cb_binder') || '[]'); } catch(_) { binder = []; }
+
+  async function loadBinderFromServer() {
+    try {
+      const data = await apiGet('/api/binder');
+      if (data && Array.isArray(data.items)) {
+        binder = data.items.map(it => ({ id: it.id, name: it.name, condition: it.condition, price: (it.acq_price_cents||0)/100, image: it.image || '' }));
+        try { localStorage.setItem('cb_binder', JSON.stringify(binder)); } catch(_){}
+        renderBinder();
+      }
+    } catch (_) {}
+  }
+  async function serverBinderReorder() {
+    const order = binder.map(b => b.id).filter(Boolean);
+    if (order.length) await apiPost('/api/binder/reorder', { order });
+  }
+  async function serverBinderRemove(id) {
+    if (!id) return;
+    await apiPost('/api/binder/remove', { id });
+  }
 
   function saveBinder() {
     try { localStorage.setItem('cb_binder', JSON.stringify(binder)); } catch(_) {}
@@ -36,6 +106,7 @@
       card.className = 'binder-item';
       card.setAttribute('draggable','true');
       card.dataset.index = String(idx);
+      if (it.id) card.dataset.id = it.id;
       card.innerHTML = `
         <img src="${it.image || ''}" alt="${it.name}">
         <div class="meta"><span>${it.condition}</span><span>$${it.price.toFixed(2)}</span></div>
@@ -48,7 +119,7 @@
         e.dataTransfer.setData('text/plain', String(idx));
       });
       card.addEventListener('dragover', (e) => e.preventDefault());
-      card.addEventListener('drop', (e) => {
+      card.addEventListener('drop', async (e) => {
         e.preventDefault();
         const from = parseInt(e.dataTransfer.getData('text/plain'));
         const to = idx;
@@ -57,18 +128,21 @@
         binder.splice(to, 0, moved);
         saveBinder();
         renderBinder();
+        try { await serverBinderReorder(); } catch(_){}
       });
-      card.querySelector('.sell-btn').addEventListener('click', () => {
+      card.querySelector('.sell-btn').addEventListener('click', async () => {
         const credit = Math.round(it.price * 0.7 * 100) / 100;
         storeCredit += credit;
         try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_) {}
-        binder.splice(idx,1);
+        const removed = binder.splice(idx,1);
+        try { if (removed[0] && removed[0].id) await serverBinderRemove(removed[0].id); } catch(_){}
         saveBinder();
         renderBinder();
         renderCart();
       });
-      card.querySelector('.rm-btn').addEventListener('click', () => {
-        binder.splice(idx,1);
+      card.querySelector('.rm-btn').addEventListener('click', async () => {
+        const removed = binder.splice(idx,1);
+        try { if (removed[0] && removed[0].id) await serverBinderRemove(removed[0].id); } catch(_){}
         saveBinder();
         renderBinder();
       });
@@ -236,7 +310,10 @@
   function recalcCheckoutSummary() {
     if (!checkoutSummary) return;
     const itemsTotal = cart.reduce((s,i)=>s+i.price,0);
-    shippingCost = (shipSameDay && shipSameDay.checked) ? 9.99 : 0;
+    const freeShip = hasFreeShippingOnce();
+    const sameDaySelected = (shipSameDay && shipSameDay.checked);
+    shippingCost = sameDaySelected ? 9.99 : 0;
+    if (!sameDaySelected && freeShip) shippingCost = 0;
     let total = itemsTotal + shippingCost;
     let creditApplied = 0;
     if (applyStoreCredit && applyStoreCredit.checked && storeCredit > 0) {
@@ -280,7 +357,10 @@
     }
     // recompute order totals
     const itemsTotal = cart.reduce((s,i)=>s+i.price,0);
-    shippingCost = (shipSameDay && shipSameDay.checked) ? 9.99 : 0;
+    const freeShip = hasFreeShippingOnce();
+    const sameDaySelected = (shipSameDay && shipSameDay.checked);
+    shippingCost = sameDaySelected ? 9.99 : 0;
+    if (!sameDaySelected && freeShip) shippingCost = 0;
     let total = itemsTotal + shippingCost;
     if (applyStoreCredit && applyStoreCredit.checked && storeCredit > 0) {
       const applied = Math.min(storeCredit, total);
@@ -288,15 +368,16 @@
       total = Math.max(0, total - applied);
       try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_) {}
     }
-    if (user) {
-      cart.forEach(it => binder.push({ name: it.name, condition: it.condition, price: it.price, image: it.image || '' }));
-      saveBinder();
-      renderBinder();
-    }
-    cart.length = 0;
-    renderCart();
-    closeCheckout();
-    alert(user ? 'Order placed! Items added to your binder.' : 'Order placed! Create an account to track purchases in your binder next time.');
+    if (!sameDaySelected && freeShip && shippingCost === 0) { consumeFreeShippingOnce(); }
+    (async () => {
+      try { await apiPost('/api/checkout/simulate', { }); } catch(_){}
+      if (user) { try { await loadBinderFromServer(); } catch(_){}
+      }
+      cart.length = 0;
+      renderCart();
+      closeCheckout();
+      alert(user ? 'Order placed! Items added to your binder.' : 'Order placed! Create an account to track purchases in your binder next time.');
+    })();
   });
   if (checkoutBtn) checkoutBtn.addEventListener('click', (e)=>{ e.preventDefault(); openCheckout(); });
 
@@ -321,15 +402,19 @@
 
   function addToCart(item) {
     const priceNum = parseFloat(item.price.replace('$', ''));
-    cart.push({ ...item, price: priceNum });
+    const entry = { ...item, price: priceNum };
+    cart.push(entry);
     renderCart();
     if (headerCartPopup && headerCartPopup.style.display !== 'block') {
       headerCartPopup.style.display = 'block';
     }
+    // Persist to server (guest or user session)
+    try { serverAddToCart({ name: entry.name, condition: entry.condition, price: entry.price, image: entry.image || '' }); } catch(_){}
   }
 
   function removeFromCart(index) {
-    cart.splice(index, 1);
+    const removed = cart.splice(index, 1);
+    if (removed && removed[0]) { try { serverRemoveFromCart(removed[0]); } catch(_){} }
     renderCart();
   }
 
@@ -374,59 +459,173 @@
   const loginEmail = document.getElementById('loginEmail');
   const loginPassword = document.getElementById('loginPassword');
   const userStatus = document.getElementById('userStatus');
+  const createAccountText = document.getElementById('createAccountText');
+  const backToLoginText = document.getElementById('backToLoginText');
+  const spinStackBtn = document.getElementById('spinStackBtn');
+  const loginLabel = document.getElementById('loginLabel');
 
   let user = null;
 
+  async function fetchCurrentUser() {
+    try {
+      const data = await apiGet('/api/me');
+      if (data && data.user) {
+        user = data.user;
+        try { localStorage.setItem('user', JSON.stringify(user)); } catch(_){}
+        await loadCartFromServer();
+        await loadBinderFromServer();
+      } else {
+        // keep any local user fallback
+      }
+    } catch(_){}
+    // Always hydrate cart for guest sessions, too
+    try { await loadCartFromServer(); } catch(_){}
+  }
+
   function updateAuthDisplay() {
     if (user) {
-      userStatus.textContent = `Logged in as ${user.email}`;
-      loginBtn.textContent = 'Log Out';
-      loginForm.style.display = 'none';
+      userStatus.textContent = '';
+      if (loginLabel) loginLabel.textContent = `Log Out — ${user.email}`;
+      if (loginBtn) { setLoginOpen(false); }
       if (binderHeaderBtn) binderHeaderBtn.style.display = 'inline-block';
+      try { refreshSpinButtonUI(); } catch(_){}
     } else {
       userStatus.textContent = '';
-      loginBtn.textContent = 'Log In';
+      if (loginLabel) loginLabel.textContent = 'Log In';
       if (binderHeaderBtn) binderHeaderBtn.style.display = 'none';
+      try { refreshSpinButtonUI(); } catch(_){}
     }
   }
 
-  loginBtn.addEventListener('click', () => {
+  function setLoginOpen(flag){
+    if (!loginBtn) return;
+    loginBtn.classList.toggle('open', !!flag);
+    loginBtn.setAttribute('aria-expanded', String(!!flag));
+    if (loginForm) {
+      loginForm.style.display = flag ? 'block' : 'none';
+      loginForm.style.maxHeight = flag ? '260px' : '0px';
+    }
+  }
+
+  if (loginBtn) loginBtn.addEventListener('click', (e) => {
+    // If clicking inside the form, don't toggle container
+    if (loginForm && loginForm.contains(e.target)) return;
     if (user) {
       user = null;
       localStorage.removeItem('user');
       updateAuthDisplay();
     } else {
-      const showing = loginForm.style.display === 'block';
-      loginForm.style.display = showing ? 'none' : 'block';
-      if (!showing) {
-        loginBtn.classList.add('expanded');
-      } else {
-        loginBtn.classList.remove('expanded');
-      }
+      const open = loginBtn.classList.contains('open');
+      setLoginOpen(!open);
+    }
+  });
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (ev)=>{
+    if (!loginBtn) return;
+    if (!loginBtn.contains(ev.target)) {
+      if (loginBtn.classList.contains('open')) setLoginOpen(false);
     }
   });
 
-  loginSubmit.addEventListener('click', () => {
-    // Accept any input for now
-    user = { email: loginEmail.value || 'user@example.com' };
-    try { localStorage.setItem('user', JSON.stringify(user)); } catch(_){}
-    updateAuthDisplay();
-    loginBtn.classList.remove('expanded');
-    // Trigger one-time daily spin for logged-in user
-    try { maybeShowDailySpin('login'); } catch(_){}
-    // Hide email capture if it was open
-    try { const ov = document.getElementById('cbEmailOverlay'); if (ov) { ov.style.display = 'none'; ov.setAttribute('aria-hidden','true'); } } catch(_){}
+  let loginMode = 'login'; // 'login' | 'create' | 'forgot'
+  async function doLogin() {
+    const email = loginEmail.value || '';
+    const password = loginPassword.value || '';
+    if (!(await ensureApiReachable())) { return false; }
+    const resp = await apiPost('/api/login', { email, password });
+    if (resp && resp.user) {
+      user = resp.user;
+      try { localStorage.setItem('user', JSON.stringify(user)); } catch(_){}
+      updateAuthDisplay();
+      await loadCartFromServer();
+      await loadBinderFromServer();
+      if (loginBtn) { setLoginOpen(false); }
+      try { maybeShowDailySpin('login'); } catch(_){}
+      try { const ov = document.getElementById('cbEmailOverlay'); if (ov) { ov.style.display = 'none'; ov.setAttribute('aria-hidden','true'); } } catch(_){}
+      return true;
+    }
+    if (resp && resp.error === 'not_found') {
+      loginMode = 'create';
+      loginSubmit.textContent = 'Create your account?';
+      return false;
+    }
+    if (resp && resp.error === 'invalid_password') {
+      loginMode = 'forgot';
+      loginSubmit.textContent = 'Forgot password?';
+      return false;
+    }
+    // email verification not required
+    alert('Login failed.');
+    return false;
+  }
+
+  async function doCreate() {
+    const email = loginEmail.value || '';
+    const password = loginPassword.value || '';
+    if (!(await ensureApiReachable())) { return false; }
+    const resp = await apiPost('/api/signup', { email, password });
+    if (resp && resp.user) {
+      user = resp.user;
+      try { localStorage.setItem('user', JSON.stringify(user)); } catch(_){}
+      updateAuthDisplay();
+      await loadCartFromServer();
+      await loadBinderFromServer();
+      if (loginBtn) { setLoginOpen(false); }
+      alert('Account created. You are now logged in.');
+      return true;
+    }
+    if (resp && resp.error === 'already_exists') {
+      alert('An account with this email already exists. Please enter your password to log in.');
+      loginMode = 'login';
+      loginSubmit.textContent = 'Submit';
+      return false;
+    }
+    alert('Could not create account.');
+    return false;
+  }
+
+  async function doForgot() {
+    const email = loginEmail.value || '';
+    await apiPost('/api/forgot', { email });
+    alert('If this email exists, we sent a password reset link.');
+    loginMode = 'login';
+    loginSubmit.textContent = 'Submit';
+    return true;
+  }
+
+  loginSubmit.addEventListener('click', async () => {
+    try {
+      if (loginMode === 'login') { await doLogin(); }
+      else if (loginMode === 'create') { await doCreate(); }
+      else if (loginMode === 'forgot') { await doForgot(); }
+    } catch(_) {
+      alert('Action failed.');
+    }
   });
+
+  function enterCreateMode() {
+    loginMode = 'create';
+    loginSubmit.textContent = 'Create account';
+    if (createAccountText) createAccountText.style.display = 'none';
+    if (backToLoginText) backToLoginText.style.display = 'inline-block';
+  }
+  function enterLoginMode() {
+    loginMode = 'login';
+    loginSubmit.textContent = 'Submit';
+    if (createAccountText) createAccountText.style.display = 'inline-block';
+    if (backToLoginText) backToLoginText.style.display = 'none';
+  }
+
+  if (createAccountText) createAccountText.addEventListener('click', (e)=>{ e.preventDefault(); enterCreateMode(); });
+  if (backToLoginText) backToLoginText.addEventListener('click', (e)=>{ e.preventDefault(); enterLoginMode(); });
 
   // load existing user
   try {
     const stored = localStorage.getItem('user');
-    if (stored) {
-      user = JSON.parse(stored);
-    }
-  } catch (e) {
-    user = null;
-  }
+    if (stored) user = JSON.parse(stored);
+  } catch (_) { user = null; }
+  // hydrate from server session if present
+  fetchCurrentUser();
   updateAuthDisplay();
   // If already logged in, show the daily spin once
   setTimeout(() => { try { maybeShowDailySpin('autoload'); } catch(_){} }, 800);
@@ -573,12 +772,13 @@
     { id: 'points100', label: '100 CB Points' },
     { id: 'free_card', label: 'A Free Card' },
   ];
-
-  function hasSpunOnce() {
-    try { if (!user) return false; const rec = JSON.parse(localStorage.getItem('cb_spin_once')||'{}'); return !!rec[user.email]; } catch(_) { return false; }
+  function todayStr(){ const d=new Date(); const m=(d.getMonth()+1).toString().padStart(2,'0'); const day=d.getDate().toString().padStart(2,'0'); return `${d.getFullYear()}-${m}-${day}`; }
+  function hasSpunToday() {
+    try { if (!user) return false; const rec = JSON.parse(localStorage.getItem('cb_spin_daily')||'{}'); return rec[user.email] === todayStr(); } catch(_) { return false; }
   }
-  function setSpunOnce(reward) {
-    try { if (!user) return; const key='cb_spin_once'; const rec = JSON.parse(localStorage.getItem(key)||'{}'); rec[user.email] = { ts: Date.now(), reward }; localStorage.setItem(key, JSON.stringify(rec)); } catch(_){}
+  function setSpunToday(reward) {
+    try { if (!user) return; const key='cb_spin_daily'; const rec = JSON.parse(localStorage.getItem(key)||'{}'); rec[user.email] = todayStr(); localStorage.setItem(key, JSON.stringify(rec)); } catch(_){}
+    try { refreshSpinButtonUI(); } catch(_){}
   }
 
   function appendRewardLedger(entry) {
@@ -588,6 +788,30 @@
       arr.push({ ...entry, ts: Date.now() });
       localStorage.setItem(key, JSON.stringify(arr));
     } catch(_){}
+  }
+
+  function getUserKey(){ return user && user.email ? user.email : null; }
+  function getMap(key){ try { return JSON.parse(localStorage.getItem(key)||'{}'); } catch(_) { return {}; } }
+  function setMap(key, obj){ try { localStorage.setItem(key, JSON.stringify(obj)); } catch(_){} }
+  function grantFreeShippingOnce() {
+    const u=getUserKey(); if (!u) return;
+    const map=getMap('cb_free_ship_once'); map[u]=1; setMap('cb_free_ship_once', map);
+  }
+  function hasFreeShippingOnce() {
+    const u=getUserKey(); if (!u) return false; const map=getMap('cb_free_ship_once'); return !!map[u];
+  }
+  function consumeFreeShippingOnce() {
+    const u=getUserKey(); if (!u) return; const map=getMap('cb_free_ship_once'); if (map[u]) { delete map[u]; setMap('cb_free_ship_once', map); }
+  }
+  function addPoints(n){ const u=getUserKey(); if (!u) return; const map=getMap('cb_points'); map[u]=(map[u]||0)+n; setMap('cb_points', map); }
+
+  function refreshSpinButtonUI(){
+    if (!spinStackBtn) return;
+    const used = hasSpunToday();
+    spinStackBtn.disabled = false; // clickable to show prompt even if guest
+    spinStackBtn.style.opacity = used ? '0.6' : '1.0';
+    const sub = used ? '<div style="font-size:12px; opacity:0.9;">Come back tomorrow!</div>' : '<div id="spinSub" style="font-size:12px; opacity:0.9;"></div>';
+    spinStackBtn.innerHTML = 'Daily Spin' + sub;
   }
 
   function showSpinOverlay() {
@@ -603,10 +827,7 @@
     spinOverlay.setAttribute('aria-hidden', 'true');
   }
 
-  function maybeShowDailySpin(reason) {
-    if (!user) return;
-    if (!hasSpunOnce()) showSpinOverlay();
-  }
+  function maybeShowDailySpin(reason) { /* manual via header button only now */ }
 
   // Header manual trigger
   // no header spin button
@@ -616,7 +837,7 @@
   let spinning = false;
   if (spinBtn && spinWheel) {
     spinBtn.addEventListener('click', () => {
-      if (spinning || hasSpunOnce()) return;
+      if (spinning || hasSpunToday()) return;
       spinning = true;
       const idx = Math.floor(Math.random() * REWARDS.length);
       // 4 segments, centers at 45, 135, 225, 315 deg (pointer at top)
@@ -627,16 +848,26 @@
       spinWheel.style.transform = `rotate(${totalDeg}deg)`;
       const chosen = REWARDS[idx];
       setTimeout(() => {
-        setSpunOnce(chosen);
+        setSpunToday(chosen);
         appendRewardLedger({ kind: 'daily_spin', reward: chosen });
         if (chosen.id === 'credit10') {
           storeCredit = (storeCredit || 0) + 10;
           try { localStorage.setItem('cb_store_credit', String(storeCredit)); } catch(_){}
           renderCart();
         }
+        if (chosen.id === 'ship_free') { grantFreeShippingOnce(); }
+        if (chosen.id === 'points100') { addPoints(100); }
         if (spinResult) spinResult.textContent = `You won: ${chosen.label}!`;
         spinning = false;
       }, 4200);
+    });
+  }
+
+  if (spinStackBtn) {
+    spinStackBtn.addEventListener('click', () => {
+      if (!user) { alert('Please log in to spin.'); return; }
+      if (hasSpunToday()) { refreshSpinButtonUI(); return; }
+      showSpinOverlay();
     });
   }
 
