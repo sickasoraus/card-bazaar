@@ -1,0 +1,60 @@
+async function fetchCardImages() {
+  const grid = document.getElementById('cardGrid');
+  if (!grid) return;
+  const cfg = (typeof window !== 'undefined' && window.CB_PAGE_CONFIG) ? window.CB_PAGE_CONFIG : {};
+  const overridePath = (typeof window !== 'undefined' && window.CB_PATH_OVERRIDE) ? String(window.CB_PATH_OVERRIDE) : '';
+  const path = overridePath || ((typeof location !== 'undefined' && location && location.pathname) ? location.pathname : '/');
+  const searchQuery = (cfg.searchQuery || '').trim();
+  const searchMode = /\/search\/?/.test(path) && !!searchQuery.length;
+  const sellMode = /\/sell\/?/.test(path);
+  const cardMatch = path.match(/\/card\/([^/]+)\/?$/);
+  const cardSlug = cardMatch ? cardMatch[1] : null;
+
+  grid.innerHTML = '';
+  grid.classList.remove('detail-view');
+  const index = ensureInventoryIndex();
+
+  if (typeof window !== 'undefined' && typeof window.CB_setFormatActive === 'function') {
+    try { window.CB_setFormatActive(path); } catch (_) {}
+  }
+
+  if (cardSlug) {
+    grid.classList.add('detail-view');
+    const guessedName = decodeURIComponent(cardSlug).replace(/-/g, ' ');
+    await renderCardDetail({ name: guessedName });
+    return;
+  }
+
+  let items = [];
+  if (Array.isArray(cfg.items) && cfg.items.length) {
+    items = cfg.items;
+  }
+
+  let format = null;
+  if (/\/frontpage\/standard\/?/.test(path)) format = 'standard';
+  else if (/\/frontpage\/modern\/?/.test(path)) format = 'modern';
+  else if (/\/frontpage\/vintage\/?/.test(path)) format = 'vintage';
+
+  if (!items.length) {
+    if (format && FORMAT_PRESETS[format]) items = FORMAT_PRESETS[format];
+    else items = DEFAULT_FRONT_PAGE;
+  }
+
+  if (searchMode) {
+    const entries = Object.values(index || {});
+    const q = searchQuery.toLowerCase();
+    const matches = entries.filter(it => it && it.name && it.name.toLowerCase().includes(q));
+    if (!matches.length) {
+      grid.innerHTML = `<div style="padding:40px; font-weight:800;">No inventory results for "${escapeHtml(searchQuery)}" yet. Try another search or return to the Front Page.</div>`;
+      return;
+    }
+    items = matches.map(it => ({ kind: 'card', name: it.name, setHint: it.setHint || '' }));
+  }
+
+  for (const raw of items) {
+    const entry = typeof raw === 'string' ? { kind: 'card', name: raw } : (raw || {});
+    if ((entry.kind || 'card') === 'card') {
+      await renderCardTile(entry, { sellMode: sellMode && !searchMode });
+    }
+  }
+}

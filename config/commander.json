@@ -1,0 +1,15 @@
+{
+  "items": [
+    { "kind": "card", "name": "Smothering Tithe" },
+    { "kind": "card", "name": "Esper Sentinel" },
+    { "kind": "card", "name": "Dockside Extortionist" },
+    { "kind": "card", "name": "Rhystic Study" },
+    { "kind": "card", "name": "Cavern of Souls" },
+    { "kind": "card", "name": "Cyclonic Rift" },
+    { "kind": "card", "name": "Heroic Intervention" },
+    { "kind": "card", "name": "Deflecting Swat" },
+    { "kind": "card", "name": "Fierce Guardianship" },
+    { "kind": "card", "name": "Guardian Project" }
+  ]
+}
+

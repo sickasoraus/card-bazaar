@@ -1,0 +1,15 @@
+{
+  "items": [
+    { "kind": "card", "name": "Sheoldred, the Apocalypse", "setHint": "dmu" },
+    { "kind": "card", "name": "The One Ring", "setHint": "ltr" },
+    { "kind": "card", "name": "Lightning Strike" },
+    { "kind": "card", "name": "Arcane Signet" },
+    { "kind": "card", "name": "Esper Sentinel" },
+    { "kind": "card", "name": "Fable of the Mirror-Breaker" },
+    { "kind": "card", "name": "Preordain" },
+    { "kind": "card", "name": "Cut Down" },
+    { "kind": "card", "name": "Triome" },
+    { "kind": "card", "name": "Plains" }
+  ]
+}
+

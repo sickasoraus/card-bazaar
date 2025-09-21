@@ -1,0 +1,15 @@
+{
+  "items": [
+    { "kind": "card", "name": "Ragavan, Nimble Pilferer" },
+    { "kind": "card", "name": "Fury" },
+    { "kind": "card", "name": "Murktide Regent" },
+    { "kind": "card", "name": "Orcish Bowmasters" },
+    { "kind": "card", "name": "The One Ring", "setHint": "ltr" },
+    { "kind": "card", "name": "Scion of Draco" },
+    { "kind": "card", "name": "Urza's Saga" },
+    { "kind": "card", "name": "Expressive Iteration" },
+    { "kind": "card", "name": "Solitude" },
+    { "kind": "card", "name": "Leyline Binding" }
+  ]
+}
+

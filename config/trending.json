@@ -1,0 +1,9 @@
+{
+  "items": [
+    { "kind": "card", "name": "The One Ring", "setHint": "ltr", "image": "/assets/cards/the-one-ring.jpg" },
+    { "kind": "card", "name": "The Soul Stone", "setHint": "spm", "image": "/assets/cards/the-soul-stone.jpg" },
+    { "kind": "card", "name": "Eddie Brock // Venom, Lethal Protector", "setHint": "spm", "image": "/assets/cards/eddie-brock-venom-lethal-protector.jpg" },
+    { "kind": "card", "name": "The Aetherspark", "setHint": "dft", "image": "/assets/cards/the-aetherspark.jpg" }
+  ]
+}
+

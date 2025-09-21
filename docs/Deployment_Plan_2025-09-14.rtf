@@ -1,0 +1,116 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Segoe UI;}{\f1 Calibri;}}
+\fs24
+\b Card Bazaar Deployment Plan (MVP)\b0\par
+Date: 2025-09-14\par
+Owner: Card Bazaar\par
+\par
+\b Why Not GitHub Pages Alone\b0\par
+- GitHub Pages serves static files only. Our app needs a Node server + SQLite DB and sends emails. Pages cannot run the backend.\par
+- Splitting static UI (Pages) and API (another host) is possible but adds complexity now. For MVP, keep UI + API together.\par
+\par
+\b Best Fit for MVP (Cheap, Simple, Persistent Disk)\b0\par
+- \b Recommended:\b0 Render Web Service + Disk (or) Fly.io App + Volume. Both are low-cost, easy to deploy from GitHub, include HTTPS, and support SQLite on disk.\par
+\par
+\b Option A — Render (simplest)\b0\par
+Cost: Free/low (free tier sleeps).\par
+Pros: No Docker, connect GitHub, auto-HTTPS, attach a disk for ./data.\par
+Cons: Free tier may sleep (cold starts).\par
+Steps:\par
+1) Push repo to GitHub.\par
+2) Create Web Service: Runtime Node; Build: \cf1 npm install\cf0 ; Start: \cf1 node server/index.js\cf0 .\par
+3) Add Disk (1–2 GB) mounted at \cf1 /opt/render/project/src/data\cf0 (matches ./data).\par
+4) Env vars: \cf1 NODE_ENV=production\cf0 ; \cf1 COOKIE_SECRET\cf0 ; \cf1 AUTH_PEPPER\cf0 ; (later) \cf1 SMTP_URL\cf0 .\par
+5) Deploy; verify \cf1 /api/health\cf0 , login/signup, binder, Auction (BETA), Sell flow (emails in data/outbox unless SMTP set).\par
+6) Domain: add \i www.yourdomain.com\i0 in Render; set DNS CNAME; apex via ALIAS/ANAME or redirect to www; HTTPS auto; enable HSTS after testing.\par
+7) Updates: keep coding in VS Code/Codex, push to GitHub → auto-deploy.\par
+\par
+\b Option B — Fly.io (cheap + powerful)\b0\par
+Cost: very low for 1 small VM + volume.\par
+Pros: Global edge; good for SQLite volumes.\par
+Cons: Needs \cf1 flyctl\cf0 and minimal Dockerfile.\par
+Steps:\par
+1) \cf1 fly launch\cf0 in repo; choose Node.\par
+2) Create volume (e.g., 3 GB) and mount to \cf1 /app/data\cf0 .\par
+3) \cf1 fly secrets set COOKIE_SECRET=... AUTH_PEPPER=...\cf0 .\par
+4) \cf1 fly deploy\cf0 ; add certs for \i www.yourdomain.com\i0 ; update DNS.\par
+5) Keep coding locally; \cf1 fly deploy\cf0 or GitHub Actions for CI.\par
+\par
+\b Option C — DigitalOcean Droplet ($6/mo)\b0\par
+Pros: Full control; straightforward to grow into Docker + Caddy (auto HTTPS).\par
+Cons: You manage patches, firewall, TLS, backups.\par
+\par
+\b Security & Trust (MVP Essentials)\b0\par
+- HTTPS everywhere; platform-managed TLS; enable HSTS after verifying.\par
+- Cookies: \i HttpOnly, Secure, SameSite=Lax\i0 (code already uses these in production).\par
+- Add security headers (Helmet) and a sane CSP (later this week).\par
+- Basic rate limiting on auth and write endpoints.\par
+- Secrets via host env vars only; rotate periodically.\par
+- Backups: snapshot the Disk/Volume or plan Postgres migration.\par
+- Optional Cloudflare in front (WAF, bot limiting, CDN cache for /assets/*).\par
+\par
+\b Email & Newsletter\b0\par
+- Transactional emails (sell confirmations, auth notifications): \b Postmark\b0 recommended.\par
+  • Subdomain suggestion: \cf1 mail.cardbazaar.com\cf0 (add SPF, DKIM; DMARC on root).\par
+- Newsletter/marketing: \b Mailchimp\b0 (or similar).\par
+  • Subdomain suggestion: \cf1 news.cardbazaar.com\cf0 .\par
+- Until SMTP is set, app writes emails to \cf1 ./data/outbox\cf0 for review.\par
+\par
+\b Domain & Subdomains (suggested)\b0\par
+- \cf1 www.cardbazaar.com\cf0 → app (Render/Fly).\par
+- \cf1 mail.cardbazaar.com\cf0 → Postmark.\par
+- \cf1 news.cardbazaar.com\cf0 → Mailchimp.\par
+- Future: \cf1 cdn.cardbazaar.com\cf0 (S3+CDN), \cf1 api.cardbazaar.com\cf0 if API split.\par
+\par
+\b Uploads & Seller Listing Scope\b0\par
+- MVP: Listings only from “My Collection” (binder + scans); no public uploads yet.\par
+- Next: S3 object storage, pre-signed uploads from mobile app; serve via CDN.\par
+\par
+\b Compliance & Trustbuilding\b0\par
+- Publish Privacy Policy, Terms, Refunds/Returns, and Contact pages.\par
+- Configure SPF/DKIM/DMARC; start DMARC at \cf1 p=none\cf0 , later tighten.\par
+- Minimal PII collection; clear marketing consent.\par
+- If EU traffic, add GDPR notice and a DSR contact email.\par
+\par
+\b Step-by-Step Checklists\b0\par
+\ul Render Quick Start\ulnone\par
+1) Connect GitHub repo → Web Service (Node).\par
+2) Build: \cf1 npm install\cf0 ; Start: \cf1 node server/index.js\cf0 .\par
+3) Disk: mount to \cf1 /opt/render/project/src/data\cf0 .\par
+4) Env: \cf1 NODE_ENV, COOKIE_SECRET, AUTH_PEPPER, SMTP_URL\cf0 (later).\par
+5) Deploy; test \cf1 /api/health\cf0 and flows; link domain; enable HSTS.\par
+\ul Fly.io Quick Start\ulnone\par
+1) \cf1 fly launch\cf0 → create volume → mount to \cf1 /app/data\cf0 .\par
+2) \cf1 fly secrets set COOKIE_SECRET AUTH_PEPPER\cf0 .\par
+3) \cf1 fly deploy\cf0 ; add certs; update DNS.\par
+4) Validate health + flows.\par
+\par
+\b Workflow With VS Code + Codex\b0\par
+- Keep coding locally. Commit + push → Render auto-deploys (or \cf1 fly deploy\cf0 ).\par
+- Local run for iteration: \cf1 npm start\cf0 then open \cf1 http://localhost:5173\cf0 .\par
+\par
+\b Recommendations (Given Constraints)\b0\par
+1) Start on Render (quickest path, cheapest, GUI-managed).\par
+2) Set up Postmark on \cf1 mail.cardbazaar.com\cf0 ; Mailchimp on \cf1 news.cardbazaar.com\cf0 .\par
+3) Keep SQLite on Disk for MVP week; plan Postgres only when accounts/orders scale.\par
+4) Consider Cloudflare later for DNS/WAF/CDN; optional for MVP.\par
+\par
+\b Open Decisions (to finalize when ready)\b0\par
+- Host choice: \i Render\i0 vs \i Fly.io\i0 (leaning Render for speed).\par
+- DB path: stay on SQLite+Disk (MVP), revisit Postgres post‑MVP.\par
+- DNS provider: stay with registrar or move to Cloudflare.\par
+- Email: adopt Postmark now or continue outbox for a few days.\par
+\par
+\b Appendix — Environment Variables\b0\par
+- \cf1 NODE_ENV=production\cf0\par
+- \cf1 PORT\cf0 (platform sets)\par
+- \cf1 COOKIE_SECRET\cf0 (32+ chars)\par
+- \cf1 AUTH_PEPPER\cf0 (32+ chars)\par
+- \cf1 SMTP_URL\cf0 (when ready; else outbox files)\par
+\par
+\b Appendix — Paths To Persist\b0\par
+- \cf1 ./data/app.db\cf0 (SQLite)\par
+- \cf1 ./data/outbox\cf0 (dev email)\par
+- \cf1 ./data/uploads\cf0 (future)\par
+\par
+}\par
