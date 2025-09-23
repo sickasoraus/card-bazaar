@@ -143,6 +143,7 @@
   }
   if (refreshSuggest) refreshSuggest.addEventListener('click', buildSuggestions);
   try { buildSuggestions(); } catch(_) {}
+  window.CB_onCardsRendered = () => { try { buildSuggestions(); } catch(_){} };
 
   // --- Pack Opener ---
   const openPackBtn = document.getElementById('openPackBtn');
@@ -374,44 +375,97 @@
   const loginEmail = document.getElementById('loginEmail');
   const loginPassword = document.getElementById('loginPassword');
   const userStatus = document.getElementById('userStatus');
+  const loginLabel = document.getElementById('loginLabel');
+  const searchInput = document.getElementById('globalSearchInput');
+  const searchButton = document.getElementById('globalSearchBtn');
+  const filterTrendingBtn = document.getElementById('filterTrending');
+  const filterStandardModernBtn = document.getElementById('filterStandardModern');
+  const filterVintageBtn = document.getElementById('filterVintage');
 
   let user = null;
 
   function updateAuthDisplay() {
     if (user) {
-      userStatus.textContent = `Logged in as ${user.email}`;
-      loginBtn.textContent = 'Log Out';
-      loginForm.style.display = 'none';
-      if (binderHeaderBtn) binderHeaderBtn.style.display = 'inline-block';
+      if (userStatus) userStatus.textContent = 'Logged in as ' + user.email;
+      const username = user.email ? user.email.split('@')[0] : '';
+      if (loginLabel) loginLabel.textContent = username ? 'Log Out - ' + username : 'Log Out';
+      if (loginForm) {
+        loginForm.setAttribute('aria-hidden', 'true');
+        loginForm.style.display = 'none';
+      }
+      if (loginBtn) {
+        loginBtn.classList.remove('open');
+        loginBtn.classList.remove('expanded');
+        loginBtn.setAttribute('aria-expanded', 'false');
+      }
+      if (binderHeaderBtn) binderHeaderBtn.style.display = 'inline-flex';
     } else {
-      userStatus.textContent = '';
-      loginBtn.textContent = 'Log In';
+      if (userStatus) userStatus.textContent = '';
+      if (loginLabel) loginLabel.textContent = 'Log In';
+      if (loginForm) {
+        loginForm.setAttribute('aria-hidden', 'true');
+        loginForm.style.display = 'none';
+      }
+      if (loginBtn) {
+        loginBtn.classList.remove('open');
+        loginBtn.classList.remove('expanded');
+        loginBtn.setAttribute('aria-expanded', 'false');
+      }
       if (binderHeaderBtn) binderHeaderBtn.style.display = 'none';
     }
   }
 
-  loginBtn.addEventListener('click', () => {
-    if (user) {
-      user = null;
-      localStorage.removeItem('user');
-      updateAuthDisplay();
-    } else {
-      const showing = loginForm.style.display === 'block';
-      loginForm.style.display = showing ? 'none' : 'block';
-      if (!showing) {
-        loginBtn.classList.add('expanded');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', (event) => {
+      if (loginForm && loginForm.contains(event.target)) return;
+      if (user) {
+        user = null;
+        try { localStorage.removeItem('user'); } catch(_){}
+        updateAuthDisplay();
       } else {
-        loginBtn.classList.remove('expanded');
+        const willOpen = !loginBtn.classList.contains('open');
+        loginBtn.classList.toggle('open', willOpen);
+        loginBtn.classList.toggle('expanded', willOpen);
+        loginBtn.setAttribute('aria-expanded', String(willOpen));
+        if (loginForm) {
+          loginForm.setAttribute('aria-hidden', String(!willOpen));
+          loginForm.style.display = willOpen ? 'flex' : 'none';
+        }
+      }
+    });
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener('click', (event) => event.stopPropagation());
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!loginBtn) return;
+    if (!loginBtn.contains(event.target)) {
+      loginBtn.classList.remove('open');
+      loginBtn.classList.remove('expanded');
+      loginBtn.setAttribute('aria-expanded', 'false');
+      if (loginForm) {
+        loginForm.setAttribute('aria-hidden', 'true');
+        loginForm.style.display = 'none';
       }
     }
   });
 
-  loginSubmit.addEventListener('click', () => {
+  if (loginSubmit) loginSubmit.addEventListener('click', () => {
     // Accept any input for now
     user = { email: loginEmail.value || 'user@example.com' };
     try { localStorage.setItem('user', JSON.stringify(user)); } catch(_){}
     updateAuthDisplay();
-    loginBtn.classList.remove('expanded');
+    if (loginBtn) {
+      loginBtn.classList.remove('open');
+      loginBtn.classList.remove('expanded');
+      loginBtn.setAttribute('aria-expanded', 'false');
+    }
+    if (loginForm) {
+      loginForm.setAttribute('aria-hidden', 'true');
+      loginForm.style.display = 'none';
+    }
     // Trigger one-time daily spin for logged-in user
     try { maybeShowDailySpin('login'); } catch(_){}
     // Hide email capture if it was open
@@ -432,6 +486,54 @@
   setTimeout(() => { try { maybeShowDailySpin('autoload'); } catch(_){} }, 800);
   // Daily spin auto-open disabled
 
+  const filterButtons = [filterTrendingBtn, filterStandardModernBtn, filterVintageBtn];
+
+  function setActiveFilter(target) {
+    filterButtons.forEach(btn => {
+      if (!btn) return;
+      btn.classList.toggle('active', btn === target);
+    });
+  }
+
+  function clearSearchInput() {
+    if (searchInput) searchInput.value = '';
+  }
+
+  function selectGroup(group, button) {
+    clearSearchInput();
+    setActiveFilter(button);
+    if (typeof window.CB_setGroup === 'function') {
+      window.CB_setGroup(group);
+    }
+  }
+
+  function runSearch() {
+    if (!searchInput) return;
+    const query = searchInput.value.trim();
+    if (typeof window.CB_searchCards === 'function') {
+      window.CB_searchCards(query);
+    }
+    if (query) {
+      setActiveFilter(null);
+    } else {
+      setActiveFilter(filterTrendingBtn);
+      if (typeof window.CB_setGroup === 'function') {
+        window.CB_setGroup('trending');
+      }
+    }
+  }
+
+  if (searchButton) searchButton.addEventListener('click', runSearch);
+  if (searchInput) searchInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') runSearch();
+  });
+
+  if (filterTrendingBtn) filterTrendingBtn.addEventListener('click', () => selectGroup('trending', filterTrendingBtn));
+  if (filterStandardModernBtn) filterStandardModernBtn.addEventListener('click', () => selectGroup('standardModern', filterStandardModernBtn));
+  if (filterVintageBtn) filterVintageBtn.addEventListener('click', () => selectGroup('vintage', filterVintageBtn));
+
+  setActiveFilter(filterTrendingBtn);
+
   // --- Email capture modal (waitlist) ---
   const EMAIL_CAPTURE_ENDPOINT = null; // set to a backend URL later; null = simulate
   const overlay = document.getElementById('cbEmailOverlay');
@@ -441,6 +543,7 @@
   const msgEl = document.getElementById('cbEmailMessage');
   const modalArt = document.getElementById('cbModalArt');
   const modalStack = document.getElementById('cbModalStack');
+  const waitlistImg = document.getElementById('cbWaitlistArt');
   // Daily Spin elements
 
   function shouldShowEmailCapture() {
@@ -519,29 +622,37 @@
   // Show after short delay when not logged in
   setTimeout(() => { if (shouldShowEmailCapture()) showEmailCapture(); }, 1200);
 
-  // Fetch Teferi art for the modal background
-  (async function setTeferiArt(){
+  const WAITLIST_FEATURE = 'Teferi, Hero of Dominaria';
+
+  async function applyWaitlistArt() {
     try {
-      const res = await fetch('https://api.scryfall.com/cards/named?exact=' + encodeURIComponent('Teferi, Hero of Dominaria'));
+      const res = await fetch('https://api.scryfall.com/cards/named?exact=' + encodeURIComponent(WAITLIST_FEATURE));
       const data = await res.json();
       const img = (data.image_uris && data.image_uris.normal) ||
                   (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris && data.card_faces[0].image_uris.normal);
-      if (img && modalStack) {
-        modalStack.innerHTML = [
-          `<img class="cb-variant-image cb-bottom" src="${img}" alt="Teferi card (bottom)">`,
-          `<img class="cb-variant-image cb-mid" src="${img}" alt="Teferi card (middle)">`,
-          `<img class="cb-variant-image cb-top" src="${img}" alt="Teferi card (top)">`,
-        ].join('');
-      } else if (modalArt) {
-        // Fallback to background if stacking container missing
-        modalArt.style.backgroundImage = img ? `url(${img})` : 'none';
-        if (!img) modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+      if (img) {
+        if (waitlistImg) {
+          waitlistImg.src = img;
+          waitlistImg.style.display = 'block';
+          waitlistImg.alt = data.name || 'Featured card art';
+        } else if (modalStack) {
+          modalStack.innerHTML = `<img class="cb-waitlist-art" src="${img}" alt="Featured card art">`;
+        } else if (modalArt) {
+          modalArt.style.backgroundImage = `url(${img})`;
+          modalArt.style.backgroundSize = 'cover';
+          modalArt.style.backgroundPosition = 'center';
+        }
+        return;
       }
-    } catch (_) {
-      if (modalArt) modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
+    } catch (_) {}
+    if (waitlistImg && !waitlistImg.getAttribute('src')) {
+      waitlistImg.style.display = 'none';
+    } else if (modalArt) {
+      modalArt.style.background = 'linear-gradient(135deg,#1d3557,#457b9d)';
     }
-  })();
+  }
 
+  applyWaitlistArt();
   // --- High-res image overlay helpers ---
   const hiresOverlay = document.getElementById('hiresOverlay');
   const hiresImage = document.getElementById('hiresImage');
