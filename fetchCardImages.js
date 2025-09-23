@@ -1,15 +1,93 @@
-const cardNames = [
-  "Teferi, Hero of Dominaria",
-  "Liliana of the Veil",
-  "Sheoldred, the Apocalypse",
-  "Cut Down",
-  "Go for the Throat",
-  "Cavern of Souls",
-  "Arcane Signet",
-  "Boseiju, Who Endures",
-  "Command Tower",
-  "Ossification"
-];
+const CARD_GROUPS = {
+  trending: [
+    "Gaea's Cradle",
+    "Grim Monolith",
+    "Underground Sea",
+    "Sheoldred, the Apocalypse",
+    "Teferi, Hero of Dominaria",
+    "Liliana of the Veil",
+    "Ragavan, Nimble Pilferer",
+    "Fable of the Mirror-Breaker",
+    "The One Ring",
+    "Boseiju, Who Endures",
+    "Ledger Shredder",
+    "Solitude",
+    "Fury",
+    "Murktide Regent",
+    "Cavern of Souls",
+    "Urza's Saga",
+    "Force of Will",
+    "Mox Opal",
+    "Delighted Halfling",
+    "Wrenn and Six"
+  ],
+  standardModern: [
+    "Sheoldred, the Apocalypse",
+    "Cut Down",
+    "Go for the Throat",
+    "Ossification",
+    "The Wandering Emperor",
+    "Farewell",
+    "Wedding Announcement",
+    "Sunfall",
+    "Leyline Binding",
+    "Ragavan, Nimble Pilferer",
+    "The One Ring",
+    "Delighted Halfling",
+    "Up the Beanstalk",
+    "Force of Negation",
+    "Engineered Explosives",
+    "Yawgmoth, Thran Physician",
+    "Primeval Titan",
+    "Murktide Regent",
+    "Karn, the Great Creator",
+    "March of Otherworldly Light"
+  ],
+  vintage: [
+    "Black Lotus",
+    "Ancestral Recall",
+    "Time Walk",
+    "Mox Sapphire",
+    "Mox Jet",
+    "Mox Ruby",
+    "Mox Pearl",
+    "Mox Emerald",
+    "Timetwister",
+    "Tolarian Academy",
+    "Bazaar of Baghdad",
+    "Yawgmoth's Will",
+    "Mana Drain",
+    "Volcanic Island",
+    "Underground Sea",
+    "Strip Mine",
+    "Demonic Tutor",
+    "Tinker",
+    "Force of Will",
+    "Balance"
+  ]
+};
+
+const CARD_CACHE = new Map();
+const ALL_CARD_NAMES = Array.from(new Set(Object.values(CARD_GROUPS).flat()));
+const TOTAL_CARD_TARGET = 40;
+
+function buildCardList(list) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return ALL_CARD_NAMES.slice(0, TOTAL_CARD_TARGET);
+  }
+  const expanded = [];
+  let index = 0;
+  while (expanded.length < TOTAL_CARD_TARGET) {
+    expanded.push(list[index % list.length]);
+    index += 1;
+  }
+  return expanded.slice(0, TOTAL_CARD_TARGET);
+}
+
+let activeGroup = 'trending';
+let cardNames = buildCardList(CARD_GROUPS[activeGroup]);
+let activeQuery = '';
+let currentRun = 0;
 
 // Pricing multipliers per condition; base price comes from Scryfall (USD)
 const CONDITION_MULTIPLIERS = {
@@ -19,7 +97,7 @@ const CONDITION_MULTIPLIERS = {
 };
 
 // Simple demo inventory counts for visible conditions (starting values)
-const inventory = {
+const DEFAULT_INVENTORY = {
   NM: 4,
   EX: 6,
   VG: 3,
@@ -103,13 +181,26 @@ function priceColorDelta(name, condition, value) {
 
 async function fetchCardImages() {
   const grid = document.getElementById("cardGrid");
+  if (!grid) return;
+  const runId = ++currentRun;
+  grid.innerHTML = '';
   const isCoarse = (typeof window !== 'undefined') && (
     ('matchMedia' in window && window.matchMedia('(pointer: coarse)').matches) ||
     ('ontouchstart' in window)
   );
   for (let name of cardNames) {
-    const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
-    const data = await res.json();
+    let data = CARD_CACHE.get(name);
+    if (!data) {
+      try {
+        const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
+        data = await res.json();
+        CARD_CACHE.set(name, data);
+      } catch (err) {
+        console.error('Failed to load card', name, err);
+        continue;
+      }
+    }
+    if (runId !== currentRun) return;
     const image = data.image_uris && data.image_uris.normal ? data.image_uris.normal : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? data.card_faces[0].image_uris.normal : '');
     const hires = data.image_uris && (data.image_uris.png || data.image_uris.large) ? (data.image_uris.png || data.image_uris.large) : (data.card_faces && data.card_faces[0] && data.card_faces[0].image_uris ? (data.card_faces[0].image_uris.png || data.card_faces[0].image_uris.large) : '');
 
@@ -154,13 +245,13 @@ async function fetchCardImages() {
         <button class="add-cart-btn">Add to Cart</button>
         <button class="hires-btn" ${hires ? '' : 'disabled'}>View Scan</button>
         <button data-condition="NM" data-price="${priceStrings.NM}">
-          NM (${inventory.NM}) — <span class="price-span" style="${colors.NM ? `color:${colors.NM}` : ''}">${priceStrings.NM}</span>
+          NM (${DEFAULT_INVENTORY.NM}) — <span class="price-span" style="${colors.NM ? `color:${colors.NM}` : ''}">${priceStrings.NM}</span>
         </button>
         <button data-condition="EX" data-price="${priceStrings.EX}">
-          EX (${inventory.EX}) — <span class="price-span" style="${colors.EX ? `color:${colors.EX}` : ''}">${priceStrings.EX}</span>
+          EX (${DEFAULT_INVENTORY.EX}) — <span class="price-span" style="${colors.EX ? `color:${colors.EX}` : ''}">${priceStrings.EX}</span>
         </button>
         <button data-condition="VG" data-price="${priceStrings.VG}">
-          VG (${inventory.VG}) — <span class="price-span" style="${colors.VG ? `color:${colors.VG}` : ''}">${priceStrings.VG}</span>
+          VG (${DEFAULT_INVENTORY.VG}) — <span class="price-span" style="${colors.VG ? `color:${colors.VG}` : ''}">${priceStrings.VG}</span>
         </button>
       </div>
       <div class="card-meta">
@@ -173,7 +264,7 @@ async function fetchCardImages() {
     const initialActive = stack.querySelector('.variant-image.active');
     if (initialActive) stack.appendChild(initialActive);
     // Attach per-card inventory snapshot
-    cardDiv._inv = { NM: inventory.NM, EX: inventory.EX, VG: inventory.VG };
+    cardDiv._inv = { NM: DEFAULT_INVENTORY.NM, EX: DEFAULT_INVENTORY.EX, VG: DEFAULT_INVENTORY.VG };
     // Seeded testimonial data per card
     function seededRandom(seed) {
       let x = Math.sin(seed) * 10000; return x - Math.floor(x);
@@ -340,9 +431,11 @@ async function fetchCardImages() {
       }
     });
 
+    if (runId !== currentRun) return;
     grid.appendChild(cardDiv);
-
-    // related-cards insertion removed
+  }
+  if (runId === currentRun && typeof window !== 'undefined' && typeof window.CB_onCardsRendered === 'function') {
+    window.CB_onCardsRendered();
   }
 }
 
@@ -424,13 +517,45 @@ async function changeVariant(button, condition, price) {
     }
   }
 
+function setDisplayList(list) {
+  cardNames = buildCardList(list);
+  if (typeof window !== 'undefined') {
+    window.cardNames = cardNames;
+  }
+}
+
+function CB_setGroup(group) {
+  activeGroup = group in CARD_GROUPS ? group : 'trending';
+  activeQuery = '';
+  setDisplayList(CARD_GROUPS[activeGroup]);
+  fetchCardImages();
+}
+
+function CB_searchCards(query) {
+  activeQuery = (query || '').trim().toLowerCase();
+  if (!activeQuery) {
+    setDisplayList(CARD_GROUPS[activeGroup]);
+    fetchCardImages();
+    return;
+  }
+  const matches = ALL_CARD_NAMES.filter(name => name.toLowerCase().includes(activeQuery));
+  setDisplayList(matches.length ? matches : ALL_CARD_NAMES);
+  fetchCardImages();
+}
+
 // UMD-style export so function is available in browser and Node tests
 if (typeof module !== 'undefined') {
-  module.exports = { fetchCardImages, cardNames, changeVariant, cycleVariant, animateToCondition };
+  module.exports = { fetchCardImages, cardNames, changeVariant, cycleVariant, animateToCondition, CB_setGroup, CB_searchCards };
 } else {
   window.fetchCardImages = fetchCardImages;
   window.cardNames = cardNames;
   window.changeVariant = changeVariant;
   window.cycleVariant = cycleVariant;
   window.animateToCondition = animateToCondition;
+  window.CB_setGroup = CB_setGroup;
+  window.CB_searchCards = CB_searchCards;
 }
+
+
+
+
