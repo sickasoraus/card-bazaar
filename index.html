@@ -55,8 +55,9 @@
       gap: 8px;
       background: #ffffff;
       border: 2px solid #d92626;
-      border-radius: 999px;
-      padding: 6px 12px 6px 16px;
+      border-radius: 16px;
+      padding: 0 22px;
+      min-height: 48px;
       box-shadow: 0 6px 14px rgba(0,0,0,0.1);
     }
     .searchbar input {
@@ -81,7 +82,7 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 16px;
+      gap: 10px;
       flex: 1;
       flex-wrap: nowrap;
     }
@@ -89,19 +90,19 @@
       flex-shrink: 0;
     }
     .header-controls .search-wrap {
-      flex: 1 1 clamp(260px, 32vw, 360px);
+      flex: 0 0 clamp(260px, 32vw, 360px);
       width: clamp(260px, 32vw, 360px);
       min-width: 0;
-      margin-right: auto;
     }
+    #headerCartBtn span + span { margin-left: 12px; }
     #headerCartBtn {
-      min-height: 44px;
-      height: 44px;
+      min-height: 48px;
+      height: auto;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 0 20px;
+      gap: 10px;
+      padding: 0 22px;
       border-radius: 16px;
       border: 2px solid #d92626;
       font-weight: 800;
@@ -122,7 +123,8 @@
       width: 100%;
       max-width: 220px;
       position: sticky;
-      top: 32px;
+      top: 16px;
+      margin-top: 100px;
     }
     .action-stack .menu-stack {
       display: flex;
@@ -133,19 +135,16 @@
     }
     .menu-stack .btn-cta,
     .menu-stack .btn-ghost,
-    .action-stack .btn-cta {
+    .action-stack .btn-cta,
+    .action-stack .btn-ghost {
       width: 100%;
       display: inline-flex;
       justify-content: center;
       align-items: center;
-      white-space: nowrap;
-      min-height: 44px;
-    }
-    .action-stack .btn-cta,
-    .action-stack .btn-ghost {
-      font-size: 16px;
-      padding: 12px 18px;
+      min-height: 48px;
+      padding: 14px 22px;
       border-radius: 12px;
+      font-size: 18px;
       line-height: 1.2;
       text-align: center;
       white-space: normal;
@@ -590,23 +589,49 @@
         gap: 12px;
       }
       .header-controls {
-        width: 100%;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex: 1;
+      flex-wrap: nowrap;
+    }
       .header-controls .search-wrap {
-        width: 100%;
-        min-width: 0;
-        margin-right: 0;
-      }
+      flex: 0 0 clamp(260px, 32vw, 360px);
+      width: clamp(260px, 32vw, 360px);
+      min-width: 0;
+    }
       #headerCartBtn {
-        width: 100%;
-      }
+      min-height: 48px;
+      height: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 22px;
+      border-radius: 16px;
+      border: 2px solid #d92626;
+      font-weight: 800;
+      background: #ffffff;
+      color: #d92626;
+      min-width: 220px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+    }
       .action-stack {
-        position: static;
-        max-width: none;
-        width: 100%;
-      }
+      grid-area: sidebar;
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: start;
+      justify-self: end;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      max-width: 220px;
+      position: sticky;
+      top: 16px;
+      margin-top: 100px;
+    }
       .action-stack .menu-stack {
         width: 100%;
       }
@@ -618,11 +643,13 @@
         padding: 20px 10px;
       }
       .header-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-        width: 100%;
-      }
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex: 1;
+      flex-wrap: nowrap;
+    }
       .header-controls > * {
         width: 100%;
       }
@@ -675,9 +702,9 @@
           </div>
         </div>
         <button id="headerCartBtn" class="btn-ghost" aria-haspopup="true" aria-expanded="false">
-          <span>Cart</span>
+          <span>My Cart</span>
           <span id="headerCartTotal" class="small-note">$0.00</span>
-          <span id="headerStoreCredit" class="small-note" style="color:#ff8a80; margin-left:6px;">+$0.00 credit</span>
+          <span id="headerStoreCredit" class="small-note" style="color:#ff8a80;">+$0.00 credit</span>
           <span id="headerCartCount" class="badge">0</span>
         </button>
       </div>
@@ -886,3 +913,11 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
