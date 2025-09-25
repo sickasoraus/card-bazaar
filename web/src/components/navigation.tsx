@@ -34,7 +34,7 @@ export function NavigationBar() {
             Log In
           </Link>
           <Link
-            href="/#deckbuilder"
+            href="/deckbuilder"
             className="gradient-pill shadow-cta rounded-[var(--radius-pill)] px-5 py-2 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)] transition-transform hover:-translate-y-[2px]"
           >
             Launch Deckbuilder

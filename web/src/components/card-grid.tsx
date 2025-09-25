@@ -1,11 +1,13 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
+import { trackCardViewed, trackSearchPerformed } from "@/lib/telemetry";
 import type { ScryfallCard } from "@/services/scryfall";
 
 const DEFAULT_QUERY = "game:paper";
 const CARD_PLACEHOLDER_COUNT = 8;
+const DEFAULT_MANA_FILTER = { min: 0, max: 20 } as const;
 
 const FORMAT_OPTIONS = [
   { value: "any" as const, label: "Any" },
@@ -28,22 +30,162 @@ const COLOR_OPTIONS = [
 type FormatValue = (typeof FORMAT_OPTIONS)[number]["value"];
 type ManaFilter = { min: number; max: number };
 
-const DEFAULT_MANA_FILTER: ManaFilter = { min: 0, max: 7 };
+type PresetOption = {
+  label: string;
+  baseQuery: string;
+  format?: FormatValue;
+  colors?: string[];
+  mana?: ManaFilter;
+};
+
+const PRESET_OPTIONS: PresetOption[] = [
+  {
+    label: "Modern Izzet Tempo",
+    baseQuery: "type:instant OR type:sorcery",
+    format: "modern",
+    colors: ["U", "R"],
+    mana: { min: 0, max: 4 },
+  },
+  {
+    label: "Commander Ramp",
+    baseQuery: "type:creature o:\"add\"",
+    format: "commander",
+    colors: ["G"],
+    mana: { min: 0, max: 3 },
+  },
+  {
+    label: "Legacy Control",
+    baseQuery: "type:instant tag:control",
+    format: "legacy",
+    colors: ["U"],
+    mana: { min: 0, max: 6 },
+  },
+];
+
+function cloneManaFilter(filter: ManaFilter): ManaFilter {
+  return { min: filter.min, max: filter.max };
+}
+
+function buildQueryString(
+  baseQuery: string,
+  format: FormatValue,
+  colors: string[],
+  mana: ManaFilter,
+): string {
+  const clauses: string[] = [];
+  const trimmedBase = baseQuery.trim();
+
+  clauses.push(trimmedBase.length ? trimmedBase : DEFAULT_QUERY);
+
+  if (format !== "any") {
+    clauses.push(`legal:${format}`);
+  }
+
+  if (colors.length) {
+    const sorted = [...colors].sort();
+    if (sorted.length === 1 && sorted[0] === "C") {
+      clauses.push("coloridentity=c");
+    } else {
+      clauses.push(`identity>=${sorted.join("")}`);
+    }
+  }
+
+  if (mana.min > DEFAULT_MANA_FILTER.min) {
+    clauses.push(`cmc>=${mana.min}`);
+  }
+
+  if (mana.max < DEFAULT_MANA_FILTER.max) {
+    clauses.push(`cmc<=${mana.max}`);
+  }
+
+  return clauses.join(" ").replace(/\s+/g, " ").trim();
+}
+
+function buildFilterSummary(format: FormatValue, colors: string[], mana: ManaFilter) {
+  const tokens: string[] = [];
+
+  if (format !== "any") {
+    tokens.push(`Format ${format}`);
+  }
+
+  if (colors.length) {
+    tokens.push(`Colors ${[...colors].sort().join("")}`);
+  }
+
+  if (
+    mana.min > DEFAULT_MANA_FILTER.min ||
+    mana.max < DEFAULT_MANA_FILTER.max
+  ) {
+    tokens.push(`Mana ${mana.min}-${mana.max}`);
+  }
+
+  return tokens.join(" | ");
+}
 
 export function CardGridFrame() {
+  const initialQuery = buildQueryString(
+    DEFAULT_QUERY,
+    "any",
+    [],
+    cloneManaFilter(DEFAULT_MANA_FILTER),
+  );
+
   const [searchInput, setSearchInput] = useState(DEFAULT_QUERY);
+  const [submittedQuery, setSubmittedQuery] = useState(DEFAULT_QUERY);
   const [selectedFormat, setSelectedFormat] = useState<FormatValue>("any");
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [manaFilter, setManaFilter] = useState<ManaFilter>(DEFAULT_MANA_FILTER);
+  const [manaFilter, setManaFilter] = useState<ManaFilter>(() =>
+    cloneManaFilter(DEFAULT_MANA_FILTER),
+  );
 
   const { data, isLoading, error, params, updateParams } = useScryfallSearch({
-    initialQuery: DEFAULT_QUERY,
+    initialQuery,
   });
 
   const cards = useMemo<ScryfallCard[]>(() => data?.data ?? [], [data]);
   const hasMore = data?.has_more ?? false;
   const totalCards = data?.total_cards;
   const currentPage = params.page ?? 1;
+  const filterSummary = useMemo(
+    () => buildFilterSummary(selectedFormat, selectedColors, manaFilter),
+    [selectedFormat, selectedColors, manaFilter],
+  );
+
+  const runSearch = useCallback(
+    (base: string, page = 1) => {
+      const nextQuery = buildQueryString(
+        base,
+        selectedFormat,
+        selectedColors,
+        manaFilter,
+      );
+      updateParams({ query: nextQuery, page });
+    },
+    [selectedFormat, selectedColors, manaFilter, updateParams],
+  );
+
+  useEffect(() => {
+    runSearch(submittedQuery, 1);
+  }, [submittedQuery, selectedFormat, selectedColors, manaFilter, runSearch]);
+
+  const lastTrackedSignature = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data || isLoading || error) {
+      return;
+    }
+    const page = params.page ?? 1;
+    const signature = `${params.query}|${page}|${data.total_cards ?? "?"}`;
+    if (lastTrackedSignature.current === signature) {
+      return;
+    }
+    lastTrackedSignature.current = signature;
+    trackSearchPerformed({
+      query: params.query,
+      page,
+      totalResults: data.total_cards,
+      filters: filterSummary || undefined,
+    });
+  }, [data, isLoading, error, params, filterSummary]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,7 +193,7 @@ export function CardGridFrame() {
     if (!trimmed) {
       return;
     }
-    updateParams({ query: trimmed, page: 1 });
+    setSubmittedQuery(trimmed);
   };
 
   const handleNextPage = () => {
@@ -68,10 +210,10 @@ export function CardGridFrame() {
 
   const handleReset = () => {
     setSearchInput(DEFAULT_QUERY);
+    setSubmittedQuery(DEFAULT_QUERY);
     setSelectedFormat("any");
     setSelectedColors([]);
-    setManaFilter(DEFAULT_MANA_FILTER);
-    updateParams({ query: DEFAULT_QUERY, page: 1 });
+    setManaFilter(cloneManaFilter(DEFAULT_MANA_FILTER));
   };
 
   const toggleColor = (code: string) => {
@@ -84,7 +226,7 @@ export function CardGridFrame() {
   };
 
   const setManaValue = (key: keyof ManaFilter, value: number) => {
-    const clamped = Math.max(0, Math.min(15, Number.isNaN(value) ? 0 : value));
+    const clamped = Math.max(0, Math.min(20, Number.isNaN(value) ? 0 : value));
     setManaFilter((prev) => {
       const next = { ...prev, [key]: clamped } as ManaFilter;
       if (next.min > next.max) {
@@ -98,7 +240,13 @@ export function CardGridFrame() {
     });
   };
 
-  const activeFilterSummary = buildFilterSummary(selectedFormat, selectedColors, manaFilter);
+  const applyPreset = (preset: PresetOption) => {
+    setSearchInput(preset.baseQuery);
+    setSubmittedQuery(preset.baseQuery);
+    setSelectedFormat(preset.format ?? "any");
+    setSelectedColors(preset.colors ? [...preset.colors] : []);
+    setManaFilter(cloneManaFilter(preset.mana ?? DEFAULT_MANA_FILTER));
+  };
 
   return (
     <section id="cards" className="pb-20">
@@ -156,16 +304,29 @@ export function CardGridFrame() {
           </div>
         </form>
 
-        <aside className="surface-card shadow-card flex flex-col gap-6 rounded-[var(--radius-card)] border border-white/10 p-6">
+        <div className="text-[11px] uppercase tracking-[2px] text-subtle">
+          {filterSummary.length
+            ? ['Filters:', filterSummary].join(' ')
+            : "Filters: All formats • All colors • Mana 0-20"}
+        </div>
+
+        <div className="surface-card shadow-card flex flex-col gap-5 rounded-[var(--radius-card)] border border-white/10 p-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-xl text-[color:var(--color-text-hero)]">Filter preview</h3>
-            <span className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)]">
-              Coming soon
-            </span>
+            <h3 className="font-display text-xl text-[color:var(--color-text-hero)]">Quick presets</h3>
+            <span className="text-xs uppercase tracking-[3px] text-subtle">Tap to explore themed queries</span>
           </div>
-          <p className="text-xs text-subtle">
-            These controls capture format, color identity, and mana preferences so we can wire them into the Scryfall query builder in the next sprint.
-          </p>
+          <div className="flex flex-wrap gap-3">
+            {PRESET_OPTIONS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => applyPreset(preset)}
+                className="gradient-pill shadow-cta rounded-[var(--radius-pill)] px-4 py-2 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)] transition-transform hover:-translate-y-[1px]"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-[3px] text-subtle">Format</span>
@@ -178,7 +339,7 @@ export function CardGridFrame() {
                     className={`rounded-[var(--radius-pill)] px-3 py-2 text-xs font-semibold uppercase tracking-[2px] transition-colors ${
                       selectedFormat === option.value
                         ? "gradient-pill shadow-cta text-[color:var(--color-text-hero)]"
-                        : "border border-white/10 text-[color:var(--color-text-body)]"
+                        : "border border-white/10 text-[color:var(--color-text-body)] hover:border-white/25"
                     }`}
                   >
                     {option.label}
@@ -199,7 +360,7 @@ export function CardGridFrame() {
                       className={`h-9 w-9 rounded-full border text-xs font-semibold transition-colors ${
                         isActive
                           ? "border-white/0 gradient-pill text-[color:var(--color-text-hero)]"
-                          : "border-white/15 text-[color:var(--color-text-body)]"
+                          : "border-white/15 text-[color:var(--color-text-body)] hover:border-white/40"
                       }`}
                     >
                       {option.label}
@@ -217,7 +378,7 @@ export function CardGridFrame() {
                 <input
                   type="number"
                   min={0}
-                  max={15}
+                  max={20}
                   value={manaFilter.min}
                   onChange={(event) => setManaValue("min", Number(event.target.value))}
                   className="w-16 rounded-[var(--radius-control)] border border-white/15 bg-white/5 px-2 py-2 text-xs text-[color:var(--color-text-hero)] focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
@@ -228,7 +389,7 @@ export function CardGridFrame() {
                 <input
                   type="number"
                   min={0}
-                  max={15}
+                  max={20}
                   value={manaFilter.max}
                   onChange={(event) => setManaValue("max", Number(event.target.value))}
                   className="w-16 rounded-[var(--radius-control)] border border-white/15 bg-white/5 px-2 py-2 text-xs text-[color:var(--color-text-hero)] focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
@@ -237,9 +398,9 @@ export function CardGridFrame() {
             </div>
           </div>
           <div className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 px-4 py-3 text-xs text-subtle">
-            <strong className="text-[color:var(--color-text-hero)]">Active filters:</strong> {activeFilterSummary || "None yet – defaults to the raw Scryfall query."}
+            <strong className="text-[color:var(--color-text-hero)]">Active filters:</strong> {filterSummary || "None yet - defaults to the raw Scryfall query."}
           </div>
-        </aside>
+        </div>
 
         {error ? (
           <div className="surface-card shadow-card rounded-[var(--radius-card)] border border-rose-500/40 bg-rose-900/20 p-6 text-sm text-[color:var(--color-text-hero)]">
@@ -268,7 +429,9 @@ export function CardGridFrame() {
                   <div className="mt-auto h-3 w-full rounded bg-white/5" />
                 </article>
               ))
-            : cards.map((card) => <CardTile key={card.id} card={card} />)}
+            : cards.map((card) => (
+                <CardTile key={card.id} card={card} queryContext={params.query} />
+              ))}
         </div>
 
         <footer className="flex flex-col items-center justify-between gap-4 rounded-[var(--radius-card)] border border-white/10 bg-white/5 px-4 py-4 text-xs text-subtle sm:flex-row">
@@ -309,9 +472,10 @@ export function CardGridFrame() {
 
 type CardTileProps = {
   card: ScryfallCard;
+  queryContext: string;
 };
 
-function CardTile({ card }: CardTileProps) {
+function CardTile({ card, queryContext }: CardTileProps) {
   const artCrop =
     card.image_uris?.art_crop || card.image_uris?.border_crop || card.image_uris?.normal;
 
@@ -319,8 +483,25 @@ function CardTile({ card }: CardTileProps) {
     ? summarizeOracleText(card.oracle_text)
     : null;
 
+  const handleView = () => {
+    trackCardViewed({ cardId: card.id, context: queryContext });
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleView();
+    }
+  };
+
   return (
-    <article className="surface-card shadow-card group flex flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 p-5 transition-transform duration-200 hover:-translate-y-1">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={handleView}
+      onKeyDown={handleKeyDown}
+      className="surface-card shadow-card group flex flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 p-5 transition-transform duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-highlight)]"
+    >
       <div className="relative h-[220px] overflow-hidden rounded-[12px] bg-[linear-gradient(160deg,var(--color-neutral-300)_0%,var(--color-neutral-100)_100%)]">
         {artCrop ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -362,20 +543,3 @@ function summarizeOracleText(text: string) {
   const preview = lines.slice(0, 3).join(" ");
   return lines.length > 3 ? `${preview} ...` : preview;
 }
-
-function buildFilterSummary(format: FormatValue, colors: string[], mana: ManaFilter) {
-  const summary: string[] = [];
-
-  if (format !== "any") {
-    summary.push(`Format ${format}`);
-  }
-  if (colors.length) {
-    summary.push(`Colors ${colors.sort().join("")}`);
-  }
-  if (mana.min !== DEFAULT_MANA_FILTER.min || mana.max !== DEFAULT_MANA_FILTER.max) {
-    summary.push(`Mana ${mana.min}-${mana.max}`);
-  }
-
-  return summary.join(" | ");
-}
-

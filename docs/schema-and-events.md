@@ -30,3 +30,19 @@
 - All tables expect row-level security with context-aware policies before exposing to clients.
 - Prisma schema should mirror these definitions with enums for constrained fields.
 - Phase 1 only uses `cards`, `printings`, `prices`, `card_tags`, `decks`, `deck_cards`, `event_log`; later tables are ready for incremental rollout.
+- Deck draft persistence approach is detailed in `docs/deck-draft-persistence.md`.
+
+## API Stubs (Phase 1)
+
+- `GET /api/decks`: Optional query params `userId`, `visibility`, `format`, `limit` (defaults to 12, max 50). Returns deck metadata plus card counts to unblock builder list views.
+- `POST /api/decks`: Accepts `name`, `format`, optional `description`, `visibility`, `powerTier`, `userId`. Persists a deck shell and returns the created record; cards will be handled in a follow-up endpoint.
+
+\n
+
+## Telemetry Helpers (Phase 1)
+
+- `trackDeckCreated({ deckId, format, visibility, seed, source })` – call when a new deck shell is created (client or server) so lifecycle analytics stay accurate.
+- `trackImportAttempted({ importId, source, status, errorCode })` – emit before/after CSV or Arena imports to monitor success vs. failure.
+- `trackExportCompleted({ deckId, exportFormat, cardsMissing, destination })` – record when a cart/export hand-off finishes for downstream commerce analytics.
+- Existing helpers (`trackSearchPerformed`, `trackCardViewed`, `trackDeckCardAdded`) stay unchanged.
+
