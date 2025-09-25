@@ -1,13 +1,35 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
 
 import { useDraftDeck } from "@/hooks/use-draft-deck";
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
 import type { ScryfallCard } from "@/services/scryfall";
+import { initiateCardBazaarBridge } from "@/services/card-bazaar-bridge";
 
 const DEFAULT_QUERY = "game:paper";
+
+const IMPORT_SOURCE_OPTIONS = [
+  { value: "manual_list" as const, label: "Manual paste" },
+  { value: "mtg_arena_txt" as const, label: "MTG Arena .txt" },
+  { value: "csv_upload" as const, label: "CSV upload" },
+];
+
+type ImportSourceValue = (typeof IMPORT_SOURCE_OPTIONS)[number]["value"];
+
+const EXPORT_OPTIONS = [
+  { value: "json" as const, label: "JSON" },
+  { value: "mtga" as const, label: "MTG Arena" },
+  { value: "csv" as const, label: "CSV" },
+];
 
 type DeckVisibility = "private" | "unlisted" | "public";
 
@@ -23,22 +45,59 @@ export default function DeckBuilderPage() {
     removeCard,
     updateDeckMeta,
     resetDeck,
-    importFromList,
-    exportToJson,
     loadDraft,
     deleteDraft,
+    importFromList,
+    exportDeck,
+    buildCardBazaarPayload,
     syncToSupabase,
     isSupabaseConfigured,
     isSyncing,
     syncError,
   } = useDraftDeck();
 
+  const [isImportPanelOpen, setImportPanelOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importSource, setImportSource] = useState<ImportSourceValue>("manual_list");
+  const [importFeedback, setImportFeedback] = useState<Awaited<ReturnType<typeof importFromList>> | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [isBridgingDeck, setIsBridgingDeck] = useState(false);
+  const [bridgeMessage, setBridgeMessage] = useState<string | null>(null);
+  const [bridgeSummary, setBridgeSummary] = useState<string | null>(null);
+  const [bridgeMissing, setBridgeMissing] = useState<string[]>([]);
+  const [bridgeError, setBridgeError] = useState<string | null>(null);
+
   const { data, isLoading, error, updateParams } = useScryfallSearch({ initialQuery: DEFAULT_QUERY });
 
   const cards = useMemo<ScryfallCard[]>(() => data?.data ?? [], [data]);
 
+  const zoneBreakdown = useMemo(() => {
+    const totals = {
+      mainboard: 0,
+      sideboard: 0,
+      commander: 0,
+      maybeboard: 0,
+      unresolved: 0,
+    };
+
+    deck.cards.forEach((card) => {
+      const zone = card.zone ?? "mainboard";
+      if (zone in totals) {
+        totals[zone as keyof typeof totals] += card.quantity;
+      }
+      if (card.resolved === false) {
+        totals.unresolved += card.quantity;
+      }
+    });
+
+    return totals;
+  }, [deck.cards]);
+
   const handleSearchSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
+    (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const trimmed = searchInput.trim();
       if (!trimmed) {
@@ -62,35 +121,127 @@ export default function DeckBuilderPage() {
     [addCard],
   );
 
-  const handleImportList = useCallback(() => {
-    const text = window.prompt("Paste a deck list (one card per line, optional leading quantity):", "");
-    if (text === null) {
-      return;
-    }
-    const result = importFromList(text);
-    if (!result.ok) {
-      window.alert(result.error);
-    } else {
-      window.alert(`Imported ${result.added} entries into your draft.`);
-    }
-  }, [importFromList]);
+  const handleImportPanelToggle = useCallback(() => {
+    setImportPanelOpen((open) => !open);
+    setImportError(null);
+    setImportFeedback(null);
+  }, []);
 
-  const handleExport = useCallback(() => {
-    const payload = exportToJson();
-    if (!payload) {
-      window.alert("Nothing to export yet.");
+  const handleImportSubmit = useCallback(async () => {
+    if (!importText.trim()) {
+      setImportError("Add a deck list to import.");
       return;
     }
-    const blob = new Blob([payload], { type: "application/json" });
-    const href = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = href;
-    anchor.download = `${deck.name.replace(/[^a-z0-9-_]+/gi, "-") || "metablazt-deck"}.json`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(href);
-  }, [deck.name, exportToJson]);
+
+    setIsImporting(true);
+    setImportError(null);
+
+    try {
+      const result = await importFromList(importText, importSource);
+      setImportFeedback(result);
+      if (!result.ok) {
+        setImportError(result.error);
+      } else if (!result.missing.length) {
+        setImportPanelOpen(false);
+        setImportText("");
+      }
+    } catch (error) {
+      console.error("Import failed", error);
+      setImportError("Failed to import deck list.");
+    } finally {
+      setIsImporting(false);
+    }
+  }, [importFromList, importSource, importText]);
+
+  const handleImportFile = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) {
+        return;
+      }
+
+      setIsImporting(true);
+      setImportError(null);
+      setImportPanelOpen(true);
+
+      try {
+        const text = await file.text();
+        setImportText(text);
+        const detectedSource: ImportSourceValue = file.name.toLowerCase().endsWith(".csv")
+          ? "csv_upload"
+          : "mtg_arena_txt";
+        setImportSource(detectedSource);
+        const result = await importFromList(text, detectedSource);
+        setImportFeedback(result);
+        if (!result.ok) {
+          setImportError(result.error);
+        }
+      } catch (error) {
+        console.error("Import file read failed", error);
+        setImportError("Failed to read deck file.");
+      } finally {
+        setIsImporting(false);
+        event.target.value = "";
+      }
+    },
+    [importFromList],
+  );
+
+  const handleExport = useCallback(
+    (format: "json" | "mtga" | "csv") => {
+      const payload = exportDeck(format);
+      if (!payload) {
+        window.alert("Nothing to export yet.");
+        return;
+      }
+
+      const extension = format === "json" ? "json" : format === "csv" ? "csv" : "txt";
+      const mimeType = format === "json" ? "application/json" : format === "csv" ? "text/csv" : "text/plain";
+      const filename = `${deck.name.replace(/[^a-z0-9-_]+/gi, "-") || "metablazt-deck"}.${extension}`;
+
+      const blob = new Blob([payload], { type: mimeType });
+      const href = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(href);
+    },
+    [deck.name, exportDeck],
+  );
+
+  const handleBridgeDeck = useCallback(async () => {
+    if (!deck.cards.length) {
+      setBridgeError("Add cards before bridging to Card Bazaar.");
+      return;
+    }
+
+    const payload = buildCardBazaarPayload();
+    if (!payload) {
+      setBridgeError("Deck not ready for Card Bazaar bridge.");
+      return;
+    }
+
+    setIsBridgingDeck(true);
+    setBridgeError(null);
+    setBridgeMessage(null);
+    setBridgeSummary(null);
+    setBridgeMissing([]);
+
+    try {
+      const response = await initiateCardBazaarBridge(payload);
+      setBridgeMessage(response.message ?? "Bridge request accepted.");
+      setBridgeSummary(response.summary ?? null);
+      setBridgeMissing(response.missing ?? []);
+    } catch (error) {
+      console.error("Bridge request failed", error);
+      setBridgeError(error instanceof Error ? error.message : "Failed to bridge deck.");
+    } finally {
+      setIsBridgingDeck(false);
+    }
+  }, [buildCardBazaarPayload, deck.cards.length]);
 
   const handleSupabaseSync = useCallback(async () => {
     const result = await syncToSupabase();
@@ -211,6 +362,98 @@ export default function DeckBuilderPage() {
                   </select>
                 </label>
               </div>
+              {isImportPanelOpen ? (
+                <div className="surface-card shadow-card flex flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-display text-lg text-[color:var(--color-text-hero)]">Import deck list</h3>
+                      <p className="text-xs text-subtle">
+                        Paste any quantity + card name list, MTG Arena .txt export, or CSV (quantity,name). We’ll fetch
+                        Scryfall data and flag anything that needs manual mapping.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleImportPanelToggle}
+                      className="rounded-full border border-white/15 px-3 py-1 text-[11px] uppercase tracking-[2px] text-[color:var(--color-text-body)] hover:border-white/35"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <textarea
+                    className="h-32 w-full rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-3 py-2 text-sm text-[color:var(--color-text-hero)] placeholder:text-subtle focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
+                    placeholder="4 Lightning Bolt\n2 SB: Mystical Dispute\nor paste your MTG Arena .txt export"
+                    value={importText}
+                    onChange={(event) => {
+                      setImportText(event.target.value);
+                      setImportFeedback(null);
+                      setImportError(null);
+                    }}
+                  />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="text-[11px] uppercase tracking-[2px] text-subtle">
+                      Source
+                      <select
+                        value={importSource}
+                        onChange={(event) => setImportSource(event.target.value as ImportSourceValue)}
+                        className="mt-1 w-full rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-3 py-2 text-sm text-[color:var(--color-text-hero)] focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
+                      >
+                        {IMPORT_SOURCE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <input
+                        id="deck-import-file"
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".txt,.csv"
+                        className="hidden"
+                        onChange={handleImportFile}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleImportSubmit}
+                        disabled={isImporting}
+                        className="gradient-pill shadow-cta rounded-[var(--radius-pill)] px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isImporting ? "Importing..." : "Run import"}
+                      </button>
+                      <label
+                        htmlFor="deck-import-file"
+                        className="cursor-pointer rounded-[var(--radius-pill)] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] hover:border-white/40"
+                      >
+                        Upload file
+                      </label>
+                    </div>
+                  </div>
+                  {importError ? (
+                    <p className="rounded-[var(--radius-control)] border border-rose-500/40 bg-rose-500/15 px-3 py-2 text-[11px] text-[color:var(--color-text-hero)]">
+                      {importError}
+                    </p>
+                  ) : null}
+                  {importFeedback && importFeedback.ok ? (
+                    <div className="rounded-[var(--radius-control)] border border-emerald-400/40 bg-emerald-500/15 px-3 py-2 text-[11px] text-[color:var(--color-text-hero)]">
+                      <p>
+                        Added {importFeedback.added} cards ({importFeedback.matched} matched).
+                        {importFeedback.missing.length
+                          ? ` ${importFeedback.missing.length} still need manual mapping.`
+                          : " All cards resolved."}
+                      </p>
+                      {importFeedback.missing.length ? (
+                        <ul className="mt-1 list-disc pl-4 text-subtle">
+                          {importFeedback.missing.map((name) => (
+                            <li key={name}>{name}</li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
             <aside className="surface-card shadow-card flex flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 p-6 text-xs text-subtle">
               <span className="font-display text-lg text-[color:var(--color-text-hero)]">Draft summary</span>
@@ -221,6 +464,22 @@ export default function DeckBuilderPage() {
               <div className="flex items-center justify-between">
                 <span>Distinct cards</span>
                 <span className="text-[color:var(--color-text-hero)] font-semibold">{deck.cards.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Mainboard</span>
+                <span className="text-[color:var(--color-text-hero)] font-semibold">{zoneBreakdown.mainboard}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Sideboard</span>
+                <span className="text-[color:var(--color-text-hero)] font-semibold">{zoneBreakdown.sideboard}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Commander</span>
+                <span className="text-[color:var(--color-text-hero)] font-semibold">{zoneBreakdown.commander}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Unresolved</span>
+                <span className="text-[color:var(--color-text-hero)] font-semibold">{zoneBreakdown.unresolved}</span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {isSupabaseConfigured ? (
@@ -235,17 +494,28 @@ export default function DeckBuilderPage() {
                 ) : null}
                 <button
                   type="button"
-                  onClick={handleImportList}
+                  onClick={handleImportPanelToggle}
                   className="rounded-[var(--radius-pill)] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] hover:border-white/40"
                 >
-                  Import list
+                  Import deck
                 </button>
+                {EXPORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleExport(option.value)}
+                    className="rounded-[var(--radius-pill)] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] hover:border-white/40"
+                  >
+                    Export {option.label}
+                  </button>
+                ))}
                 <button
                   type="button"
-                  onClick={handleExport}
-                  className="rounded-[var(--radius-pill)] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] hover:border-white/40"
+                  onClick={handleBridgeDeck}
+                  disabled={isBridgingDeck}
+                  className="rounded-[var(--radius-pill)] border border-dashed border-white/25 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] transition-opacity hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Export JSON
+                  {isBridgingDeck ? "Bridging..." : "Bridge to Card Bazaar"}
                 </button>
                 <button
                   type="button"
@@ -273,6 +543,27 @@ export default function DeckBuilderPage() {
                   Drafts save locally today. Configure Supabase to enable cloud persistence.
                 </p>
               )}
+              {bridgeMessage ? (
+                <p className="rounded-[var(--radius-control)] border border-emerald-400/40 bg-emerald-500/15 px-3 py-2 text-[11px] text-[color:var(--color-text-hero)]">
+                  {bridgeMessage}
+                  {bridgeSummary ? <span className="block text-subtle">{bridgeSummary}</span> : null}
+                </p>
+              ) : null}
+              {bridgeError ? (
+                <p className="rounded-[var(--radius-control)] border border-rose-500/40 bg-rose-500/15 px-3 py-2 text-[11px] text-[color:var(--color-text-hero)]">
+                  {bridgeError}
+                </p>
+              ) : null}
+              {bridgeMissing.length ? (
+                <div className="rounded-[var(--radius-control)] border border-amber-400/40 bg-amber-500/15 px-3 py-2 text-[11px] text-[color:var(--color-text-hero)]">
+                  <p className="font-semibold">Needs manual mapping</p>
+                  <ul className="mt-1 list-disc pl-4">
+                    {bridgeMissing.map((name) => (
+                      <li key={name}>{name}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <div className="mt-4 space-y-2">
                 <h3 className="text-[11px] uppercase tracking-[2px] text-subtle">Recent drafts</h3>
                 {formattedDrafts.length ? (
@@ -335,6 +626,8 @@ export default function DeckBuilderPage() {
                   <th className="px-4 py-3 text-left">Quantity</th>
                   <th className="px-4 py-3 text-left">Card</th>
                   <th className="px-4 py-3 text-left">Type</th>
+                  <th className="px-4 py-3 text-left">Zone</th>
+                  <th className="px-4 py-3 text-left">Status</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -351,6 +644,18 @@ export default function DeckBuilderPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">{card.typeLine ?? "—"}</td>
+                    <td className="px-4 py-3 capitalize">{card.zone ?? "mainboard"}</td>
+                    <td className="px-4 py-3">
+                      {card.resolved === false ? (
+                        <span className="rounded-full border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[2px] text-amber-200">
+                          Needs mapping
+                        </span>
+                      ) : (
+                        <span className="rounded-full border border-emerald-400/40 bg-emerald-500/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[2px] text-emerald-200">
+                          Resolved
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2 text-xs">
                         <button

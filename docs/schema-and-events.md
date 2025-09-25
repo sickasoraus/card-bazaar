@@ -1,4 +1,4 @@
-# Supabase Schema & Event Taxonomy (Phase 0–1)
+# Supabase Schema & Event Taxonomy (Phase 0â€“2)
 
 ## Core Tables
 
@@ -13,36 +13,36 @@
 - `imports`: `id UUID PK`, `user_id UUID references users`, `source text check (source in ('csv','mtg_arena_txt','text_list'))`, `raw_payload text`, `normalized jsonb`, `status text check (status in ('pending','processed','failed'))`, `processed_at timestamptz`, `created_at timestamptz default now()`
 - `event_log`: `id UUID PK`, `user_id UUID references users`, `session_id uuid`, `event_type text`, `subject_type text`, `subject_id uuid`, `context jsonb`, `value_numeric numeric`, `value_text text`, `occurred_at timestamptz default now()`
 - `trending_snapshots`: `id UUID PK`, `scope text check (scope in ('card','deck'))`, `subject_id uuid`, `period text check (period in ('daily','weekly'))`, `trend_score numeric`, `components jsonb`, `calculated_at timestamptz default now()`
-- `recommendations`: `id UUID PK`, `user_id UUID references users`, `recommendation_type text check (recommendation_type in ('related_card','upgrade_suggestion','trending_pick'))`, `payload jsonb`, `generated_at timestamptz default now()`, `expires_at timestamptz
+- `recommendations`: `id UUID PK`, `user_id UUID references users`, `recommendation_type text check (recommendation_type in ('related_card','upgrade_suggestion','trending_pick'))`, `payload jsonb`, `generated_at timestamptz default now()`, `expires_at timestamptz`
 
-## Event Taxonomy (Phase 1 focus)
+## Event Taxonomy (Phase 1+ focus)
 
 - `search_performed`: context captures `query`, `filters`, `results_count`.
 - `card_viewed`: subject is card/printing; context includes `page`, `position`, `source` (e.g., trending, search).
-- `deck_card_added`: subject is deck; context includes `card_id`, `zone`, `method` (manual, suggestion, import).
+- `deck_card_added`: subject deck; context includes `card_id`, `zone`, `method` (manual, suggestion, import, import_unresolved) so unresolved imports are traceable.
 - `deck_created`: subject deck; context includes `format`, `seed` (blank, template, import).
-- `import_attempted`: subject import; context includes `source`, `status`, `error_code` when failed.
-- `export_completed`: subject deck; context includes `export_format`, `cards_missing` count.
+- `import_attempted`: subject import; context includes `source`, `status`, `error_code`, plus `card_count`, `matched_count`, `missing_count`, `merged_count` for import quality metrics.
+- `export_completed`: subject deck; context includes `export_format`, `cards_missing`, `destination` (local download, card bazaar bridge, etc.).
 - `simulator_started`: future-proof flag for Phase 3+, but log structure ready with `starting_hand` sample toggle.
 
 ## Notes
 
 - All tables expect row-level security with context-aware policies before exposing to clients.
 - Prisma schema should mirror these definitions with enums for constrained fields.
-- Phase 1 only uses `cards`, `printings`, `prices`, `card_tags`, `decks`, `deck_cards`, `event_log`; later tables are ready for incremental rollout.
+- Phase 1/2 use `cards`, `printings`, `prices`, `card_tags`, `decks`, `deck_cards`, `event_log`; later tables are ready for incremental rollout.
 - Deck draft persistence approach is detailed in `docs/deck-draft-persistence.md`.
 
-## API Stubs (Phase 1)
+## API Stubs (Phase 2)
 
-- `GET /api/decks`: Optional query params `userId`, `visibility`, `format`, `limit` (defaults to 12, max 50). Returns deck metadata plus card counts to unblock builder list views.
-- `POST /api/decks`: Accepts `name`, `format`, optional `description`, `visibility`, `powerTier`, `userId`. Persists a deck shell and returns the created record; cards will be handled in a follow-up endpoint.
+- `GET /api/decks`: Optional query params `userId`, `visibility`, `format`, `limit` (defaults to 12, max 50). Returns deck metadata plus card counts for builder list views.
+- `POST /api/decks`: Accepts `name`, `format`, optional `description`, `visibility`, `powerTier`, `userId`. Persists a deck shell and returns the created record; cards are synced separately.
+- `PUT /api/decks/cards`: Accepts deck metadata plus `{ printingId, quantity, zone }[]` to upsert deck cards during Supabase sync.
+- `POST /api/cart-bridge`: Accepts either `{ type: "card", cardId, name, setCode?, setName?, price? }` or deck manifests `{ type: "deck", deckId, name, format, totalCards, distinctCards, items[], missing[] }` to queue Card Bazaar bridge placeholders until the live integration is enabled. Returns `bridgeId`, user message, optional `summary`, and a `missing` array for unresolved cards.
 
-\n
+## Telemetry Helpers (Phase 2)
 
-## Telemetry Helpers (Phase 1)
-
-- `trackDeckCreated({ deckId, format, visibility, seed, source })` – call when a new deck shell is created (client or server) so lifecycle analytics stay accurate.
-- `trackImportAttempted({ importId, source, status, errorCode })` – emit before/after CSV or Arena imports to monitor success vs. failure.
-- `trackExportCompleted({ deckId, exportFormat, cardsMissing, destination })` – record when a cart/export hand-off finishes for downstream commerce analytics.
-- Existing helpers (`trackSearchPerformed`, `trackCardViewed`, `trackDeckCardAdded`) stay unchanged.
-
+- `trackDeckCreated({ deckId, format, visibility, seed, source })` â€“ call when a new deck shell is created so lifecycle analytics stay accurate.
+- `trackImportAttempted({ importId, source, status, errorCode, cardCount, matchedCount, missingCount, mergedCount })` â€“ emit before/after CSV or Arena imports to monitor success vs. failure and how many cards still need manual mapping.
+- `trackExportCompleted({ deckId, exportFormat, cardsMissing, destination })` â€“ record when a cart/export hand-off finishes for downstream commerce analytics (local downloads, Card Bazaar bridge, etc.).
+- `trackDeckCardAdded({ deckId, cardId, zone, method })` â€“ method now includes `import_unresolved` when the card could not be matched to a Scryfall ID.
+- Existing helpers (`trackSearchPerformed`, `trackCardViewed`) stay unchanged.

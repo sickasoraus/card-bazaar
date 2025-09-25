@@ -62,6 +62,13 @@ Supabase mirrors the Deck/DeckCard models defined in web/prisma/schema.prisma, p
    - Compare lastUpdated timestamps. If local is newer than Supabase on load, prompt user to merge or overwrite.
 6. **Draft picker UI**
    - The deck builder sidebar lists recent drafts (local and Supabase-backed) so users can resume or remove them quickly.
+7. **Import pipeline (Phase 2)**
+   - Parser accepts quantity-name text, MTG Arena `.txt`, and CSV formats, normalising into `{ name, quantity, zone }` entries.
+   - Bulk Scryfall lookups resolve card IDs and metadata; unresolved cards stay in the draft with `resolved = false` so UI highlights manual follow-ups.
+   - Telemetry captures `card_count`, `matched_count`, `missing_count`, and `merged_count` to measure import quality.
+8. **Exports & bridges (Phase 2)**
+   - Users can export JSON, MTG Arena text, and CSV snapshots, with telemetry noting `destination` and missing counts.
+   - `buildCardBazaarPayload` assembles a manifest for `/api/cart-bridge` so Card Bazaar carts can be staged once the partnership endpoint is live.
 
 ## API Touchpoints
 
@@ -95,5 +102,4 @@ A nightly cleanup job (browser-side) removes drafts older than 7 days unless fla
 - Implement local storage utilities in the deck builder hook.
 - Ensure PUT /api/decks/cards?deckId=<uuid> stays aligned with deck_cards upsert helper.
 - Wire telemetry for draft save/restore flows once deck builder UI lands.
-
 

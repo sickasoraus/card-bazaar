@@ -577,13 +577,15 @@ function FeaturedCardShowcase({ card, queryContext }: FeaturedCardProps) {
 
     try {
       const result = await initiateCardBazaarBridge({
+        type: "card",
         cardId: card.id,
         name: card.name,
         setCode: card.set ?? null,
         setName: card.set_name ?? null,
         price,
       });
-      setBridgeMessage(result.message ?? "Card Bazaar bridge saved. Inventory sync coming soon.");
+      const summary = result.summary ? ` ${result.summary}` : "";
+      setBridgeMessage(`${result.message ?? "Card Bazaar bridge saved."}${summary}`.trim());
     } catch (error) {
       setBridgeError(error instanceof Error ? error.message : "Failed to reach bridge endpoint.");
     } finally {

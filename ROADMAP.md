@@ -51,8 +51,25 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - Supabase database provisioned with env secrets before Prisma client is enabled.
 - API rate-limiting plan for Scryfall once filters are live to avoid throttling.
 
+## Phase 2 - Deck Builder & Cart Bridge
+
+**Status:** In Progress
+
+**Scope:** robust deck import/export support, deck builder UX polish, and Card Bazaar bridge placeholders ready for integration.
+
+**Completed**
+- Multi-format deck import pipeline (text, MTG Arena `.txt`, CSV) with Scryfall resolution, unresolved tracking, and telemetry metrics.
+- Deck builder UI refresh with import workspace, zone/resolution indicators, and export options (JSON, MTG Arena text, CSV).
+- Card Bazaar bridge payload helper + `/api/cart-bridge` stub for both single-card and deck manifests.
+
+**Next Up**
+- Surface deck suggestions and card-recommendation hooks once personalization jobs land.
+- Wire authenticated Supabase deck sync + conflict resolution UI polish.
+- Add deck-to-cart manifest preview once Card Bazaar endpoint is live.
+
 ## Change Log
 
+- 2025-09-26: Deck builder import/export pipeline, zone awareness, and Card Bazaar bridge preview shipped.
 - 2025-09-25: Card explorer filters now drive Scryfall queries with summary UI and telemetry metadata.
 - 2025-09-25: Deck builder Supabase sync plus recent draft picker shipped.
 - 2025-09-24: Card explorer now consumes live Scryfall search with pagination and loading states.
@@ -65,7 +82,6 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - 2025-09-24: Next.js App Router scaffold added under `/web` with static export config.
 - 2025-09-24: Base navigation/hero/card grid frame shipped for Phase 0 UI shell.
 - 2025-09-24: GitHub Pages workflow added for automated static deployments.
-
 
 
 
