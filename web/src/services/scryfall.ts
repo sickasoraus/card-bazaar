@@ -31,6 +31,7 @@ export type ScryfallCard = {
   oracle_text?: string;
   image_uris?: Record<string, string>;
   set_name?: string;
+  set?: string;
   collector_number?: string;
   rarity?: string;
   prices?: Record<string, string | null>;

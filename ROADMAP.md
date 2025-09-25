@@ -1,6 +1,6 @@
-﻿# Metablazt Roadmap (Phase Tracker)
+# Metablazt Roadmap (Phase Tracker)
 
-_Last updated: 2025-09-24_
+_Last updated: 2025-09-25_
 
 This document tracks feature delivery for Phases 0 and 1 as we work toward the GitHub Pages milestone.
 
@@ -21,28 +21,31 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 **Next Up**
 - Roll forward into Phase 1 feature delivery.
 
-**Risks & Watchouts**
-- Static export must avoid Supabase dependencies until backend available.
-- Branding assets need placeholder logo/art until design handoff.
+**Dependencies**
+- Supabase database provisioned with env secrets before Prisma client is enabled.
+- API rate-limiting plan for Scryfall once filters are live to avoid throttling.
+
 
 ## Phase 1 - Card Explorer & Data Hooks
 
-**Status:** In progress
+**Status:** Complete
 
 **Scope:** client-side Scryfall integration, card explorer page, deck data scaffolding, migrations ready for Supabase.
 
 **Completed**
-- Client-side Scryfall data service with in-memory caching implemented (src/services/scryfall.ts) (2025-09-24)
+- Client-side Scryfall data service with in-memory caching implemented (`src/services/scryfall.ts`) (2025-09-24)
 - Card explorer wired to live Scryfall search with pagination + loading states (2025-09-24)
 - Filter controls (format, color identity, mana value) scaffolded with state ready for query wiring (2025-09-24)
-- Prisma schema and initial migration SQL drafted under web/prisma (2025-09-24)
-- Telemetry helper stubs for Phase 1 events added (src/lib/telemetry.ts) (2025-09-24)
+- Prisma schema and initial migration SQL drafted under `web/prisma` (2025-09-24)
+- Telemetry helper stubs for Phase 1 events added (`src/lib/telemetry.ts`) (2025-09-24)
+- Deck API route stubbed with Prisma-backed GET/POST endpoints for future builder integration (`src/app/api/decks/route.ts`) (2025-09-25)
+- Deck draft persistence strategy documented (`docs/deck-draft-persistence.md`) (2025-09-25)
+- Filter state wired into Scryfall query builder with preset chips and filter summary UI (2025-09-25)
+- Search telemetry now emits filter metadata alongside pagination events (2025-09-25)
+- Deck builder integrates Supabase deck sync with recent draft picker and cloud/local instrumentation (2025-09-25)
 
 **Next Up**
-1. Connect filter state to the Scryfall query builder and expose preset shortcuts.
-2. Integrate telemetry helpers into card search/results interactions.
-3. Stand up Supabase project and apply initial migration; wire Prisma client usage in Next.js API routes.
-4. Define persistence strategy for deck drafts (local storage vs Supabase) ahead of builder work.
+- Prep Phase 2 backlog: deck suggestions, personalization hooks, and Supabase ingestion polish.
 
 **Dependencies**
 - Supabase database provisioned with env secrets before Prisma client is enabled.
@@ -50,6 +53,8 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 
 ## Change Log
 
+- 2025-09-25: Card explorer filters now drive Scryfall queries with summary UI and telemetry metadata.
+- 2025-09-25: Deck builder Supabase sync plus recent draft picker shipped.
 - 2025-09-24: Card explorer now consumes live Scryfall search with pagination and loading states.
 - 2025-09-24: Filter controls (format/color identity/mana) scaffolded for future query wiring.
 - 2025-09-24: Prisma schema + initial migration and telemetry stubs added for Supabase integration.
@@ -60,3 +65,7 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - 2025-09-24: Next.js App Router scaffold added under `/web` with static export config.
 - 2025-09-24: Base navigation/hero/card grid frame shipped for Phase 0 UI shell.
 - 2025-09-24: GitHub Pages workflow added for automated static deployments.
+
+
+
+
