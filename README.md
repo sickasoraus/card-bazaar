@@ -40,4 +40,10 @@ npm run build
 
 See `docs/supabase-setup.md` for the full walkthrough.
 
-Refer to `ROADMAP.md` for current Phase 1 milestones.
+## Phase 2 Highlights
+
+- Deck builder import workspace supports quantity/name text, MTG Arena `.txt`, and CSV lists with automatic Scryfall resolution.
+- Export decks as JSON, MTG Arena text, or CSV, and stage Card Bazaar bridge payloads via `/api/cart-bridge`.
+- UI shows zone/resolution badges so unresolved imports are easy to spot before bridging.
+
+Refer to `ROADMAP.md` for the latest milestone status.

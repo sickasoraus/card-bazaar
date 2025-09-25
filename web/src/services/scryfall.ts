@@ -1,6 +1,7 @@
 ﻿const SCRYFALL_API = "https://api.scryfall.com";
 
 const MAX_PAGE = 200;
+const COLLECTION_CHUNK_SIZE = 70;
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
 const cache = new Map<string, CacheEntry<unknown>>();
 
@@ -40,6 +41,26 @@ export type ScryfallCard = {
   power?: string;
   toughness?: string;
   layout?: string;
+  printed_name?: string;
+};
+
+type ScryfallCollectionIdentifier = {
+  name?: string;
+  set?: string;
+};
+
+type ScryfallCollectionRequest = {
+  identifiers: ScryfallCollectionIdentifier[];
+};
+
+type ScryfallCollectionNotFound = {
+  name?: string;
+  set?: string;
+};
+
+type ScryfallCollectionResponse = {
+  data: ScryfallCard[];
+  not_found?: ScryfallCollectionNotFound[];
 };
 
 export type CardSearchParams = {
@@ -176,8 +197,69 @@ export function clearScryfallCache(keyStartsWith?: string) {
   }
 }
 
+async function fetchCollectionChunk(
+  identifiers: ScryfallCollectionIdentifier[],
+): Promise<ScryfallCollectionResponse> {
+  const response = await fetch(`${SCRYFALL_API}/cards/collection`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ identifiers } as ScryfallCollectionRequest),
+  });
+
+  if (!response.ok) {
+    let message = `Scryfall collection request failed with status ${response.status}`;
+    try {
+      const body = (await response.json()) as { details?: string };
+      if (typeof body?.details === "string") {
+        message = body.details;
+      }
+    } catch {
+      // ignore parsing error
+    }
+    throw new ScryfallApiError(response.status, message);
+  }
+
+  return (await response.json()) as ScryfallCollectionResponse;
+}
+
+export async function fetchCardsByNames(names: string[]): Promise<{
+  cards: ScryfallCard[];
+  missing: string[];
+}> {
+  const normalized = Array.from(
+    new Set(
+      names
+        .map((name) => (typeof name === "string" ? name.trim() : ""))
+        .filter((value) => value.length > 0)
+        .map((value) => value.toLowerCase()),
+    ),
+  );
+
+  if (!normalized.length) {
+    return { cards: [], missing: [] };
+  }
+
+  const cards: ScryfallCard[] = [];
+  const missingSet = new Set<string>();
+
+  for (let index = 0; index < normalized.length; index += COLLECTION_CHUNK_SIZE) {
+    const chunk = normalized.slice(index, index + COLLECTION_CHUNK_SIZE).map((name) => ({ name }));
+    const result = await fetchCollectionChunk(chunk);
+    cards.push(...result.data);
+    result.not_found?.forEach((entry) => {
+      if (entry?.name) {
+        missingSet.add(entry.name.toLowerCase());
+      }
+    });
+  }
+
+  return {
+    cards,
+    missing: Array.from(missingSet.values()),
+  };
+}
+
 export type { ScryfallListResponse };
-
-
-
-

@@ -8,8 +8,13 @@ import {
   trackExportCompleted,
   trackImportAttempted,
 } from "@/lib/telemetry";
+import type { DeckBridgePayload } from "@/services/card-bazaar-bridge";
+import { fetchCardsByNames } from "@/services/scryfall";
+import type { ScryfallCard } from "@/services/scryfall";
 
 type DeckVisibility = "private" | "unlisted" | "public";
+
+type DeckZone = "mainboard" | "sideboard" | "maybeboard" | "commander";
 
 type DraftCard = {
   cardId: string;
@@ -18,6 +23,8 @@ type DraftCard = {
   typeLine?: string | null;
   imageUrl?: string | null;
   quantity: number;
+  zone: DeckZone;
+  resolved?: boolean;
 };
 
 type DraftDeck = {
@@ -67,6 +74,210 @@ const nowIso = () => new Date().toISOString();
 
 const draftStorageKey = (deckId: string) => `${DRAFT_KEY_PREFIX}${deckId}`;
 
+type ParsedImportEntry = {
+  name: string;
+  quantity: number;
+  zone: DeckZone;
+};
+
+const VALID_ZONES: DeckZone[] = ["mainboard", "sideboard", "maybeboard", "commander"];
+
+function normalizeWhitespace(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function cleanupCardName(value: string): string {
+  const trimmed = normalizeWhitespace(value)
+    .replace(/\s*\([A-Za-z0-9]{2,5}\)\s*[0-9]*$/i, "")
+    .replace(/\s*\[[^\]]*\]\s*$/, "");
+  return normalizeWhitespace(trimmed.replace(/^"|"$/g, ""));
+}
+
+function normalizeCardKey(value: string): string {
+  return cleanupCardName(value)
+    .toLowerCase()
+    .replace(/[’'`]/g, "")
+    .replace(/[,.:]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseDeckList(raw: string): ParsedImportEntry[] {
+  if (!raw.trim()) {
+    return [];
+  }
+
+  const lines = raw.split(/\r?\n/);
+  let activeZone: DeckZone = "mainboard";
+  const entries: ParsedImportEntry[] = [];
+
+  for (const rawLine of lines) {
+    if (!rawLine) {
+      continue;
+    }
+
+    let line = rawLine.trim();
+    if (!line) {
+      continue;
+    }
+
+    if (/^deck\s*$/i.test(line)) {
+      activeZone = "mainboard";
+      continue;
+    }
+    if (/^sideboard\s*$/i.test(line)) {
+      activeZone = "sideboard";
+      continue;
+    }
+    if (/^maybeboard\s*$/i.test(line)) {
+      activeZone = "maybeboard";
+      continue;
+    }
+    if (/^commander\s*$/i.test(line)) {
+      activeZone = "commander";
+      continue;
+    }
+
+    let zone = activeZone;
+    if (/^SB:/i.test(line)) {
+      zone = "sideboard";
+      line = line.replace(/^SB:\s*/i, "");
+    }
+
+    const csvMatch = line.match(/^([0-9]+)\s*[,;\t]\s*(.+)$/);
+    if (csvMatch) {
+      const quantity = Number.parseInt(csvMatch[1], 10);
+      const name = cleanupCardName(csvMatch[2]);
+      entries.push({ name, quantity: Number.isFinite(quantity) ? quantity : 1, zone });
+      continue;
+    }
+
+    const quantityNameMatch = line.match(/^([0-9]+)[xX]?\s+(.+)$/);
+    if (quantityNameMatch) {
+      const quantity = Number.parseInt(quantityNameMatch[1], 10);
+      const remainder = quantityNameMatch[2];
+      const name = cleanupCardName(remainder.replace(/\s*\([A-Za-z0-9]{1,5}\)\s*[0-9]*$/i, ""));
+      entries.push({ name, quantity: Number.isFinite(quantity) ? quantity : 1, zone });
+      continue;
+    }
+
+    const simpleMatch = line.match(/^(.+?)\s+[xX]\s*([0-9]+)$/);
+    if (simpleMatch) {
+      const name = cleanupCardName(simpleMatch[1]);
+      const quantity = Number.parseInt(simpleMatch[2], 10);
+      entries.push({ name, quantity: Number.isFinite(quantity) ? quantity : 1, zone });
+      continue;
+    }
+
+    entries.push({ name: cleanupCardName(line), quantity: 1, zone });
+  }
+
+  return entries.filter((entry) => entry.name.length > 0 && entry.quantity > 0);
+}
+
+function buildCardLookup(cards: ScryfallCard[]): Map<string, ScryfallCard> {
+  const map = new Map<string, ScryfallCard>();
+
+  cards.forEach((card) => {
+    const keys = new Set<string>();
+    keys.add(normalizeCardKey(card.name));
+
+    if (card.printed_name) {
+      keys.add(normalizeCardKey(card.printed_name));
+    }
+
+    const doubleFaced = card.name.split("//").map((part) => normalizeCardKey(part));
+    doubleFaced.forEach((key) => {
+      if (key) {
+        keys.add(key);
+      }
+    });
+
+    keys.forEach((key) => {
+      if (key.length) {
+        map.set(key, card);
+      }
+    });
+  });
+
+  return map;
+}
+
+const ZONE_SORT_ORDER: Record<DeckZone, number> = {
+  mainboard: 0,
+  commander: 1,
+  sideboard: 2,
+  maybeboard: 3,
+};
+
+function sortCardsForExport(cards: DraftCard[]): DraftCard[] {
+  return [...cards].sort((a, b) => {
+    const zoneA = ZONE_SORT_ORDER[a.zone ?? "mainboard"] ?? 0;
+    const zoneB = ZONE_SORT_ORDER[b.zone ?? "mainboard"] ?? 0;
+    if (zoneA !== zoneB) {
+      return zoneA - zoneB;
+    }
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function formatDeckAsMtga(deck: DraftDeck): string {
+  const lines: string[] = [];
+  const grouped = new Map<DeckZone, DraftCard[]>();
+
+  sortCardsForExport(deck.cards).forEach((card) => {
+    const zone = card.zone ?? "mainboard";
+    if (!grouped.has(zone)) {
+      grouped.set(zone, []);
+    }
+    grouped.get(zone)!.push(card);
+  });
+
+  const appendSection = (title: string, cards: DraftCard[]) => {
+    if (!cards.length) {
+      return;
+    }
+    if (lines.length) {
+      lines.push("");
+    }
+    lines.push(title);
+    cards.forEach((card) => {
+      const suffix = card.resolved === false ? " (unresolved)" : "";
+      lines.push(`${card.quantity} ${card.name}${suffix}`);
+    });
+  };
+
+  appendSection("Deck", grouped.get("mainboard") ?? []);
+  appendSection("Commander", grouped.get("commander") ?? []);
+  appendSection("Sideboard", grouped.get("sideboard") ?? []);
+  appendSection("Maybeboard", grouped.get("maybeboard") ?? []);
+
+  return lines.join("\n");
+}
+
+function csvEscape(value: string): string {
+  if (value.includes("\n") || value.includes(",") || value.includes("\"")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function formatDeckAsCsv(deck: DraftDeck): string {
+  const header = "Quantity,Name,Zone,Resolved,Mana Cost,Type Line";
+  const rows = sortCardsForExport(deck.cards).map((card) =>
+    [
+      card.quantity.toString(),
+      csvEscape(card.name),
+      card.zone ?? "mainboard",
+      card.resolved === false ? "no" : "yes",
+      csvEscape(card.manaCost ?? ""),
+      csvEscape(card.typeLine ?? ""),
+    ].join(","),
+  );
+
+  return [header, ...rows].join("\n");
+}
+
 function createInitialDeck(): DraftDeck {
   const timestamp = nowIso();
   return {
@@ -106,6 +317,10 @@ function safeParseDraftCard(value: unknown): DraftCard | null {
       ? quantityRaw
       : 1;
 
+  const zoneRaw = typeof card.zone === "string" ? card.zone : undefined;
+  const zone = VALID_ZONES.includes(zoneRaw as DeckZone) ? (zoneRaw as DeckZone) : "mainboard";
+  const resolved = typeof card.resolved === "boolean" ? card.resolved : true;
+
   return {
     cardId: card.cardId,
     name: card.name,
@@ -113,6 +328,8 @@ function safeParseDraftCard(value: unknown): DraftCard | null {
     typeLine: normalizeOptionalString(card.typeLine),
     imageUrl: normalizeOptionalString(card.imageUrl),
     quantity,
+    zone,
+    resolved,
   };
 }
 
@@ -387,7 +604,11 @@ type AddCardInput = {
   imageUrl?: string | null;
 };
 
-type ImportResult = { ok: true; added: number } | { ok: false; error: string };
+type ImportResult =
+  | { ok: true; added: number; matched: number; merged: number; missing: string[] }
+  | { ok: false; error: string; missing?: string[] };
+
+type DeckExportFormat = "json" | "mtga" | "csv";
 
 export function useDraftDeck() {
   const initialDeckFromStorageRef = useRef<DraftDeck | null>(null);
@@ -529,7 +750,7 @@ export function useDraftDeck() {
           cards: deck.cards.map((card) => ({
             printingId: card.cardId,
             quantity: card.quantity,
-            zone: "mainboard",
+            zone: card.zone ?? "mainboard",
           })),
           metadata: {
             name: metadata.name,
@@ -604,6 +825,8 @@ export function useDraftDeck() {
           typeLine: card.typeLine ?? undefined,
           imageUrl: card.imageUrl ?? undefined,
           quantity: 1,
+          zone: "mainboard",
+          resolved: true,
         };
 
         return {
@@ -686,7 +909,7 @@ export function useDraftDeck() {
   );
 
   const importFromList = useCallback(
-    (list: string, source = "manual_list"): ImportResult => {
+    async (list: string, source = "manual_list"): Promise<ImportResult> => {
       if (!deck || !list.trim()) {
         return { ok: false, error: "Nothing to import." };
       }
@@ -695,48 +918,124 @@ export function useDraftDeck() {
       trackImportAttempted({ importId, source, status: "pending" });
 
       try {
-        const lines = list
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter(Boolean);
-
-        if (!lines.length) {
+        const entries = parseDeckList(list);
+        if (!entries.length) {
           trackImportAttempted({ importId, source, status: "failed", errorCode: "empty" });
           return { ok: false, error: "No card names detected." };
         }
 
+        const nameKeyToDisplay = new Map<string, string>();
+        entries.forEach((entry) => {
+          const key = normalizeCardKey(entry.name);
+          if (!nameKeyToDisplay.has(key)) {
+            nameKeyToDisplay.set(key, cleanupCardName(entry.name));
+          }
+        });
+
+        const uniqueNames = Array.from(new Set(nameKeyToDisplay.values()));
+        const { cards: resolvedCards, missing: missingFromApi } = await fetchCardsByNames(uniqueNames);
+        const lookup = buildCardLookup(resolvedCards);
+        const missingKeys = new Set<string>(missingFromApi.map((name) => normalizeCardKey(name)));
+        const matchedKeys = new Set<string>();
+
+        let addedQuantity = 0;
+        let mergedQuantity = 0;
+
         updateDeck((current) => {
           const nextCards = [...current.cards];
-          lines.forEach((line) => {
-            const quantityMatch = line.match(/^([0-9]+)[x\s]+(.+)/i);
-            const quantity = quantityMatch ? Number.parseInt(quantityMatch[1], 10) : 1;
-            const name = quantityMatch ? quantityMatch[2] : line;
-            const cardId = generateId("import-card");
 
-            const normalizedQuantity = Number.isFinite(quantity) ? quantity : 1;
-            const existing = nextCards.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
-            trackDeckCardAdded({ deckId: current.id, cardId, zone: "mainboard", method: "import" });
+          entries.forEach((entry) => {
+            const key = normalizeCardKey(entry.name);
+            const displayName = nameKeyToDisplay.get(key) ?? cleanupCardName(entry.name);
+            const zone = entry.zone ?? "mainboard";
+            const quantity = Math.max(1, Math.floor(entry.quantity));
+
+            if (!quantity) {
+              return;
+            }
+
+            addedQuantity += quantity;
+
+            let matchedCard = lookup.get(key);
+            if (!matchedCard && key.includes("//")) {
+              const [front] = key.split("//");
+              matchedCard = lookup.get(front.trim());
+            }
+
+            const resolved = Boolean(matchedCard);
+            if (resolved) {
+              matchedKeys.add(normalizeCardKey(matchedCard!.name));
+              missingKeys.delete(key);
+            } else {
+              missingKeys.add(key);
+            }
+
+            const cardId = matchedCard?.id ?? generateId("manual-card");
+            trackDeckCardAdded({
+              deckId: current.id,
+              cardId,
+              zone,
+              method: resolved ? "import" : "import_unresolved",
+            });
+
+            const existing = resolved
+              ? nextCards.find((candidate) => candidate.cardId === matchedCard!.id)
+              : nextCards.find((candidate) => normalizeCardKey(candidate.name) === key);
 
             if (existing) {
-              existing.quantity += normalizedQuantity;
+              existing.quantity += quantity;
+              mergedQuantity += quantity;
+              if (resolved && !existing.resolved) {
+                existing.resolved = true;
+                existing.cardId = matchedCard!.id;
+                existing.name = matchedCard!.name;
+                existing.manaCost = matchedCard!.mana_cost ?? existing.manaCost;
+                existing.typeLine = matchedCard!.type_line ?? existing.typeLine;
+                existing.imageUrl =
+                  matchedCard!.image_uris?.small ?? matchedCard!.image_uris?.normal ?? existing.imageUrl;
+              }
+              if (!existing.zone) {
+                existing.zone = zone;
+              }
             } else {
-              nextCards.push({ cardId, name, quantity: normalizedQuantity });
+              nextCards.push({
+                cardId,
+                name: matchedCard?.name ?? displayName,
+                manaCost: matchedCard?.mana_cost ?? undefined,
+                typeLine: matchedCard?.type_line ?? undefined,
+                imageUrl: matchedCard?.image_uris?.small ?? matchedCard?.image_uris?.normal ?? undefined,
+                quantity,
+                zone,
+                resolved,
+              });
             }
           });
+
           return {
             ...current,
             cards: nextCards,
           };
         });
 
+        const missingList = Array.from(missingKeys).map((key) => nameKeyToDisplay.get(key) ?? key);
+
         trackImportAttempted({
           importId,
           source,
           status: "success",
-          cardCount: lines.length,
+          cardCount: addedQuantity,
+          matchedCount: matchedKeys.size,
+          missingCount: missingList.length,
+          mergedCount: mergedQuantity,
         });
 
-        return { ok: true, added: lines.length };
+        return {
+          ok: true,
+          added: addedQuantity,
+          matched: matchedKeys.size,
+          merged: mergedQuantity,
+          missing: missingList,
+        };
       } catch (error) {
         console.warn("Failed to import deck list", error);
         trackImportAttempted({ importId, source, status: "failed", errorCode: "parse_error" });
@@ -746,25 +1045,91 @@ export function useDraftDeck() {
     [deck, updateDeck],
   );
 
-  const exportToJson = useCallback((): string | null => {
+  const exportDeck = useCallback(
+    (format: DeckExportFormat): string | null => {
+      if (!deck) {
+        return null;
+      }
+
+      const timestamp = nowIso();
+
+      switch (format) {
+        case "json": {
+          const payload = {
+            id: deck.id,
+            name: deck.name,
+            format: deck.format,
+            visibility: deck.visibility,
+            cards: deck.cards,
+            exportedAt: timestamp,
+          };
+          trackExportCompleted({
+            deckId: deck.id,
+            exportFormat: "json",
+            cardsMissing: deck.cards.filter((card) => card.resolved === false).length,
+            destination: "local_download",
+          });
+          return JSON.stringify(payload, null, 2);
+        }
+        case "mtga": {
+          const output = formatDeckAsMtga(deck);
+          trackExportCompleted({
+            deckId: deck.id,
+            exportFormat: "mtga",
+            cardsMissing: deck.cards.filter((card) => card.resolved === false).length,
+            destination: "local_download",
+          });
+          return output;
+        }
+        case "csv": {
+          const output = formatDeckAsCsv(deck);
+          trackExportCompleted({
+            deckId: deck.id,
+            exportFormat: "csv",
+            cardsMissing: deck.cards.filter((card) => card.resolved === false).length,
+            destination: "local_download",
+          });
+          return output;
+        }
+        default:
+          return null;
+      }
+    },
+    [deck],
+  );
+
+  const exportToJson = useCallback((): string | null => exportDeck("json"), [exportDeck]);
+
+  const buildCardBazaarPayload = useCallback((): DeckBridgePayload | null => {
     if (!deck) {
       return null;
     }
-    const payload = {
-      id: deck.id,
+
+    const sorted = sortCardsForExport(deck.cards);
+    const items = sorted.map((card) => ({
+      cardId: card.cardId,
+      name: card.name,
+      quantity: card.quantity,
+      manaCost: card.manaCost ?? null,
+      typeLine: card.typeLine ?? null,
+      price: null,
+      zone: card.zone ?? "mainboard",
+    }));
+
+    const missing = Array.from(
+      new Set(sorted.filter((card) => card.resolved === false).map((card) => card.name)),
+    );
+
+    return {
+      type: "deck",
+      deckId: deck.remoteId ?? deck.id,
       name: deck.name,
       format: deck.format,
-      visibility: deck.visibility,
-      cards: deck.cards,
-      exportedAt: nowIso(),
+      totalCards: sorted.reduce((total, card) => total + card.quantity, 0),
+      distinctCards: sorted.length,
+      items,
+      missing,
     };
-    trackExportCompleted({
-      deckId: deck.id,
-      exportFormat: "json",
-      cardsMissing: 0,
-      destination: "local_download",
-    });
-    return JSON.stringify(payload, null, 2);
   }, [deck]);
 
   const cardCount = useMemo(
@@ -784,7 +1149,9 @@ export function useDraftDeck() {
     loadDraft,
     deleteDraft,
     importFromList,
+    exportDeck,
     exportToJson,
+    buildCardBazaarPayload,
     syncToSupabase,
     isSupabaseConfigured: SUPABASE_ENABLED,
     isSyncing,

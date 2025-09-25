@@ -21,7 +21,7 @@ type DeckCardAddedPayload = {
   deckId: string;
   cardId: string;
   zone: string;
-  method?: "manual" | "suggestion" | "import";
+  method?: "manual" | "suggestion" | "import" | "import_unresolved";
 };
 
 type DeckCreatedPayload = {
@@ -39,6 +39,9 @@ type ImportAttemptedPayload = {
   status: "pending" | "processed" | "failed" | "success";
   errorCode?: string;
   cardCount?: number;
+  matchedCount?: number;
+  missingCount?: number;
+  mergedCount?: number;
 };
 
 type ExportCompletedPayload = {
