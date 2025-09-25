@@ -1,8 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
 import { trackCardViewed, trackSearchPerformed } from "@/lib/telemetry";
+import { initiateCardBazaarBridge } from "@/services/card-bazaar-bridge";
 import type { ScryfallCard } from "@/services/scryfall";
 
 const DEFAULT_QUERY = "game:paper";
@@ -48,7 +50,7 @@ const PRESET_OPTIONS: PresetOption[] = [
   },
   {
     label: "Commander Ramp",
-    baseQuery: "type:creature o:\"add\"",
+    baseQuery: 'type:creature o:"add"',
     format: "commander",
     colors: ["G"],
     mana: { min: 0, max: 3 },
@@ -78,7 +80,7 @@ function buildQueryString(
   clauses.push(trimmedBase.length ? trimmedBase : DEFAULT_QUERY);
 
   if (format !== "any") {
-    clauses.push(`legal:${format}`);
+    clauses.push(`format:${format}`);
   }
 
   if (colors.length) {
@@ -86,16 +88,17 @@ function buildQueryString(
     if (sorted.length === 1 && sorted[0] === "C") {
       clauses.push("coloridentity=c");
     } else {
-      clauses.push(`identity>=${sorted.join("")}`);
+      const identity = sorted.join("").toLowerCase();
+      clauses.push(`coloridentity>=${identity}`);
     }
   }
 
   if (mana.min > DEFAULT_MANA_FILTER.min) {
-    clauses.push(`cmc>=${mana.min}`);
+    clauses.push(`mv>=${mana.min}`);
   }
 
   if (mana.max < DEFAULT_MANA_FILTER.max) {
-    clauses.push(`cmc<=${mana.max}`);
+    clauses.push(`mv<=${mana.max}`);
   }
 
   return clauses.join(" ").replace(/\s+/g, " ").trim();
@@ -105,21 +108,109 @@ function buildFilterSummary(format: FormatValue, colors: string[], mana: ManaFil
   const tokens: string[] = [];
 
   if (format !== "any") {
-    tokens.push(`Format ${format}`);
+    const option = FORMAT_OPTIONS.find((item) => item.value === format);
+    tokens.push(`Format: ${option?.label ?? format}`);
   }
 
   if (colors.length) {
-    tokens.push(`Colors ${[...colors].sort().join("")}`);
+    const sorted = [...colors].sort();
+    const label = sorted
+      .map((code) => COLOR_LABELS[code] ?? code)
+      .join(" / ");
+    tokens.push(`Colors: ${label}`);
   }
 
-  if (
-    mana.min > DEFAULT_MANA_FILTER.min ||
-    mana.max < DEFAULT_MANA_FILTER.max
-  ) {
+  if (mana.min > DEFAULT_MANA_FILTER.min || mana.max < DEFAULT_MANA_FILTER.max) {
     tokens.push(`Mana ${mana.min}-${mana.max}`);
   }
 
   return tokens.join(" | ");
+}
+
+function rarityBadge(rarity?: string) {
+  switch (rarity) {
+    case "mythic":
+      return {
+        label: "Mythic",
+        className:
+          "bg-gradient-to-r from-amber-400/80 to-amber-200/60 text-amber-950 border border-amber-400/70",
+      };
+    case "rare":
+      return {
+        label: "Rare",
+        className:
+          "bg-gradient-to-r from-yellow-300/70 to-yellow-200/40 text-yellow-900 border border-yellow-300/60",
+      };
+    case "uncommon":
+      return {
+        label: "Uncommon",
+        className:
+          "bg-gradient-to-r from-slate-200/70 to-slate-100/50 text-slate-900 border border-slate-200/70",
+      };
+    default:
+      return {
+        label: "Common",
+        className:
+          "bg-gradient-to-r from-white/70 to-white/40 text-slate-800 border border-white/60",
+      };
+  }
+}
+
+function getUsageScore(card: ScryfallCard): number {
+  const rank = (card as unknown as { edhrec_rank?: number }).edhrec_rank;
+  if (typeof rank === "number" && rank > 0) {
+    const normalized = Math.max(0, Math.min(1, 1 - Math.log10(rank) / 4));
+    return Math.round(normalized * 100);
+  }
+  return 35;
+}
+
+function getPrice(card: ScryfallCard): string | null {
+  const source = card.prices?.usd ?? card.prices?.usd_foil ?? card.prices?.usd_etched ?? null;
+  if (!source) {
+    return null;
+  }
+  const parsed = Number.parseFloat(source);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+  return `$${parsed.toFixed(2)}`;
+}
+
+const COLOR_HEX: Record<string, string> = {
+  W: "#f8f5e1",
+  U: "#8fb7ff",
+  B: "#4b4a4f",
+  R: "#ff8a7a",
+  G: "#73d08b",
+  C: "#d1d5db",
+};
+
+const COLOR_LABELS: Record<string, string> = {
+  W: "White",
+  U: "Blue",
+  B: "Black",
+  R: "Red",
+  G: "Green",
+  C: "Colorless",
+};
+
+function renderColorPips(colors: string[]) {
+  if (!colors.length) {
+    return (
+      <span className="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] text-[color:var(--color-text-body)]">
+        C
+      </span>
+    );
+  }
+
+  return colors.map((color, index) => (
+    <span
+      key={`${color}-${index}`}
+      className="h-6 w-6 rounded-full border border-white/20"
+      style={{ background: COLOR_HEX[color] ?? COLOR_HEX.C }}
+    />
+  ));
 }
 
 export function CardGridFrame() {
@@ -134,9 +225,7 @@ export function CardGridFrame() {
   const [submittedQuery, setSubmittedQuery] = useState(DEFAULT_QUERY);
   const [selectedFormat, setSelectedFormat] = useState<FormatValue>("any");
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [manaFilter, setManaFilter] = useState<ManaFilter>(() =>
-    cloneManaFilter(DEFAULT_MANA_FILTER),
-  );
+  const [manaFilter, setManaFilter] = useState<ManaFilter>(() => cloneManaFilter(DEFAULT_MANA_FILTER));
 
   const { data, isLoading, error, params, updateParams } = useScryfallSearch({
     initialQuery,
@@ -146,6 +235,7 @@ export function CardGridFrame() {
   const hasMore = data?.has_more ?? false;
   const totalCards = data?.total_cards;
   const currentPage = params.page ?? 1;
+
   const filterSummary = useMemo(
     () => buildFilterSummary(selectedFormat, selectedColors, manaFilter),
     [selectedFormat, selectedColors, manaFilter],
@@ -153,12 +243,7 @@ export function CardGridFrame() {
 
   const runSearch = useCallback(
     (base: string, page = 1) => {
-      const nextQuery = buildQueryString(
-        base,
-        selectedFormat,
-        selectedColors,
-        manaFilter,
-      );
+      const nextQuery = buildQueryString(base, selectedFormat, selectedColors, manaFilter);
       updateParams({ query: nextQuery, page });
     },
     [selectedFormat, selectedColors, manaFilter, updateParams],
@@ -174,7 +259,7 @@ export function CardGridFrame() {
       return;
     }
     const page = params.page ?? 1;
-    const signature = `${params.query}|${page}|${data.total_cards ?? "?"}`;
+    const signature = `${params.query ?? ""}|${page}|${filterSummary}`;
     if (lastTrackedSignature.current === signature) {
       return;
     }
@@ -228,7 +313,8 @@ export function CardGridFrame() {
   const setManaValue = (key: keyof ManaFilter, value: number) => {
     const clamped = Math.max(0, Math.min(20, Number.isNaN(value) ? 0 : value));
     setManaFilter((prev) => {
-      const next = { ...prev, [key]: clamped } as ManaFilter;
+      const next = { ...prev };
+      next[key] = clamped;
       if (next.min > next.max) {
         if (key === "min") {
           next.max = clamped;
@@ -248,28 +334,30 @@ export function CardGridFrame() {
     setManaFilter(cloneManaFilter(preset.mana ?? DEFAULT_MANA_FILTER));
   };
 
+  const [featuredCard, ...restCards] = cards;
+
   return (
-    <section id="cards" className="pb-20">
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-10 px-6">
-        <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-[6px] text-[color:var(--color-accent-highlight)]">
-              Live Scryfall Data
-            </p>
-            <h2 className="font-display text-3xl text-[color:var(--color-text-hero)] sm:text-4xl">
-              Search the MTG multiverse without leaving Metablazt
+    <section id="cards" className="border-b border-white/10 bg-[color:var(--color-surface-primary)] py-16">
+      <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-8 px-6">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-semibold uppercase tracking-[6px] text-[color:var(--color-accent-highlight)]">
+              Phase 2 Preview
+            </span>
+            <h2 className="font-display text-3xl text-[color:var(--color-text-hero)]">
+              Discover stacked highlights and pro-tuned staples
             </h2>
             <p className="max-w-2xl text-sm text-subtle">
-              Powered by Scryfall&apos;s API. We will layer in personalization, Card Bazaar inventory, and Supabase persistence next.
+              Filters, presets, and usage insights help you move from browsing to brewing without leaving Metablazt.
             </p>
           </div>
-          <div className="flex flex-col gap-2 text-xs text-subtle lg:items-end">
+          <div className="flex flex-col gap-1 text-right text-xs text-subtle">
             <span>
               Query: <code className="rounded bg-white/5 px-2 py-1 text-[11px] text-[color:var(--color-text-hero)]">{params.query}</code>
             </span>
             <span>
               Page {currentPage}
-              {hasMore || currentPage > 1 ? ` - ${totalCards ?? "..."} cards total` : ""}
+              {hasMore || currentPage > 1 ? ` • ${hasMore ? "More results available" : "End of results"}` : ""}
             </span>
           </div>
         </header>
@@ -331,20 +419,23 @@ export function CardGridFrame() {
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-[3px] text-subtle">Format</span>
               <div className="flex flex-wrap gap-2">
-                {FORMAT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setSelectedFormat(option.value)}
-                    className={`rounded-[var(--radius-pill)] px-3 py-2 text-xs font-semibold uppercase tracking-[2px] transition-colors ${
-                      selectedFormat === option.value
-                        ? "gradient-pill shadow-cta text-[color:var(--color-text-hero)]"
-                        : "border border-white/10 text-[color:var(--color-text-body)] hover:border-white/25"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+                {FORMAT_OPTIONS.map((option) => {
+                  const isActive = selectedFormat === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setSelectedFormat(option.value)}
+                      className={`rounded-[var(--radius-pill)] px-3 py-2 text-xs font-semibold uppercase tracking-[2px] transition-colors ${
+                        isActive
+                          ? "gradient-pill shadow-cta text-[color:var(--color-text-hero)]"
+                          : "border border-white/10 text-[color:var(--color-text-body)] hover:border-white/25"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div className="flex flex-col gap-2">
@@ -357,11 +448,12 @@ export function CardGridFrame() {
                       key={option.value}
                       type="button"
                       onClick={() => toggleColor(option.value)}
-                      className={`h-9 w-9 rounded-full border text-xs font-semibold transition-colors ${
+                      className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-transform ${
                         isActive
-                          ? "border-white/0 gradient-pill text-[color:var(--color-text-hero)]"
-                          : "border-white/15 text-[color:var(--color-text-body)] hover:border-white/40"
+                          ? "border-white/60 bg-white/20 text-[color:var(--color-text-hero)] shadow-card"
+                          : "border-white/15 bg-white/5 text-[color:var(--color-text-body)] hover:-translate-y-[1px] hover:border-white/35"
                       }`}
+                      aria-pressed={isActive}
                     >
                       {option.label}
                     </button>
@@ -369,68 +461,58 @@ export function CardGridFrame() {
                 })}
               </div>
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-[3px] text-subtle">Mana value (CMC)</span>
-            <div className="flex gap-3">
-              <label className="flex items-center gap-2 text-xs text-subtle">
-                <span>Min</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={manaFilter.min}
-                  onChange={(event) => setManaValue("min", Number(event.target.value))}
-                  className="w-16 rounded-[var(--radius-control)] border border-white/15 bg-white/5 px-2 py-2 text-xs text-[color:var(--color-text-hero)] focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
-                />
-              </label>
-              <label className="flex items-center gap-2 text-xs text-subtle">
-                <span>Max</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={20}
-                  value={manaFilter.max}
-                  onChange={(event) => setManaValue("max", Number(event.target.value))}
-                  className="w-16 rounded-[var(--radius-control)] border border-white/15 bg-white/5 px-2 py-2 text-xs text-[color:var(--color-text-hero)] focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
-                />
-              </label>
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-[3px] text-subtle">Mana range</span>
+              <div className="flex items-center gap-3 text-xs text-subtle">
+                <label className="flex items-center gap-2">
+                  <span>Min</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={manaFilter.min}
+                    onChange={(event) => setManaValue("min", Number(event.target.value))}
+                    className="w-16 rounded-[var(--radius-control)] border border-white/15 bg-white/5 px-2 py-2 text-xs text-[color:var(--color-text-hero)] focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-xs text-subtle">
+                  <span>Max</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={manaFilter.max}
+                    onChange={(event) => setManaValue("max", Number(event.target.value))}
+                    className="w-16 rounded-[var(--radius-control)] border border-white/15 bg-white/5 px-2 py-2 text-xs text-[color:var(--color-text-hero)] focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
+                  />
+                </label>
+              </div>
             </div>
-          </div>
-          <div className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 px-4 py-3 text-xs text-subtle">
-            <strong className="text-[color:var(--color-text-hero)]">Active filters:</strong> {filterSummary || "None yet - defaults to the raw Scryfall query."}
+            <div className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 px-4 py-3 text-xs text-subtle">
+              <strong className="text-[color:var(--color-text-hero)]">Active filters:</strong> {filterSummary || "None yet – defaults to the raw Scryfall query."}
+            </div>
           </div>
         </div>
 
-        {error ? (
-          <div className="surface-card shadow-card rounded-[var(--radius-card)] border border-rose-500/40 bg-rose-900/20 p-6 text-sm text-[color:var(--color-text-hero)]">
-            <p className="font-semibold uppercase tracking-[3px]">Scryfall request failed</p>
-            <p className="mt-2 text-subtle">{error.message}</p>
-            <button
-              type="button"
-              onClick={() => updateParams({})}
-              className="mt-4 rounded-[var(--radius-pill)] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)]"
-            >
-              Retry
-            </button>
-          </div>
+        {featuredCard ? (
+          <FeaturedCardShowcase card={featuredCard} queryContext={params.query} />
         ) : null}
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {isLoading && cards.length === 0
+          {isLoading && restCards.length === 0
             ? Array.from({ length: CARD_PLACEHOLDER_COUNT }).map((_, index) => (
                 <article
-                  key={`placeholder-${index}`}
+                  key={`card-placeholder-${index}`}
                   className="surface-card shadow-card flex flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 p-5 animate-pulse"
                 >
-                  <div className="h-[220px] rounded-[12px] bg-white/10" />
-                  <div className="h-6 w-3/4 rounded bg-white/10" />
+                  <div className="relative h-64 overflow-hidden rounded-[18px] bg-white/5" />
+                  <div className="h-4 w-3/4 rounded bg-white/10" />
                   <div className="h-3 w-1/2 rounded bg-white/5" />
                   <div className="mt-auto h-3 w-full rounded bg-white/5" />
                 </article>
               ))
-            : cards.map((card) => (
-                <CardTile key={card.id} card={card} queryContext={params.query} />
+            : restCards.map((card) => (
+                <StackedCardTile key={card.id} card={card} queryContext={params.query} />
               ))}
         </div>
 
@@ -438,7 +520,7 @@ export function CardGridFrame() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
             <span>
               Showing page {currentPage}
-              {totalCards ? ` of roughly ${totalCards.toLocaleString()} cards` : ""}
+              {totalCards ? ` • ${totalCards.toLocaleString()} cards` : ""}
             </span>
             {data?.warnings?.length ? (
               <span className="rounded-full bg-[color:var(--color-accent-highlight)]/20 px-3 py-1 text-[11px] text-[color:var(--color-text-hero)]">
@@ -470,18 +552,138 @@ export function CardGridFrame() {
   );
 }
 
-type CardTileProps = {
+type FeaturedCardProps = {
   card: ScryfallCard;
   queryContext: string;
 };
 
-function CardTile({ card, queryContext }: CardTileProps) {
-  const artCrop =
-    card.image_uris?.art_crop || card.image_uris?.border_crop || card.image_uris?.normal;
+function FeaturedCardShowcase({ card, queryContext }: FeaturedCardProps) {
+  const artCrop = card.image_uris?.art_crop ?? card.image_uris?.border_crop ?? card.image_uris?.normal;
+  const usage = getUsageScore(card);
+  const price = getPrice(card);
+  const rarity = rarityBadge(card.rarity);
+  const [isBridging, setIsBridging] = useState(false);
+  const [bridgeMessage, setBridgeMessage] = useState<string | null>(null);
+  const [bridgeError, setBridgeError] = useState<string | null>(null);
 
-  const oraclePreview = card.oracle_text
-    ? summarizeOracleText(card.oracle_text)
-    : null;
+  const handleView = () => {
+    trackCardViewed({ cardId: card.id, context: queryContext });
+  };
+
+  const handleBridge = async () => {
+    setIsBridging(true);
+    setBridgeMessage(null);
+    setBridgeError(null);
+
+    try {
+      const result = await initiateCardBazaarBridge({
+        cardId: card.id,
+        name: card.name,
+        setCode: card.set ?? null,
+        setName: card.set_name ?? null,
+        price,
+      });
+      setBridgeMessage(result.message ?? "Card Bazaar bridge saved. Inventory sync coming soon.");
+    } catch (error) {
+      setBridgeError(error instanceof Error ? error.message : "Failed to reach bridge endpoint.");
+    } finally {
+      setIsBridging(false);
+    }
+  };
+
+  if (!artCrop) {
+    return null;
+  }
+
+  return (
+    <section className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-[color:var(--color-neutral-100)]/80 via-[color:var(--color-neutral-200)]/60 to-[color:var(--color-surface-primary)]/90 p-8">
+      <div className="absolute inset-0 -z-10 opacity-40 blur-3xl" aria-hidden="true">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={artCrop} alt="" className="h-full w-full object-cover" />
+      </div>
+      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr),320px]">
+        <div className="flex flex-col gap-6">
+          <span className="rounded-full border border-white/20 bg-white/10 px-4 py-1 text-[11px] uppercase tracking-[3px] text-[color:var(--color-text-hero)]">
+            Featured highlight
+          </span>
+          <h3 className="font-display text-4xl text-[color:var(--color-text-hero)]">{card.name}</h3>
+          <p className="text-sm text-subtle">{card.oracle_text ?? "No rules text available."}</p>
+          <div className="flex flex-wrap items-center gap-3 text-xs text-subtle">
+            <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 uppercase tracking-[2px] text-[color:var(--color-text-hero)]">
+              {card.type_line}
+            </span>
+            {price ? (
+              <span className="rounded-full border border-emerald-400/60 bg-emerald-500/20 px-3 py-1 text-[color:var(--color-text-hero)]">
+                Market {price}
+              </span>
+            ) : null}
+            <span
+              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[2px] ${rarity.className}`}
+            >
+              {rarity.label}
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-subtle">
+              <span>Usage</span>
+              <div className="relative h-2 w-32 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-[color:var(--color-accent-start)] to-[color:var(--color-accent-end)]"
+                  style={{ width: `${Math.min(usage, 100)}%` }}
+                />
+              </div>
+              <span className="text-[color:var(--color-text-hero)] font-semibold">{usage}%</span>
+            </div>
+            <div className="flex items-center gap-1">{renderColorPips(card.color_identity ?? [])}</div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleView}
+              className="gradient-pill shadow-cta rounded-[var(--radius-pill)] px-5 py-2 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)]"
+            >
+              Inspect card
+            </button>
+            <button
+              type="button"
+              onClick={handleBridge}
+              disabled={isBridging}
+              className="rounded-[var(--radius-pill)] border border-dashed border-white/25 px-5 py-2 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-body)] transition-opacity hover:border-white/40 disabled:opacity-50"
+            >
+              {isBridging ? "Bridging..." : "Card Bazaar Bridge (preview)"}
+            </button>
+          </div>
+          {bridgeMessage ? (
+            <p className="rounded-[var(--radius-control)] border border-emerald-400/40 bg-emerald-500/15 px-4 py-2 text-xs text-[color:var(--color-text-hero)]">
+              {bridgeMessage}
+            </p>
+          ) : null}
+          {bridgeError ? (
+            <p className="rounded-[var(--radius-control)] border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs text-[color:var(--color-text-hero)]">
+              {bridgeError}
+            </p>
+          ) : null}
+        </div>
+        <div className="relative mx-auto h-[420px] w-[300px]">
+          <div className="absolute inset-0 translate-x-[22px] translate-y-[18px] rotate-6 rounded-[24px] border border-white/10 bg-white/10 blur-sm" aria-hidden="true" />
+          <div className="absolute inset-0 -translate-x-[18px] -translate-y-[22px] -rotate-3 rounded-[24px] border border-white/10 bg-white/10 blur-sm" aria-hidden="true" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={artCrop}
+            alt={card.name}
+            className="relative h-full w-full rounded-[24px] border border-white/20 object-cover shadow-2xl"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StackedCardTile({ card, queryContext }: { card: ScryfallCard; queryContext: string }) {
+  const artCrop = card.image_uris?.art_crop ?? card.image_uris?.border_crop ?? card.image_uris?.normal;
+  const usage = getUsageScore(card);
+  const price = getPrice(card);
+  const rarity = rarityBadge(card.rarity);
 
   const handleView = () => {
     trackCardViewed({ cardId: card.id, context: queryContext });
@@ -500,46 +702,74 @@ function CardTile({ card, queryContext }: CardTileProps) {
       tabIndex={0}
       onClick={handleView}
       onKeyDown={handleKeyDown}
-      className="surface-card shadow-card group flex flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 p-5 transition-transform duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-highlight)]"
+      className="surface-card group relative flex h-full flex-col gap-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/5 p-5 transition-transform duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-highlight)]"
     >
-      <div className="relative h-[220px] overflow-hidden rounded-[12px] bg-[linear-gradient(160deg,var(--color-neutral-300)_0%,var(--color-neutral-100)_100%)]">
+      <div className="relative h-56">
+        <div className="absolute inset-0 translate-x-[14px] translate-y-[16px] rotate-[6deg] rounded-[22px] border border-white/10 bg-[color:var(--color-neutral-100)]/40 transition duration-300 group-hover:translate-x-[18px] group-hover:translate-y-[18px] group-hover:rotate-[9deg]" aria-hidden="true" />
+        <div className="absolute inset-0 -translate-x-[10px] -translate-y-[12px] -rotate-[4deg] rounded-[22px] border border-white/10 bg-[color:var(--color-neutral-200)]/30 transition duration-300 group-hover:-translate-x-[14px] group-hover:-translate-y-[14px] group-hover:-rotate-[7deg]" aria-hidden="true" />
         {artCrop ? (
-          // eslint-disable-next-line @next/next/no-img-element
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={artCrop}
             alt={card.name}
-            loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full rounded-[22px] border border-white/15 object-cover shadow-xl transition duration-300 group-hover:shadow-2xl"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-xs uppercase tracking-[4px] text-[color:var(--color-text-hero)]/70">
-            Art Preview
+          <div className="absolute inset-0 flex items-center justify-center rounded-[22px] border border-dashed border-white/15 bg-white/5 text-xs uppercase tracking-[3px] text-subtle">
+            Art unavailable
           </div>
         )}
-        <span className="absolute left-4 top-4 rounded-full bg-[color:var(--color-accent-highlight)]/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[3px] text-[color:var(--color-neutral-100)]">
-          {card.set_name ?? "Unknown Set"}
+        <span
+          className={`absolute left-4 top-4 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[2px] ${rarity.className}`}
+        >
+          {rarity.label}
         </span>
-        <span className="absolute bottom-4 left-4 text-xs uppercase tracking-[4px] text-[color:var(--color-text-hero)]/80">
-          #{card.collector_number ?? "?"}
+        <span className="absolute right-4 top-4 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-hero)]">
+          {card.set_name ?? card.set}
         </span>
+        <div className="absolute bottom-4 left-4 flex items-center gap-2 text-xs text-[color:var(--color-text-hero)]">
+          {renderColorPips(card.color_identity ?? [])}
+        </div>
       </div>
       <div className="flex flex-col gap-1">
-        <h3 className="font-display text-xl text-[color:var(--color-text-hero)]">{card.name}</h3>
-        <p className="text-xs uppercase tracking-[4px] text-subtle">{card.type_line}</p>
+        <h4 className="font-display text-xl text-[color:var(--color-text-hero)]">{card.name}</h4>
+        <p className="text-[11px] uppercase tracking-[3px] text-subtle">{card.type_line}</p>
       </div>
-      {oraclePreview ? <p className="text-xs text-subtle">{oraclePreview}</p> : null}
-      <div className="mt-auto flex items-center justify-between text-xs text-subtle">
-        <span>{card.mana_cost ?? ""}</span>
-        <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 font-semibold uppercase tracking-[3px] text-[10px] text-[color:var(--color-text-hero)]">
-          {card.rarity ?? "-"}
-        </span>
+      {card.oracle_text ? (
+        <p className="line-clamp-3 text-xs text-subtle">{summarizeOracleText(card.oracle_text)}</p>
+      ) : null}
+      <div className="mt-auto flex flex-col gap-3 text-xs text-subtle">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>Usage</span>
+            <div className="relative h-2 w-24 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="absolute inset-y-0 left-0 bg-gradient-to-r from-[color:var(--color-accent-start)] to-[color:var(--color-accent-end)]"
+                style={{ width: `${Math.min(usage, 100)}%` }}
+              />
+            </div>
+            <span className="text-[color:var(--color-text-hero)] font-semibold">{usage}%</span>
+          </div>
+          {price ? (
+            <span className="rounded-full border border-emerald-400/60 bg-emerald-500/20 px-3 py-1 text-[color:var(--color-text-hero)]">
+              {price}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center justify-between text-[11px] uppercase tracking-[2px] text-subtle">
+          <span>{card.mana_cost ?? ""}</span>
+          <span>#{card.collector_number ?? "?"}</span>
+        </div>
       </div>
     </article>
   );
 }
 
 function summarizeOracleText(text: string) {
-  const lines = text.split("\n");
+  const lines = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   const preview = lines.slice(0, 3).join(" ");
-  return lines.length > 3 ? `${preview} ...` : preview;
+  return lines.length > 3 ? `${preview}...` : preview;
 }
