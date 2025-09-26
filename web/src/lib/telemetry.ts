@@ -1,4 +1,4 @@
-﻿"use client";
+'use client';
 
 const TELEMETRY_ENDPOINT = "/api/telemetry";
 
@@ -51,13 +51,47 @@ type ExportCompletedPayload = {
   destination?: string;
 };
 
+type DeckViewedPayload = {
+  deckId?: string;
+  source?: "builder" | "gallery" | "share" | "unknown";
+  format?: string;
+  cardCount?: number;
+};
+
+type DeckImportedPayload = {
+  deckId?: string;
+  source: string;
+  cardCount?: number;
+  matchedCount?: number;
+  missingCount?: number;
+};
+
+type BridgeInitiatedPayload = {
+  scope: "card" | "deck";
+  subjectId?: string;
+  destination?: string;
+  missingCount?: number;
+  bridgeId?: string;
+};
+
+type RecommendationServedPayload = {
+  recommendationId?: string;
+  surface: "homepage" | "deck_builder" | "card_detail";
+  algorithm: "trending" | "similar_cards" | "recent_activity" | "manual";
+  impressionCount?: number;
+};
+
 type TelemetryEnvelope =
   | { type: "search_performed"; payload: SearchPerformedPayload }
   | { type: "card_viewed"; payload: CardViewedPayload }
+  | { type: "deck_viewed"; payload: DeckViewedPayload }
   | { type: "deck_card_added"; payload: DeckCardAddedPayload }
   | { type: "deck_created"; payload: DeckCreatedPayload }
+  | { type: "deck_imported"; payload: DeckImportedPayload }
   | { type: "import_attempted"; payload: ImportAttemptedPayload }
-  | { type: "export_completed"; payload: ExportCompletedPayload };
+  | { type: "export_completed"; payload: ExportCompletedPayload }
+  | { type: "bridge_initiated"; payload: BridgeInitiatedPayload }
+  | { type: "recommendation_served"; payload: RecommendationServedPayload };
 
 const debugMode = () => process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
 
@@ -103,12 +137,20 @@ export function trackCardViewed(payload: CardViewedPayload) {
   emitTelemetry({ type: "card_viewed", payload });
 }
 
+export function trackDeckViewed(payload: DeckViewedPayload) {
+  emitTelemetry({ type: "deck_viewed", payload });
+}
+
 export function trackDeckCardAdded(payload: DeckCardAddedPayload) {
   emitTelemetry({ type: "deck_card_added", payload });
 }
 
 export function trackDeckCreated(payload: DeckCreatedPayload) {
   emitTelemetry({ type: "deck_created", payload });
+}
+
+export function trackDeckImported(payload: DeckImportedPayload) {
+  emitTelemetry({ type: "deck_imported", payload });
 }
 
 export function trackImportAttempted(payload: ImportAttemptedPayload) {
@@ -118,3 +160,14 @@ export function trackImportAttempted(payload: ImportAttemptedPayload) {
 export function trackExportCompleted(payload: ExportCompletedPayload) {
   emitTelemetry({ type: "export_completed", payload });
 }
+
+export function trackBridgeInitiated(payload: BridgeInitiatedPayload) {
+  emitTelemetry({ type: "bridge_initiated", payload });
+}
+
+export function trackRecommendationServed(payload: RecommendationServedPayload) {
+  emitTelemetry({ type: "recommendation_served", payload });
+}
+
+
+

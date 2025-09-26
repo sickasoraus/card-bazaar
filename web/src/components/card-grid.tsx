@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
-import { trackCardViewed, trackSearchPerformed } from "@/lib/telemetry";
+import { trackBridgeInitiated, trackCardViewed, trackSearchPerformed } from "@/lib/telemetry";
 import { initiateCardBazaarBridge } from "@/services/card-bazaar-bridge";
 import type { ScryfallCard } from "@/services/scryfall";
 
@@ -357,7 +358,7 @@ export function CardGridFrame() {
             </span>
             <span>
               Page {currentPage}
-              {hasMore || currentPage > 1 ? ` • ${hasMore ? "More results available" : "End of results"}` : ""}
+              {hasMore || currentPage > 1 ? ` - ${hasMore ? "More results available" : "End of results"}` : ""}
             </span>
           </div>
         </header>
@@ -395,7 +396,7 @@ export function CardGridFrame() {
         <div className="text-[11px] uppercase tracking-[2px] text-subtle">
           {filterSummary.length
             ? ['Filters:', filterSummary].join(' ')
-            : "Filters: All formats • All colors • Mana 0-20"}
+            : "Filters: All formats - All colors - Mana 0-20"}
         </div>
 
         <div className="surface-card shadow-card flex flex-col gap-5 rounded-[var(--radius-card)] border border-white/10 p-6">
@@ -489,7 +490,7 @@ export function CardGridFrame() {
               </div>
             </div>
             <div className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 px-4 py-3 text-xs text-subtle">
-              <strong className="text-[color:var(--color-text-hero)]">Active filters:</strong> {filterSummary || "None yet – defaults to the raw Scryfall query."}
+              <strong className="text-[color:var(--color-text-hero)]">Active filters:</strong> {filterSummary || "None yet - defaults to the raw Scryfall query."}
             </div>
           </div>
         </div>
@@ -520,7 +521,7 @@ export function CardGridFrame() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
             <span>
               Showing page {currentPage}
-              {totalCards ? ` • ${totalCards.toLocaleString()} cards` : ""}
+              {totalCards ? ` - ${totalCards.toLocaleString()} cards` : ""}
             </span>
             {data?.warnings?.length ? (
               <span className="rounded-full bg-[color:var(--color-accent-highlight)]/20 px-3 py-1 text-[11px] text-[color:var(--color-text-hero)]">
@@ -583,6 +584,13 @@ function FeaturedCardShowcase({ card, queryContext }: FeaturedCardProps) {
         setCode: card.set ?? null,
         setName: card.set_name ?? null,
         price,
+      });
+      trackBridgeInitiated({
+        scope: "card",
+        subjectId: card.id,
+        destination: "card_bazaar",
+        missingCount: Array.isArray(result.missing) ? result.missing.length : undefined,
+        bridgeId: result.bridgeId,
       });
       const summary = result.summary ? ` ${result.summary}` : "";
       setBridgeMessage(`${result.message ?? "Card Bazaar bridge saved."}${summary}`.trim());
@@ -686,24 +694,20 @@ function StackedCardTile({ card, queryContext }: { card: ScryfallCard; queryCont
   const usage = getUsageScore(card);
   const price = getPrice(card);
   const rarity = rarityBadge(card.rarity);
+  const detailLink = {
+    pathname: "/cards/[cardId]",
+    query: { cardId: card.id },
+  } as const;
 
   const handleView = () => {
     trackCardViewed({ cardId: card.id, context: queryContext });
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      handleView();
-    }
-  };
-
   return (
-    <article
-      role="button"
-      tabIndex={0}
+    <Link
+      href={detailLink}
+      prefetch={false}
       onClick={handleView}
-      onKeyDown={handleKeyDown}
       className="surface-card group relative flex h-full flex-col gap-4 overflow-hidden rounded-[22px] border border-white/10 bg-white/5 p-5 transition-transform duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-highlight)]"
     >
       <div className="relative h-56">
@@ -763,7 +767,7 @@ function StackedCardTile({ card, queryContext }: { card: ScryfallCard; queryCont
           <span>#{card.collector_number ?? "?"}</span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }
 
@@ -775,3 +779,30 @@ function summarizeOracleText(text: string) {
   const preview = lines.slice(0, 3).join(" ");
   return lines.length > 3 ? `${preview}...` : preview;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

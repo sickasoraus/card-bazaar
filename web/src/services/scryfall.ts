@@ -1,4 +1,4 @@
-﻿const SCRYFALL_API = "https://api.scryfall.com";
+const SCRYFALL_API = "https://api.scryfall.com";
 
 const MAX_PAGE = 200;
 const COLLECTION_CHUNK_SIZE = 70;
@@ -137,6 +137,16 @@ async function fetchFromScryfall<T>(path: string, params?: URLSearchParams, opti
   return data;
 }
 
+export async function fetchCardById(cardId: string, options: FetchOptions = {}): Promise<ScryfallCard> {
+  const trimmed = cardId.trim();
+  if (!trimmed.length) {
+    throw new Error("Scryfall card lookup requires a non-empty identifier.");
+  }
+
+  const encoded = encodeURIComponent(trimmed);
+  return fetchFromScryfall<ScryfallCard>(`/cards/${encoded}`, undefined, options);
+}
+
 export async function searchCards(params: CardSearchParams, options: FetchOptions = {}): Promise<CardSearchResult> {
   const { query, page = 1, order, dir } = params;
 
@@ -263,3 +273,6 @@ export async function fetchCardsByNames(names: string[]): Promise<{
 }
 
 export type { ScryfallListResponse };
+
+
+
