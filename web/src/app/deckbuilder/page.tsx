@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   useCallback,
@@ -303,7 +303,7 @@ export default function DeckBuilderPage() {
       }
       const loaded = loadDraft(draftId);
       if (!loaded) {
-        window.alert("We couldn’t open that draft. It may have been removed.");
+        window.alert("We couldn't open that draft. It may have been removed.");
       }
     },
     [deck.id, loadDraft],
@@ -368,7 +368,7 @@ export default function DeckBuilderPage() {
                     <div>
                       <h3 className="font-display text-lg text-[color:var(--color-text-hero)]">Import deck list</h3>
                       <p className="text-xs text-subtle">
-                        Paste any quantity + card name list, MTG Arena .txt export, or CSV (quantity,name). We’ll fetch
+                        Paste any quantity + card name list, MTG Arena .txt export, or CSV (quantity,name). We will fetch
                         Scryfall data and flag anything that needs manual mapping.
                       </p>
                     </div>
@@ -577,7 +577,7 @@ export default function DeckBuilderPage() {
                           <div className="space-y-1">
                             <p className="text-sm font-semibold text-[color:var(--color-text-hero)]">{draft.name}</p>
                             <p className="text-[10px] uppercase tracking-[1.5px] text-subtle">
-                              {draft.format} · {draft.badge} draft · {draft.lastUpdatedLabel}
+                              {draft.format} . {draft.badge} draft . {draft.lastUpdatedLabel}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -617,7 +617,7 @@ export default function DeckBuilderPage() {
           <h2 className="font-display text-2xl text-[color:var(--color-text-hero)]">Your current draft</h2>
           {deck.cards.length === 0 ? (
             <p className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 p-4 text-sm text-subtle">
-              No cards added yet. Search below and tap “Add to deck” to start building.
+              No cards added yet. Search below and tap Add to deck to start building.
             </p>
           ) : (
             <table className="min-w-full overflow-hidden rounded-[var(--radius-card)] border border-white/10 text-sm text-subtle">
@@ -643,7 +643,7 @@ export default function DeckBuilderPage() {
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-4 py-3">{card.typeLine ?? "—"}</td>
+                    <td className="px-4 py-3">{card.typeLine ?? "-"}</td>
                     <td className="px-4 py-3 capitalize">{card.zone ?? "mainboard"}</td>
                     <td className="px-4 py-3">
                       {card.resolved === false ? (
@@ -767,3 +767,6 @@ export default function DeckBuilderPage() {
     </div>
   );
 }
+
+
+

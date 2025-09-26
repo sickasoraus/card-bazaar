@@ -1,14 +1,18 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type TelemetryType =
   | "search_performed"
   | "card_viewed"
+  | "deck_viewed"
   | "deck_card_added"
   | "deck_created"
+  | "deck_imported"
   | "import_attempted"
-  | "export_completed";
+  | "export_completed"
+  | "bridge_initiated"
+  | "recommendation_served";
 
 type BaseTelemetryBody = {
   type: TelemetryType;
@@ -20,13 +24,21 @@ type BaseTelemetryBody = {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DECK_SEED_VALUES = new Set(["blank", "template", "import"]);
 const IMPORT_STATUS_VALUES = new Set(["pending", "processed", "failed", "success"]);
+const DECK_VIEW_SOURCE_VALUES = new Set(["builder", "gallery", "share", "unknown"]);
+const BRIDGE_SCOPE_VALUES = new Set(["card", "deck"]);
+const RECOMMENDATION_SURFACES = new Set(["homepage", "deck_builder", "card_detail"]);
+const RECOMMENDATION_ALGORITHMS = new Set(["trending", "similar_cards", "recent_activity", "manual"]);
 const SUPPORTED_EVENTS = new Set<TelemetryType>([
   "search_performed",
   "card_viewed",
+  "deck_viewed",
   "deck_card_added",
   "deck_created",
+  "deck_imported",
   "import_attempted",
   "export_completed",
+  "bridge_initiated",
+  "recommendation_served",
 ]);
 
 type ValidatedEvent = {
@@ -116,6 +128,40 @@ function validateTelemetryBody(body: unknown): ValidationResult {
         },
       };
     }
+    case "deck_viewed": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: "deck_viewed payload must be an object." };
+      }
+      const { deckId, source, format, cardCount } = payload as Record<string, unknown>;
+      const trimmedDeckId = typeof deckId === "string" && deckId.trim().length ? deckId.trim() : null;
+      const trimmedSource = typeof source === "string" && source.trim().length ? source.trim() : "unknown";
+      const sourceCategory = DECK_VIEW_SOURCE_VALUES.has(trimmedSource) ? trimmedSource : "unknown";
+      const context: Prisma.JsonObject = {
+        source: trimmedSource,
+        sourceCategory,
+      };
+      if (trimmedDeckId) {
+        context.deckId = trimmedDeckId;
+      }
+      if (typeof format === "string" && format.trim()) {
+        context.format = format.trim();
+      }
+      if (typeof cardCount === "number" && Number.isFinite(cardCount)) {
+        context.cardCount = cardCount;
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "deck",
+          subjectId: trimmedDeckId && isUuid(trimmedDeckId) ? trimmedDeckId : null,
+          context,
+        },
+      };
+    }
+
     case "deck_card_added": {
       if (!payload || typeof payload !== "object") {
         return { ok: false, error: "deck_card_added payload must be an object." };
@@ -132,7 +178,12 @@ function validateTelemetryBody(body: unknown): ValidationResult {
       }
       const trimmedDeckId = deckId.trim();
       const context: Prisma.JsonObject = { deckId: trimmedDeckId, cardId, zone };
-      if (method === "manual" || method === "suggestion" || method === "import") {
+      if (
+        method === "manual" ||
+        method === "suggestion" ||
+        method === "import" ||
+        method === "import_unresolved"
+      ) {
         context.method = method;
       }
       return {
@@ -184,11 +235,49 @@ function validateTelemetryBody(body: unknown): ValidationResult {
         },
       };
     }
+    case "deck_imported": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: "deck_imported payload must be an object." };
+      }
+      const { deckId, source, cardCount, matchedCount, missingCount } = payload as Record<string, unknown>;
+      if (typeof source !== "string" || !source.trim()) {
+        return { ok: false, error: "deck_imported payload requires source." };
+      }
+      const trimmedDeckId = typeof deckId === "string" && deckId.trim().length ? deckId.trim() : null;
+      const trimmedSource = source.trim();
+      const context: Prisma.JsonObject = {
+        source: trimmedSource,
+      };
+      if (trimmedDeckId) {
+        context.deckId = trimmedDeckId;
+      }
+      if (typeof cardCount === "number" && Number.isFinite(cardCount)) {
+        context.cardCount = cardCount;
+      }
+      if (typeof matchedCount === "number" && Number.isFinite(matchedCount)) {
+        context.matchedCount = matchedCount;
+      }
+      if (typeof missingCount === "number" && Number.isFinite(missingCount)) {
+        context.missingCount = missingCount;
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "deck",
+          subjectId: trimmedDeckId && isUuid(trimmedDeckId) ? trimmedDeckId : null,
+          context,
+        },
+      };
+    }
+
     case "import_attempted": {
       if (!payload || typeof payload !== "object") {
         return { ok: false, error: "import_attempted payload must be an object." };
       }
-      const { importId, source, status, errorCode, cardCount } = payload as Record<string, unknown>;
+      const { importId, source, status, errorCode, cardCount, matchedCount, missingCount, mergedCount } = payload as Record<string, unknown>;
       if (typeof source !== "string" || !source.trim()) {
         return { ok: false, error: "import_attempted payload requires source." };
       }
@@ -209,6 +298,15 @@ function validateTelemetryBody(body: unknown): ValidationResult {
       }
       if (typeof cardCount === "number" && Number.isFinite(cardCount)) {
         context.cardCount = cardCount;
+      }
+      if (typeof matchedCount === "number" && Number.isFinite(matchedCount)) {
+        context.matchedCount = matchedCount;
+      }
+      if (typeof missingCount === "number" && Number.isFinite(missingCount)) {
+        context.missingCount = missingCount;
+      }
+      if (typeof mergedCount === "number" && Number.isFinite(mergedCount)) {
+        context.mergedCount = mergedCount;
       }
       return {
         ok: true,
@@ -256,6 +354,83 @@ function validateTelemetryBody(body: unknown): ValidationResult {
         },
       };
     }
+    case "bridge_initiated": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: "bridge_initiated payload must be an object." };
+      }
+      const { scope, subjectId, destination, missingCount, bridgeId: rawBridgeId } = payload as Record<string, unknown>;
+      const normalizedScope = typeof scope === "string" && scope.trim().length ? scope.trim() : null;
+      if (!normalizedScope || !BRIDGE_SCOPE_VALUES.has(normalizedScope)) {
+        return { ok: false, error: "bridge_initiated payload requires scope (card or deck)." };
+      }
+      const trimmedSubjectId = typeof subjectId === "string" && subjectId.trim().length ? subjectId.trim() : null;
+      const context: Prisma.JsonObject = {
+        scope: normalizedScope,
+      };
+      if (trimmedSubjectId) {
+        context.subjectId = trimmedSubjectId;
+      }
+      if (typeof destination === "string" && destination.trim()) {
+        context.destination = destination.trim();
+      }
+      if (typeof missingCount === "number" && Number.isFinite(missingCount)) {
+        context.missingCount = missingCount;
+      }
+      if (typeof rawBridgeId === "string" && rawBridgeId.trim()) {
+        context.bridgeId = rawBridgeId.trim();
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: normalizedScope,
+          subjectId: normalizedScope === "deck" && trimmedSubjectId && isUuid(trimmedSubjectId) ? trimmedSubjectId : null,
+          context,
+        },
+      };
+    }
+    case "recommendation_served": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: "recommendation_served payload must be an object." };
+      }
+      const { recommendationId, surface, algorithm, impressionCount } = payload as Record<string, unknown>;
+      const normalizedSurface = typeof surface === "string" && surface.trim().length ? surface.trim() : null;
+      if (!normalizedSurface || !RECOMMENDATION_SURFACES.has(normalizedSurface)) {
+        return { ok: false, error: "recommendation_served payload requires a supported surface." };
+      }
+      const normalizedAlgorithm = typeof algorithm === "string" && algorithm.trim().length ? algorithm.trim() : null;
+      if (!normalizedAlgorithm || !RECOMMENDATION_ALGORITHMS.has(normalizedAlgorithm)) {
+        return { ok: false, error: "recommendation_served payload requires a supported algorithm." };
+      }
+      const trimmedRecommendationId =
+        typeof recommendationId === "string" && recommendationId.trim().length
+          ? recommendationId.trim()
+          : null;
+      const context: Prisma.JsonObject = {
+        surface: normalizedSurface,
+        algorithm: normalizedAlgorithm,
+      };
+      if (trimmedRecommendationId) {
+        context.recommendationId = trimmedRecommendationId;
+      }
+      if (typeof impressionCount === "number" && Number.isFinite(impressionCount)) {
+        context.impressionCount = impressionCount;
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "recommendation",
+          subjectId: trimmedRecommendationId && isUuid(trimmedRecommendationId) ? trimmedRecommendationId : null,
+          context,
+        },
+      };
+    }
+
     default:
       return { ok: false, error: "Unsupported telemetry event type." };
   }
@@ -310,3 +485,20 @@ export async function POST(request: Request) {
 }
 
 export const runtime = "nodejs";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-﻿import { CardGridFrame } from "@/components/card-grid";
+import { CardGridFrame } from "@/components/card-grid";
 import { DeckBuilderPreviewSection } from "@/components/deck-builder-preview";
 import { HeroSection } from "@/components/hero";
 import { NavigationBar } from "@/components/navigation";
@@ -25,3 +25,4 @@ export default function Home() {
     </div>
   );
 }
+

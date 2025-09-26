@@ -96,7 +96,7 @@ function cleanupCardName(value: string): string {
 function normalizeCardKey(value: string): string {
   return cleanupCardName(value)
     .toLowerCase()
-    .replace(/[’'`]/g, "")
+    .replace(/[''`]/g, "")
     .replace(/[,.:]/g, "")
     .replace(/\s+/g, " ")
     .trim();

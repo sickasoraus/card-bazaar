@@ -65,6 +65,20 @@ enum TrendingPeriod {
   weekly
 }
 
+enum IngestionJobType {
+  scryfall_bulk
+  price_snapshot
+  telemetry_rollup
+  trending_refresh
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+}
+
 model User {
   id               String    @id @default(uuid()) @db.Uuid
   email            String    @unique
@@ -118,6 +132,7 @@ model Card {
 
   printings     Printing[]
   tags          CardTag[]
+  dailyMetrics  CardDailyMetric[]
 
   @@map("cards")
 }
@@ -186,6 +201,7 @@ model Deck {
 
   owner       User?          @relation(fields: [userId], references: [id])
   cards       DeckCard[]
+  dailyMetrics DeckDailyMetric[]
 
   @@map("decks")
 }
@@ -235,6 +251,53 @@ model EventLog {
   @@map("event_log")
 }
 
+model IngestionJobRun {
+  id           String           @id @default(uuid()) @db.Uuid
+  jobType      IngestionJobType @map("job_type")
+  status       JobStatus        @default(queued)
+  startedAt    DateTime         @default(now()) @map("started_at")
+  completedAt  DateTime?        @map("completed_at")
+  errorMessage String?          @map("error_message")
+  metadata     Json?
+
+  @@map("ingestion_job_runs")
+}
+
+model CardDailyMetric {
+  id              String   @id @default(uuid()) @db.Uuid
+  cardId          String   @map("card_id") @db.Uuid
+  metricDate      DateTime @map("metric_date") @db.Date
+  views           Int      @default(0)
+  uniqueUsers     Int      @map("unique_users") @default(0)
+  deckInclusions  Int      @map("deck_inclusions") @default(0)
+  priceAvg        Decimal? @map("price_avg") @db.Decimal(12, 4)
+  priceChange     Decimal? @map("price_change") @db.Decimal(12, 4)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  card            Card     @relation(fields: [cardId], references: [id])
+
+  @@unique([cardId, metricDate])
+  @@map("card_daily_metrics")
+}
+
+model DeckDailyMetric {
+  id              String   @id @default(uuid()) @db.Uuid
+  deckId          String   @map("deck_id") @db.Uuid
+  metricDate      DateTime @map("metric_date") @db.Date
+  views           Int      @default(0)
+  uniqueUsers     Int      @map("unique_users") @default(0)
+  imports         Int      @default(0)
+  exports         Int      @default(0)
+  bridgeRequests  Int      @map("bridge_requests") @default(0)
+  winRate         Decimal? @map("win_rate") @db.Decimal(5, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  deck            Deck     @relation(fields: [deckId], references: [id])
+
+  @@unique([deckId, metricDate])
+  @@map("deck_daily_metrics")
+}
+
 model TrendingSnapshot {
   id           String          @id @default(uuid()) @db.Uuid
   scope        TrendingScope
@@ -259,4 +322,8 @@ model Recommendation {
 
   @@map("recommendations")
 }
+
+
+
+
 

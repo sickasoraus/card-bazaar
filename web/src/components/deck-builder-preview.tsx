@@ -1,4 +1,4 @@
-﻿"use client";
+'use client';
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
@@ -16,7 +16,7 @@ type DeckVisibilityFilter = typeof VISIBILITY_FILTERS[number]["value"];
 function formatTimestamp(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "â€”";
+    return "--";
   }
   return date.toLocaleString(undefined, {
     month: "short",
@@ -110,7 +110,7 @@ export function DeckBuilderPreviewSection() {
               disabled={isRefreshing || isLoading}
               className="rounded-[var(--radius-control)] border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] transition-opacity hover:border-white/35 disabled:opacity-40"
             >
-              {isRefreshing ? "Refreshingâ€¦" : "Refresh list"}
+              {isRefreshing ? "Refreshing-EUR|" : "Refresh list"}
             </button>
             {note ? (
               <p className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 p-3 text-xs text-subtle">
@@ -190,7 +190,7 @@ function DeckList({ decks, isLoading }: DeckListProps) {
             <div>
               <p className="font-display text-lg text-[color:var(--color-text-hero)]">{deck.name}</p>
               <span className="text-[11px] uppercase tracking-[3px] text-subtle">
-                {deck.format} Â· {deck.visibility}
+                {deck.format} - {deck.visibility}
               </span>
             </div>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)]">
@@ -203,3 +203,5 @@ function DeckList({ decks, isLoading }: DeckListProps) {
     </ul>
   );
 }
+
+

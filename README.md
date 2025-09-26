@@ -1,11 +1,11 @@
-ï»¿# metablazt
+# metablazt
 
 Magic the Gathering Card Database and deck builder.
 
 ## Project Structure
 
-- `/web` â€“ Next.js App Router frontend (TypeScript, Tailwind, Prisma-ready) configured for static export.
-- `/docs` â€“ architecture references and deployment guides (`schema-and-events.md`, `design-tokens.md`, `supabase-setup.md`).
+- `/web` – Next.js App Router frontend (TypeScript, Tailwind, Prisma-ready) configured for static export.
+- `/docs` – architecture references and deployment guides (`schema-and-events.md`, `design-tokens.md`, `supabase-setup.md`, `trending-analytics.md`, `personalization-strategy.md`).
 
 ## Getting Started
 
@@ -47,3 +47,5 @@ See `docs/supabase-setup.md` for the full walkthrough.
 - UI shows zone/resolution badges so unresolved imports are easy to spot before bridging.
 
 Refer to `ROADMAP.md` for the latest milestone status.
+
+

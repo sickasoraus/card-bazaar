@@ -1,4 +1,4 @@
-# Supabase Setup Guide (Phase 1)
+Ôªø# Supabase Setup Guide (Phase 1)
 
 This walkthrough gets a Supabase Postgres instance ready for Metablazt.
 
@@ -30,12 +30,24 @@ Prisma Migrate cannot run directly through the pooler, so apply the schema once 
    npm run prisma:generate
    ```
 
+## 3b. Apply Phase 3 trending scaffolding (optional until Phase 3)
+- In Supabase SQL editor run `web/prisma/migrations/0002_phase3_trending/manual.sql` to create the job log and daily metric tables.
+- Locally, mark the migration as applied so Prisma stays in sync:
+  ```bash
+  cd web
+  npx prisma migrate resolve --applied 0002_phase3_trending
+  ```
+- If Prisma returns P3008 (already applied), the migration is already recorded in Supabase and you can skip straight to Prisma client generation.
+- Regenerate the client after schema changes:
+  ```bash
+  npm run prisma:generate
+  ```
 ## 4. Using Prisma in the app
 - Import the shared client from `src/lib/prisma.ts` inside API routes or server actions.
 - Prisma Client will reuse the Session Pooler connection defined in `DATABASE_URL`.
 
 ### Need direct migrations later?
-If you want Prisma to execute migrations automatically, either tunnel with the [Supabase CLI](https://supabase.com/docs/guides/cli/local-development#database-connect) or run from an environment with IPv6 access to the ìDirect Connectionî endpoint, then switch the URL back to the pooler for normal usage.
+If you want Prisma to execute migrations automatically, either tunnel with the [Supabase CLI](https://supabase.com/docs/guides/cli/local-development#database-connect) or run from an environment with IPv6 access to the ‚ÄúDirect Connection‚Äù endpoint, then switch the URL back to the pooler for normal usage.
 
 ## 5. Telemetry endpoint
 - The client helpers post to `/api/telemetry`. When `NEXT_PUBLIC_TELEMETRY_DEBUG=true`, data stays in the console; set it to `false` to forward events to Supabase (`event_log` table).
@@ -45,3 +57,8 @@ If you want Prisma to execute migrations automatically, either tunnel with the [
 - Update deployment workflows (Vercel or GitHub Actions) to export the secret before running Prisma commands.
 
 With this setup, later phases can persist decks, telemetry, and ingested card data directly into Supabase.
+
+
+
+
+
