@@ -307,6 +307,7 @@ model TrendingSnapshot {
   components   Json?           @map("components")
   calculatedAt DateTime        @default(now()) @map("calculated_at")
 
+  @@unique([scope, subjectId, period])
   @@map("trending_snapshots")
 }
 

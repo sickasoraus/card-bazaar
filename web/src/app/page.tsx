@@ -2,6 +2,7 @@ import { CardGridFrame } from "@/components/card-grid";
 import { DeckBuilderPreviewSection } from "@/components/deck-builder-preview";
 import { HeroSection } from "@/components/hero";
 import { NavigationBar } from "@/components/navigation";
+import { TrendingRail } from "@/components/trending-rail";
 
 export default function Home() {
   return (
@@ -9,6 +10,7 @@ export default function Home() {
       <NavigationBar />
       <main className="flex-1">
         <HeroSection />
+        <TrendingRail />
         <CardGridFrame />
         <DeckBuilderPreviewSection />
       </main>
@@ -25,4 +27,3 @@ export default function Home() {
     </div>
   );
 }
-

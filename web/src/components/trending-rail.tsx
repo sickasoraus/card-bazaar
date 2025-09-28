@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 
+import { useTrending, type IngestionJobMeta, type TrendingEntry } from "@/hooks/use-trending";
 import { trackBridgeInitiated } from "@/lib/telemetry";
-import { useTrending, type TrendingEntry } from "@/hooks/use-trending";
 import { initiateCardBazaarBridge } from "@/services/card-bazaar-bridge";
 
 type CardTrendingEntry = TrendingEntry & {
@@ -20,6 +20,12 @@ export function TrendingRail() {
         .slice(0, 6),
     [entries],
   );
+
+  const lastUpdatedLabel = useMemo(() => formatRelativeTime(meta?.lastCalculatedAt ?? null), [meta?.lastCalculatedAt]);
+  const trendingJob = meta?.jobs?.trendingRefresh ?? null;
+  const telemetryJob = meta?.jobs?.telemetryRollup ?? null;
+  const isFallback = Boolean(meta?.fallback);
+  const hasDatabase = meta?.hasDatabase ?? true;
 
   return (
     <section
@@ -40,6 +46,19 @@ export function TrendingRail() {
                 ? "Supabase metrics are coming online soon - for now we're highlighting a curated set of standouts so the rail always feels alive."
                 : "Scores blend view velocity, deck inclusions, price movement, and inventory pressure. Hover to inspect the data points before pivoting into deeper searches."}
             </p>
+            {meta ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[2px] text-subtle">
+                <StatusLabel tone={isFallback ? "warning" : "success"}>
+                  {isFallback ? "Showing curated fallback snapshot" : "Live Supabase metrics"}
+                </StatusLabel>
+                {!hasDatabase ? <StatusLabel tone="danger">Supabase connection missing</StatusLabel> : null}
+                {lastUpdatedLabel ? (
+                  <StatusLabel tone="neutral">Last refreshed {lastUpdatedLabel}</StatusLabel>
+                ) : null}
+                <JobStatusChip label="Trending job" job={trendingJob} />
+                <JobStatusChip label="Telemetry rollup" job={telemetryJob} />
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -162,6 +181,38 @@ function TrendingCardTile({ entry }: TrendingCardTileProps) {
   );
 }
 
+function JobStatusChip({ label, job }: { label: string; job?: IngestionJobMeta | null }) {
+  if (!job) {
+    return null;
+  }
+
+  const tone = job.status === "succeeded" ? "success" : job.status === "failed" ? "danger" : "neutral";
+  const timestamp = job.completedAt ?? job.startedAt;
+  const relative = formatRelativeTime(timestamp);
+  const statusLabel = job.status === "succeeded" ? "Succeeded" : job.status === "failed" ? "Failed" : job.status;
+
+  return (
+    <StatusLabel tone={tone}>
+      {relative ? `${label}: ${statusLabel} (${relative})` : `${label}: ${statusLabel}`}
+    </StatusLabel>
+  );
+}
+
+function StatusLabel({ children, tone }: { children: ReactNode; tone: "neutral" | "success" | "warning" | "danger" }) {
+  const toneClasses: Record<"neutral" | "success" | "warning" | "danger", string> = {
+    neutral: "border-white/20 bg-white/10 text-[color:var(--color-text-body)]",
+    success: "border-emerald-300/40 bg-emerald-500/15 text-emerald-100",
+    warning: "border-amber-300/50 bg-amber-500/20 text-amber-100",
+    danger: "border-rose-400/60 bg-rose-500/20 text-rose-100",
+  };
+
+  return (
+    <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[2px] ${toneClasses[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
 function formatPercentage(value: unknown) {
   let numeric: number | null = null;
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -182,7 +233,46 @@ function formatPercentage(value: unknown) {
   return `${formatted}%`;
 }
 
+function formatRelativeTime(iso: string | null | undefined): string | null {
+  if (!iso) {
+    return null;
+  }
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
 
+  const diffMs = Date.now() - parsed.getTime();
+  const future = diffMs < 0;
+  const abs = Math.abs(diffMs);
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
 
+  let value: number;
+  let unit: "minute" | "hour" | "day";
 
+  if (abs < minute) {
+    value = 0;
+    unit = "minute";
+  } else if (abs < hour) {
+    value = Math.round(abs / minute);
+    unit = "minute";
+  } else if (abs < day) {
+    value = Math.round(abs / hour);
+    unit = "hour";
+  } else {
+    value = Math.round(abs / day);
+    unit = "day";
+  }
 
+  if (value === 0) {
+    return future ? "in under a minute" : "moments ago";
+  }
+
+  const plural = value === 1 ? "" : "s";
+  if (future) {
+    return `in ${value} ${unit}${plural}`;
+  }
+  return `${value} ${unit}${plural} ago`;
+}

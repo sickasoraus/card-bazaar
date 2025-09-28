@@ -32,7 +32,7 @@ describe("TrendingRail", () => {
     mockBridge.mockResolvedValue({ bridgeId: "bridge-1", missing: [], ok: true });
   });
 
-  it("renders fallback messaging when metrics are not yet live", () => {
+  it("renders fallback messaging and status chips when metrics are not yet live", () => {
     mockUseTrending.mockReturnValue({
       entries: [
         {
@@ -60,6 +60,12 @@ describe("TrendingRail", () => {
         format: null,
         count: 1,
         fallback: true,
+        hasDatabase: false,
+        lastCalculatedAt: null,
+        jobs: {
+          telemetryRollup: null,
+          trendingRefresh: null,
+        },
       },
       isLoading: false,
       error: null,
@@ -72,9 +78,11 @@ describe("TrendingRail", () => {
     expect(screen.getByText("Lightning Bolt")).toBeInTheDocument();
     expect(screen.getByText("12.5%")).toBeInTheDocument();
     expect(screen.getByText("36")).toBeInTheDocument();
+    expect(screen.getByText(/showing curated fallback snapshot/i)).toBeInTheDocument();
+    expect(screen.getByText(/supabase connection missing/i)).toBeInTheDocument();
   });
 
-  it("falls back to an em dash when price growth cannot be parsed", () => {
+  it("shows live metrics messaging when Supabase data is present", () => {
     mockUseTrending.mockReturnValue({
       entries: [
         {
@@ -102,6 +110,12 @@ describe("TrendingRail", () => {
         format: null,
         count: 1,
         fallback: false,
+        hasDatabase: true,
+        lastCalculatedAt: null,
+        jobs: {
+          telemetryRollup: null,
+          trendingRefresh: null,
+        },
       },
       isLoading: false,
       error: null,
@@ -112,6 +126,7 @@ describe("TrendingRail", () => {
 
     expect(screen.getByText(/brainstorm/i)).toBeInTheDocument();
     expect(screen.getByText("--")).toBeInTheDocument();
+    expect(screen.getByText(/live supabase metrics/i)).toBeInTheDocument();
   });
 
   it("bridges to Card Bazaar and tracks telemetry", async () => {
@@ -143,6 +158,12 @@ describe("TrendingRail", () => {
         format: null,
         count: 1,
         fallback: false,
+        hasDatabase: true,
+        lastCalculatedAt: null,
+        jobs: {
+          telemetryRollup: null,
+          trendingRefresh: null,
+        },
       },
       isLoading: false,
       error: null,
@@ -172,10 +193,3 @@ describe("TrendingRail", () => {
     );
   });
 });
-
-
-
-
-
-
-

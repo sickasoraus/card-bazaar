@@ -21,6 +21,7 @@ export type RecommendationCardEntity = {
     manaCost: string | null;
     image: string | null;
     colorIdentity: string[];
+    typeLine: string | null;
   };
 };
 

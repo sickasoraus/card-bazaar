@@ -1,9 +1,33 @@
-'use client';
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export type TrendingScope = "card" | "deck";
 export type TrendingPeriod = "daily" | "weekly";
+export type IngestionJobStatus = "queued" | "running" | "succeeded" | "failed";
+
+export type IngestionJobMeta = {
+  jobType: string;
+  status: IngestionJobStatus;
+  startedAt: string | null;
+  completedAt: string | null;
+  durationMs: number | null;
+  errorMessage: string | null;
+};
+
+export type TrendingMeta = {
+  scope: TrendingScope;
+  period: TrendingPeriod;
+  format: string | null;
+  count: number;
+  fallback: boolean;
+  hasDatabase?: boolean;
+  lastCalculatedAt?: string | null;
+  jobs?: {
+    telemetryRollup: IngestionJobMeta | null;
+    trendingRefresh: IngestionJobMeta | null;
+  } | null;
+};
 
 export type TrendingCard = {
   id: string;
@@ -44,13 +68,7 @@ export type UseTrendingOptions = {
 
 export type UseTrendingResult = {
   entries: TrendingEntry[];
-  meta: {
-    scope: TrendingScope;
-    period: TrendingPeriod;
-    format: string | null;
-    count: number;
-    fallback: boolean;
-  } | null;
+  meta: TrendingMeta | null;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -76,7 +94,7 @@ function buildTrendingSearchParams(options: UseTrendingOptions) {
 
 export function useTrending(options: UseTrendingOptions = {}): UseTrendingResult {
   const [entries, setEntries] = useState<TrendingEntry[]>([]);
-  const [meta, setMeta] = useState<UseTrendingResult["meta"]>(null);
+  const [meta, setMeta] = useState<TrendingMeta | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -104,7 +122,7 @@ export function useTrending(options: UseTrendingOptions = {}): UseTrendingResult
           .json()
           .catch(() => ({}))) as {
           data?: TrendingEntry[];
-          meta?: UseTrendingResult["meta"];
+          meta?: TrendingMeta;
           error?: string;
         };
 
@@ -149,5 +167,3 @@ export function useTrending(options: UseTrendingOptions = {}): UseTrendingResult
     refresh,
   };
 }
-
-

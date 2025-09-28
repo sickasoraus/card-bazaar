@@ -1,6 +1,6 @@
 # Metablazt Roadmap (Phase Tracker)
 
-_Last updated: 2025-09-25_
+_Last updated: 2025-09-26_
 
 This document tracks feature delivery for Phases 0 and 1 as we work toward the GitHub Pages milestone.
 
@@ -19,7 +19,7 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - GitHub Pages workflow configured for automated static deploys (2025-09-24)
 
 **Next Up**
-- Roll forward into Phase 1 feature delivery.
+- Rolling into Phase 3 (trending analytics + personalization rails).
 
 **Dependencies**
 - Supabase database provisioned with env secrets before Prisma client is enabled.
@@ -45,7 +45,7 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - Deck builder integrates Supabase deck sync with recent draft picker and cloud/local instrumentation (2025-09-25)
 
 **Next Up**
-- Prep Phase 2 backlog: deck suggestions, personalization hooks, and Supabase ingestion polish.
+- Rolling into Phase 3 (trending analytics + personalization rails).
 
 **Dependencies**
 - Supabase database provisioned with env secrets before Prisma client is enabled.
@@ -53,7 +53,7 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 
 ## Phase 2 - Deck Builder & Cart Bridge
 
-**Status:** In Progress
+**Status:** Complete
 
 **Scope:** robust deck import/export support, deck builder UX polish, and Card Bazaar bridge placeholders ready for integration.
 
@@ -67,8 +67,30 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - Wire authenticated Supabase deck sync + conflict resolution UI polish.
 - Add deck-to-cart manifest preview once Card Bazaar endpoint is live.
 
+## Phase 3 - Trending Analytics & Personalization
+
+**Status:** In Progress
+
+**Scope:** Supabase metrics rollups, trending APIs, and recommendation rails across the product surfaces.
+
+**Completed**
+- Trending data service and /api/trending expose Supabase metrics with job health metadata (2025-09-26).
+- Homepage trending rail now consumes live metrics with status chips and refresh controls (2025-09-26).
+- Deck builder recommendations panel calls /api/recommendations, logs telemetry, and supports add-to-deck actions (2025-09-26).
+
+**Next Up**
+- Implement recommendation rail on /cards/[cardId] with bridge/add-to-deck actions.
+- Finalize cron automation runbooks and Supabase monitoring dashboards.
+- Persist personalized seeds in 
+ecommendations for authenticated users.
+
+**Dependencies**
+- Supabase cron jobs (	elemetry_rollup, 	rending_refresh) remain healthy.
+- Recommendation persistence schema migrations applied before enabling personalized seeds.
 ## Change Log
 
+- 2025-09-26: Homepage trending rail now renders Supabase metrics with status chips and refresh controls.
+- 2025-09-26: Deck builder recommendations panel wired to `/api/recommendations` with add-to-deck telemetry.
 - 2025-09-26: Deck builder import/export pipeline, zone awareness, and Card Bazaar bridge preview shipped.
 - 2025-09-25: Card explorer filters now drive Scryfall queries with summary UI and telemetry metadata.
 - 2025-09-25: Deck builder Supabase sync plus recent draft picker shipped.
@@ -82,6 +104,9 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - 2025-09-24: Next.js App Router scaffold added under `/web` with static export config.
 - 2025-09-24: Base navigation/hero/card grid frame shipped for Phase 0 UI shell.
 - 2025-09-24: GitHub Pages workflow added for automated static deployments.
+
+
+
 
 
 

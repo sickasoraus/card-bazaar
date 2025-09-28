@@ -4,6 +4,11 @@ _Last updated: 2025-09-26_
 
 This checklist captures the Supabase jobs and ETL flows needed before Phase 3 features (trending insights + personalization) go live.
 
+**Status notes:**
+- 2025-09-26: `/api/trending` live with Supabase data; homepage trending rail displays job freshness and fallback state.
+- 2025-09-26: Deck builder recommendations panel consumes the same metrics via `/api/recommendations`.
+
+
 ## 1. Data Sources & Schedule
 
 | Job | Frequency | Source | Destination |
@@ -136,3 +141,8 @@ do update set
 - Surface the latest `trending_refresh` timestamp in the admin dashboard so merchandisers know freshness.
 
 With these pieces in place we can surface reliable trending insights and feed personalization models in upcoming sprints.
+## 6. Local Job Shortcuts
+
+- `npm run jobs:telemetry` aggregates the current day's telemetry into `card_daily_metrics` and `deck_daily_metrics`.
+- `npm run jobs:trending` recomputes `trending_snapshots` using the latest daily metrics.
+- `npm run jobs:seed` injects a sample card/deck plus baseline metrics so the UI shows data before cron jobs are wired up.
