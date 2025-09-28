@@ -80,6 +80,28 @@ type RecommendationServedPayload = {
   algorithm: "trending" | "similar_cards" | "recent_activity" | "manual";
   impressionCount?: number;
 };
+type SimulatorActionPayload = {
+  action:
+    | "load_deck"
+    | "shuffle"
+    | "draw"
+    | "draw_opening_hand"
+    | "mulligan"
+    | "next_turn"
+    | "move_card"
+    | "reset"
+    | "clear";
+  deckId?: string;
+  cardCount?: number;
+  count?: number;
+  destination?: string;
+};
+type AutofillActionPayload = {
+  action: "requested" | "received" | "added" | "add_all" | "dismissed";
+  deckId?: string;
+  suggestionCount?: number;
+};
+
 
 type TelemetryEnvelope =
   | { type: "search_performed"; payload: SearchPerformedPayload }
@@ -91,6 +113,8 @@ type TelemetryEnvelope =
   | { type: "import_attempted"; payload: ImportAttemptedPayload }
   | { type: "export_completed"; payload: ExportCompletedPayload }
   | { type: "bridge_initiated"; payload: BridgeInitiatedPayload }
+  | { type: "deck_simulator_action"; payload: SimulatorActionPayload }
+  | { type: "deck_autofill_action"; payload: AutofillActionPayload }
   | { type: "recommendation_served"; payload: RecommendationServedPayload };
 
 const debugMode = () => process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
@@ -171,3 +195,9 @@ export function trackRecommendationServed(payload: RecommendationServedPayload) 
 
 
 
+export function trackSimulatorAction(payload: SimulatorActionPayload) {
+  emitTelemetry({ type: "deck_simulator_action", payload });
+}
+export function trackAutofillAction(payload: AutofillActionPayload) {
+  emitTelemetry({ type: "deck_autofill_action", payload });
+}

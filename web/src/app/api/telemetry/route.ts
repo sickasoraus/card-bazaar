@@ -12,7 +12,9 @@ type TelemetryType =
   | "import_attempted"
   | "export_completed"
   | "bridge_initiated"
-  | "recommendation_served";
+  | "recommendation_served"
+  | "deck_simulator_action"
+  | "deck_autofill_action";
 
 type BaseTelemetryBody = {
   type: TelemetryType;
@@ -39,6 +41,8 @@ const SUPPORTED_EVENTS = new Set<TelemetryType>([
   "export_completed",
   "bridge_initiated",
   "recommendation_served",
+  "deck_simulator_action",
+  "deck_autofill_action",
 ]);
 
 type ValidatedEvent = {
@@ -431,6 +435,68 @@ function validateTelemetryBody(body: unknown): ValidationResult {
       };
     }
 
+    case "deck_simulator_action": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: "deck_simulator_action payload must be an object." };
+      }
+      const { action, deckId, cardCount, count, destination } = payload as Record<string, unknown>;
+      if (typeof action !== "string" || !action.trim().length) {
+        return { ok: false, error: "deck_simulator_action payload requires an action." };
+      }
+      const context: Prisma.JsonObject = {
+        action: action.trim(),
+      };
+      if (typeof deckId === "string" && deckId.trim().length && isUuid(deckId.trim())) {
+        context.deckId = deckId.trim();
+      }
+      if (typeof cardCount === "number" && Number.isFinite(cardCount)) {
+        context.cardCount = cardCount;
+      }
+      if (typeof count === "number" && Number.isFinite(count)) {
+        context.count = count;
+      }
+      if (typeof destination === "string" && destination.trim().length) {
+        context.destination = destination.trim();
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "simulator",
+          subjectId: null,
+          context,
+        },
+      };
+    }
+    case "deck_autofill_action": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: "deck_autofill_action payload must be an object." };
+      }
+      const { action, deckId, suggestionCount } = payload as Record<string, unknown>;
+      if (typeof action !== "string" || !action.trim().length) {
+        return { ok: false, error: "deck_autofill_action payload requires an action." };
+      }
+      const context: Prisma.JsonObject = { action: action.trim() };
+      if (typeof deckId === "string" && deckId.trim().length && isUuid(deckId.trim())) {
+        context.deckId = deckId.trim();
+      }
+      if (typeof suggestionCount === "number" && Number.isFinite(suggestionCount)) {
+        context.suggestionCount = suggestionCount;
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "autofill",
+          subjectId: null,
+          context,
+        },
+      };
+    }
     default:
       return { ok: false, error: "Unsupported telemetry event type." };
   }
@@ -485,6 +551,9 @@ export async function POST(request: Request) {
 }
 
 export const runtime = "nodejs";
+
+
+
 
 
 

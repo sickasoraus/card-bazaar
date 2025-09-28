@@ -16,7 +16,7 @@ export function NavigationBar() {
             Metablazt
           </span>
           <span className="hidden rounded-full bg-[color:var(--color-neutral-300)]/40 px-3 py-1 text-[11px] font-semibold text-[color:var(--color-text-hero)] tracking-[1.5px] md:inline-flex">
-            Phase 0
+            Phase 4
           </span>
         </Link>
         <nav className="hidden items-center gap-8 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-accent-highlight)] lg:flex">
@@ -44,3 +44,4 @@ export function NavigationBar() {
     </header>
   );
 }
+

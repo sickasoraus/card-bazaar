@@ -15,11 +15,103 @@ import { useDraftDeck } from "@/hooks/use-draft-deck";
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
 import { useRecommendations, type RecommendationSeed, type UseRecommendationsResult } from "@/hooks/use-recommendations";
 import { mapRecommendationSource } from "@/lib/recommendation-utils";
-import { trackRecommendationServed } from "@/lib/telemetry";
+import { trackAutofillAction, trackRecommendationServed } from "@/lib/telemetry";
 import type { ScryfallCard } from "@/services/scryfall";
+import type { AutofillSuggestion } from "@/services/autofill";
 import { initiateCardBazaarBridge } from "@/services/card-bazaar-bridge";
 
 const DEFAULT_QUERY = "game:paper";
+
+const KRRIRK_SEED_STORAGE_KEY = "metablazt.seed.krrik";
+const KRRIRK_DECK_NAME = "K'rrik Devotion";
+const KRRIRK_SEED_LIST = `1 K'rrik, Son of Yawgmoth
+1 Urborg, Tomb of Yawgmoth
+1 Cabal Stronghold
+1 Castle Locthwain
+1 Phyrexian Tower
+1 Takenuma, Abandoned Mire
+1 Chrome Mox
+1 Ancient Tomb
+1 Arch of Orazca
+1 Nykthos, Shrine to Nyx
+1 Bloodchief's Thirst
+1 Dark Ritual
+1 Cut Down
+1 Fatal Push
+1 Inquisition of Kozilek
+1 Insatiable Avarice
+1 Thoughtseize
+1 Village Rites
+1 Bitterblossom
+1 Bitter Triumph
+1 Deadly Dispute
+1 Dark Confidant
+1 Dreadhorde Invasion
+1 Jadar, Ghoulcaller of Nephalia
+1 Sign in Blood
+1 Sheoldred's Edict
+1 Arcane Signet
+1 Jet Medallion
+1 Mind Stone
+1 The Irencrag
+1 Black Market Connections
+1 Liliana of the Veil
+1 Lord Skitter, Sewer King
+1 Necropotence
+1 Phyrexian Arena
+1 Ophiomancer
+1 Toxic Deluge
+1 Damnation
+1 Sheoldred, the Apocalypse
+1 Lolth, Spider Queen
+1 Liliana, Dreadhorde General
+1 Vraska, Betrayal's Sting
+1 Ardyn, the Usurper
+1 Griselbrand
+1 Reanimate
+1 Baleful Mastery
+1 Witch's Cottage
+1 Crux of Fate
+1 Liliana, Death's Majesty
+31 Swamp
+1 Exsanguinate
+1 Torment of Hailfire
+1 Gix, Yawgmoth Praetor
+1 Gray Merchant of Asphodel
+1 Bolas's Citadel
+1 Breach the Multiverse
+1 Mox Amber
+1 Liliana, Waker of the Dead
+1 Sorin the Mirthless
+1 Professor Onyx
+1 The Cruelty of Gix
+1 Duress
+1 Beseech the Mirror
+1 Phyrexian Obliterator
+1 Outrageous Robbery
+1 Languish
+1 Feed the Cycle
+1 Cruelclaw's Heist
+1 Gifted Aetherborn
+1 Massacre Wurm`;
+
+const COLOR_LABELS: Record<string, string> = {
+  W: "White",
+  U: "Blue",
+  B: "Black",
+  R: "Red",
+  G: "Green",
+};
+
+type AutofillStatus = "idle" | "loading" | "success" | "error";
+
+type AutofillMeta = {
+  deckId: string | null;
+  deckName: string | null;
+  format: string | null;
+  colors: string[] | null;
+  count: number;
+};
 
 const IMPORT_SOURCE_OPTIONS = [
   { value: "manual_list" as const, label: "Manual paste" },
@@ -74,6 +166,12 @@ export default function DeckBuilderPage() {
   const [bridgeMissing, setBridgeMissing] = useState<string[]>([]);
   const [bridgeError, setBridgeError] = useState<string | null>(null);
 
+  const [autofillStatus, setAutofillStatus] = useState<AutofillStatus>("idle");
+  const [autofillSuggestions, setAutofillSuggestions] = useState<AutofillSuggestion[]>([]);
+  const [autofillError, setAutofillError] = useState<string | null>(null);
+  const [autofillMeta, setAutofillMeta] = useState<AutofillMeta | null>(null);
+  const [isAddingAllSuggestions, setIsAddingAllSuggestions] = useState(false);
+
   const { data, isLoading, error, updateParams } = useScryfallSearch({ initialQuery: DEFAULT_QUERY });
 
   const cards = useMemo<ScryfallCard[]>(() => data?.data ?? [], [data]);
@@ -125,6 +223,207 @@ export default function DeckBuilderPage() {
     },
     [addCard],
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (deck.cards.length > 0) {
+      return;
+    }
+    if (window.localStorage.getItem(KRRIRK_SEED_STORAGE_KEY)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const result = await importFromList(KRRIRK_SEED_LIST, "manual_list");
+        if (!cancelled && result?.ok) {
+          updateDeckMeta({
+            name: KRRIRK_DECK_NAME,
+            format: "commander",
+            visibility: deck.visibility,
+          });
+          window.localStorage.setItem(KRRIRK_SEED_STORAGE_KEY, "true");
+        }
+      } catch (error) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Failed to seed K'rrik deck", error);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deck.cards.length, deck.visibility, importFromList, updateDeckMeta]);
+
+  const mainboardCards = useMemo(
+    () => deck.cards.filter((card) => (card.zone ?? "mainboard") === "mainboard" && card.quantity > 0),
+    [deck.cards],
+  );
+
+  const deckColorPalette = useMemo(() => {
+    const symbols = new Set<string>();
+    mainboardCards.forEach((card) => {
+      const cost = card.manaCost ?? "";
+      for (const char of cost) {
+        if ("WUBRG".includes(char)) {
+          symbols.add(char);
+        }
+      }
+    });
+    return symbols.size ? Array.from(symbols) : null;
+  }, [mainboardCards]);
+
+  const hasMainboardCards = mainboardCards.length > 0;
+
+  const handleGenerateAutofill = useCallback(async () => {
+    if (!hasMainboardCards) {
+      setAutofillStatus("error");
+      setAutofillError("Add mainboard cards before generating suggestions.");
+      setAutofillSuggestions([]);
+      setAutofillMeta(null);
+      return;
+    }
+
+    setAutofillStatus("loading");
+    setAutofillError(null);
+    setAutofillSuggestions([]);
+    setAutofillMeta(null);
+
+    trackAutofillAction({ action: "requested", deckId: deck.id, suggestionCount: undefined });
+
+    try {
+      const requestCards = mainboardCards.map((card) => ({
+        cardId: card.cardId,
+        name: card.name,
+        quantity: card.quantity,
+      }));
+
+      const response = await fetch("/api/autofill", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          deckId: deck.id,
+          deckName: deck.name,
+          format: deck.format,
+          colors: deckColorPalette,
+          cards: requestCards,
+          limit: 6,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const message =
+          payload && typeof payload === "object" && "error" in payload && typeof (payload as { error?: unknown }).error === "string"
+            ? (payload as { error: string }).error
+            : "Unable to compute suggestions right now.";
+        setAutofillStatus("error");
+        setAutofillError(message);
+        return;
+      }
+
+      const payload = await response.json();
+      const suggestions: AutofillSuggestion[] = Array.isArray(payload?.data) ? payload.data : [];
+      setAutofillSuggestions(suggestions);
+      setAutofillStatus("success");
+
+      if (payload?.meta && typeof payload.meta === "object") {
+        setAutofillMeta({
+          deckId: typeof payload.meta.deckId === "string" ? payload.meta.deckId : null,
+          deckName: typeof payload.meta.deckName === "string" ? payload.meta.deckName : null,
+          format: typeof payload.meta.format === "string" ? payload.meta.format : null,
+          colors: Array.isArray(payload.meta.colors)
+            ? payload.meta.colors.filter((entry: unknown): entry is string => typeof entry === "string")
+            : null,
+          count: typeof payload.meta.count === "number" ? payload.meta.count : suggestions.length,
+        });
+      } else {
+        setAutofillMeta({
+          deckId: deck.id,
+          deckName: deck.name,
+          format: deck.format,
+          colors: deckColorPalette,
+          count: suggestions.length,
+        });
+      }
+
+      trackAutofillAction({ action: "received", deckId: deck.id, suggestionCount: suggestions.length });
+    } catch (error) {
+      console.warn("Autofill request failed", error);
+      setAutofillStatus("error");
+      setAutofillError("Unable to compute suggestions right now. Please try again soon.");
+    }
+  }, [deck.id, deck.name, deck.format, deckColorPalette, hasMainboardCards, mainboardCards]);
+
+  const handleAddAutofillSuggestion = useCallback(
+    (suggestion: AutofillSuggestion) => {
+      addCard({
+        cardId: suggestion.cardId,
+        name: suggestion.name,
+        manaCost: suggestion.manaCost,
+        typeLine: suggestion.typeLine,
+        imageUrl: suggestion.image ?? null,
+        method: "suggestion",
+      });
+
+      trackAutofillAction({ action: "added", deckId: deck.id, suggestionCount: 1 });
+
+      let nextSuggestions: AutofillSuggestion[] = [];
+      setAutofillSuggestions((current) => {
+        nextSuggestions = current.filter((item) => item.seedId !== suggestion.seedId);
+        return nextSuggestions;
+      });
+      setAutofillMeta((current) => (current ? { ...current, count: nextSuggestions.length } : current));
+      setAutofillStatus("success");
+    },
+    [addCard, deck.id],
+  );
+
+  const handleAddAllAutofillSuggestions = useCallback(() => {
+    if (!autofillSuggestions.length) {
+      return;
+    }
+
+    setIsAddingAllSuggestions(true);
+    try {
+      autofillSuggestions.forEach((suggestion) => {
+        addCard({
+          cardId: suggestion.cardId,
+          name: suggestion.name,
+          manaCost: suggestion.manaCost,
+          typeLine: suggestion.typeLine,
+          imageUrl: suggestion.image ?? null,
+          method: "suggestion",
+        });
+      });
+
+      trackAutofillAction({ action: "add_all", deckId: deck.id, suggestionCount: autofillSuggestions.length });
+      setAutofillSuggestions([]);
+      setAutofillMeta((current) => (current ? { ...current, count: 0 } : current));
+      setAutofillStatus("success");
+    } finally {
+      setIsAddingAllSuggestions(false);
+    }
+  }, [addCard, autofillSuggestions, deck.id]);
+
+  const handleDismissAutofill = useCallback(() => {
+    let dismissedCount = 0;
+    setAutofillSuggestions((current) => {
+      dismissedCount = current.length;
+      return [];
+    });
+    setAutofillStatus("idle");
+    setAutofillError(null);
+    setAutofillMeta(null);
+    trackAutofillAction({ action: "dismissed", deckId: deck.id, suggestionCount: dismissedCount });
+  }, [deck.id]);
 
   const zoneBreakdown = useMemo(() => {
     const totals = {
@@ -569,6 +868,12 @@ export default function DeckBuilderPage() {
                 >
                   {isBridgingDeck ? "Bridging..." : "Bridge to Card Bazaar"}
                 </button>
+                <Link
+                  href="/deckbuilder/simulator"
+                  className="gradient-pill shadow-cta rounded-[var(--radius-pill)] px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)]"
+                >
+                  Open simulator
+                </Link>
                 <button
                   type="button"
                   onClick={resetDeck}
@@ -671,6 +976,20 @@ export default function DeckBuilderPage() {
         error={recommendationsError}
         onRefresh={refreshRecommendations}
         onAdd={handleAddRecommendedCard}
+      />
+
+      <AutofillSection
+        status={autofillStatus}
+        suggestions={autofillSuggestions}
+        error={autofillError}
+        isGenerating={autofillStatus === "loading"}
+        isAddingAll={isAddingAllSuggestions}
+        hasMainboard={hasMainboardCards}
+        meta={autofillMeta}
+        onGenerate={handleGenerateAutofill}
+        onAdd={handleAddAutofillSuggestion}
+        onAddAll={handleAddAllAutofillSuggestions}
+        onClear={handleDismissAutofill}
       />
 
       <section className="border-b border-white/10 bg-[color:var(--color-neutral-100)]/40 py-10">
@@ -934,6 +1253,212 @@ function RecommendationsSection({ seeds, meta, isLoading, error, onRefresh, onAd
   );
 }
 
+type AutofillSectionProps = {
+  status: AutofillStatus;
+  suggestions: AutofillSuggestion[];
+  error: string | null;
+  isGenerating: boolean;
+  isAddingAll: boolean;
+  hasMainboard: boolean;
+  meta: AutofillMeta | null;
+  onGenerate: () => void;
+  onAdd: (suggestion: AutofillSuggestion) => void;
+  onAddAll: () => void;
+  onClear: () => void;
+};
+
+function AutofillSection({
+  status,
+  suggestions,
+  error,
+  isGenerating,
+  isAddingAll,
+  hasMainboard,
+  meta,
+  onGenerate,
+  onAdd,
+  onAddAll,
+  onClear,
+}: AutofillSectionProps) {
+  const hasSuggestions = suggestions.length > 0;
+  const hasError = Boolean(error);
+  const colorsLabel = formatColorIdentitySymbols(meta?.colors);
+  const showClear = hasSuggestions || hasError;
+
+  return (
+    <section className="border-b border-white/10 bg-[color:var(--color-neutral-200)]/20 py-12">
+      <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-6 px-6">
+        <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[6px] text-[color:var(--color-accent-highlight)]">
+              Autofill prototype
+            </p>
+            <h2 className="font-display text-3xl text-[color:var(--color-text-hero)] sm:text-4xl">
+              Boost your mainboard
+            </h2>
+            <p className="max-w-3xl text-sm text-subtle">
+              Generate quick additions from trending data and archetype matches. Well keep tuning this once personalization jobs land.
+            </p>
+            {meta ? (
+              <div className="flex flex-wrap gap-2 text-[11px] uppercase tracking-[2px] text-subtle">
+                <StatusPill tone="neutral">
+                  Deck  {meta.deckName ?? "Active draft"}
+                </StatusPill>
+                {meta.format ? <StatusPill tone="neutral">Format  {meta.format}</StatusPill> : null}
+                {colorsLabel ? <StatusPill tone="neutral">Colors  {colorsLabel}</StatusPill> : null}
+                <StatusPill tone="success">Suggestions  {meta.count}</StatusPill>
+              </div>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={onGenerate}
+              className="gradient-pill shadow-cta inline-flex items-center justify-center rounded-[var(--radius-pill)] px-5 py-2 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)] transition-transform hover:-translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isGenerating || !hasMainboard}
+            >
+              {isGenerating ? "Generating..." : "Generate suggestions"}
+            </button>
+            {hasSuggestions ? (
+              <button
+                type="button"
+                onClick={onAddAll}
+                className="rounded-[var(--radius-pill)] border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition-colors hover:border-white/35 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isGenerating || isAddingAll}
+              >
+                {isAddingAll ? "Adding..." : "Add all"}
+              </button>
+            ) : null}
+            {showClear ? (
+              <button
+                type="button"
+                onClick={onClear}
+                className="rounded-[var(--radius-pill)] border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] transition-colors hover:border-white/35 disabled:opacity-60"
+                disabled={isGenerating}
+              >
+                Clear
+              </button>
+            ) : null}
+          </div>
+        </header>
+
+        {!hasMainboard && !hasSuggestions && !hasError && !isGenerating ? (
+          <div className="rounded-[var(--radius-card)] border border-dashed border-white/15 bg-white/5 p-4 text-sm text-subtle">
+            Add a few mainboard cards, then run the autofill prototype to see recommended pickups.
+          </div>
+        ) : null}
+
+        {hasError ? (
+          <div className="rounded-[var(--radius-card)] border border-rose-500/40 bg-rose-900/20 p-4 text-sm text-[color:var(--color-text-hero)]">
+            {error}
+          </div>
+        ) : null}
+
+        {isGenerating ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <article
+                key={`autofill-skeleton-${index}`}
+                className="surface-card shadow-card flex flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 p-4 animate-pulse"
+              >
+                <div className="h-[140px] rounded-[14px] bg-white/10" />
+                <div className="h-4 w-3/4 rounded bg-white/15" />
+                <div className="h-3 w-1/2 rounded bg-white/10" />
+                <div className="h-8 w-full rounded bg-white/5" />
+              </article>
+            ))}
+          </div>
+        ) : null}
+
+        {!isGenerating && hasSuggestions ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {suggestions.map((suggestion) => (
+              <AutofillSuggestionTile key={suggestion.seedId} suggestion={suggestion} onAdd={onAdd} />
+            ))}
+          </div>
+        ) : null}
+
+        {!isGenerating && !hasSuggestions && status === "success" && !hasError ? (
+          <div className="rounded-[var(--radius-card)] border border-white/10 bg-white/5 p-4 text-sm text-subtle">
+            We didnt find new suggestions yet. Try adjusting your list or format and run autofill again.
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+type AutofillSuggestionTileProps = {
+  suggestion: AutofillSuggestion;
+  onAdd: (suggestion: AutofillSuggestion) => void;
+};
+
+function AutofillSuggestionTile({ suggestion, onAdd }: AutofillSuggestionTileProps) {
+  const identity = formatColorIdentitySymbols(suggestion.colorIdentity) ?? "Colorless";
+  const sourceLabel = formatAutofillSource(suggestion.source);
+
+  return (
+    <article className="surface-card hover:shadow-xl flex flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 bg-white/5 p-4 transition-transform duration-150 hover:-translate-y-[2px]">
+      <div className="relative h-[140px] overflow-hidden rounded-[14px] border border-white/10 bg-[color:var(--color-neutral-200)]/20">
+        {suggestion.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={suggestion.image} alt={suggestion.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[3px] text-subtle">
+            No art
+          </div>
+        )}
+        <span className="absolute left-3 top-3 rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-hero)]">
+          {sourceLabel}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <h3 className="font-display text-lg text-[color:var(--color-text-hero)]">{suggestion.name}</h3>
+        <p className="text-[11px] uppercase tracking-[3px] text-subtle">{identity}</p>
+        {suggestion.typeLine ? <p className="text-[11px] text-subtle">{suggestion.typeLine}</p> : null}
+      </div>
+      <p className="text-xs text-subtle">{suggestion.reason}</p>
+      <dl className="grid grid-cols-2 gap-2 text-[11px] uppercase tracking-[2px] text-subtle">
+        <div>
+          <dt className="text-xs text-[color:var(--color-accent-highlight)]">Mana</dt>
+          <dd className="text-[color:var(--color-text-hero)] font-semibold">{suggestion.manaCost ?? "--"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-[color:var(--color-accent-highlight)]">Set</dt>
+          <dd>{suggestion.setCode}</dd>
+        </div>
+      </dl>
+      <button
+        type="button"
+        onClick={() => onAdd(suggestion)}
+        className="gradient-pill shadow-cta mt-auto rounded-[var(--radius-pill)] px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)]"
+      >
+        Add to deck
+      </button>
+    </article>
+  );
+}
+
+function formatColorIdentitySymbols(symbols?: string[] | null): string | null {
+  if (!symbols || symbols.length === 0) {
+    return null;
+  }
+  return symbols.map((symbol) => COLOR_LABELS[symbol] ?? symbol).join(" / ");
+}
+
+function formatAutofillSource(source: AutofillSuggestion["source"]): string {
+  switch (source) {
+    case "trending":
+      return "Trending";
+    case "similar":
+      return "Similar";
+    case "fallback":
+      return "Fallback";
+    default:
+      return source;
+  }
+}
+
 type RecommendationCardTileProps = {
   seed: CardRecommendationSeed;
   onAdd: (seed: CardRecommendationSeed) => void;
@@ -1026,6 +1551,36 @@ function formatResolver(resolver: string): string {
 function isCardRecommendationSeed(seed: RecommendationSeed): seed is CardRecommendationSeed {
   return Boolean(seed.entity && seed.entity.type === "card" && (seed.entity as { card?: unknown }).card);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

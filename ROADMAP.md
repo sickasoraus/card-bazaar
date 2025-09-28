@@ -81,14 +81,31 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 **Next Up**
 - Implement recommendation rail on /cards/[cardId] with bridge/add-to-deck actions.
 - Finalize cron automation runbooks and Supabase monitoring dashboards.
-- Persist personalized seeds in 
-ecommendations for authenticated users.
+- Persist personalized seeds in recommendations for authenticated users.
 
 **Dependencies**
-- Supabase cron jobs (	elemetry_rollup, 	rending_refresh) remain healthy.
+- Supabase cron jobs (telemetry_rollup, trending_refresh) remain healthy.
 - Recommendation persistence schema migrations applied before enabling personalized seeds.
+## Phase 4 - Deck Simulator & Autofill Prototype
+
+**Status:** Complete
+
+**Scope:** Goldfishing workspace, rule-based autofill, and Card Bazaar bridge polish before the AI handoff.
+
+**Completed**
+- Deck builder now links directly into the simulator workspace with a branded CTA.
+- Autofill prototype panel generates suggestions via `/api/autofill`, supports add/add-all flows, and emits telemetry.
+
+**Next Up**
+- Kick off Phase 5 (SSO + advanced recommendations) planning.
+
+**Dependencies**
+- Supabase card catalog plus trending seeds stay fresh for non-fallback suggestions.
+- Additional telemetry coverage to train the ML-based autofill that replaces the prototype.
+
 ## Change Log
 
+- 2025-09-28: Deck builder autofill panel and simulator CTA shipped.
 - 2025-09-26: Homepage trending rail now renders Supabase metrics with status chips and refresh controls.
 - 2025-09-26: Deck builder recommendations panel wired to `/api/recommendations` with add-to-deck telemetry.
 - 2025-09-26: Deck builder import/export pipeline, zone awareness, and Card Bazaar bridge preview shipped.
