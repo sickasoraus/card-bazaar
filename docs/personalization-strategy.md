@@ -4,6 +4,11 @@ _Last updated: 2025-09-26_
 
 This reference outlines the initial seed strategies for Metablazt recommendations and how they map to our Supabase schema/telemetry.
 
+**Status notes:**
+- 2025-09-26: Deck builder recommendations panel is live, sourcing cards from `/api/recommendations` and logging `recommendation_served` events.
+- 2025-09-26: Homepage trending rail uses trending seeds fed by Supabase metrics.
+
+
 ## Seed Types
 
 | Seed | Description | Data Sources | Telemetry Touchpoints |
@@ -23,21 +28,27 @@ This reference outlines the initial seed strategies for Metablazt recommendation
 
 1. **API layer**
    - Build GET /api/recommendations supporting surface, scope, and limit params.
-   - Hydrate from ecommendations table when available; fall back to deterministic seeds using the services below.
+   - Hydrate from 
+ecommendations table when available; fall back to deterministic seeds using the services below.
 2. **Services**
-   - ecommendationSeeds.getTrendingCards(limit, format?)
-   - ecommendationSeeds.getSimilarCards(cardId, limit)
-   - ecommendationSeeds.getDeckUpgrades(deckId, limit)
+   - 
+ecommendationSeeds.getTrendingCards(limit, format?)
+   - 
+ecommendationSeeds.getSimilarCards(cardId, limit)
+   - 
+ecommendationSeeds.getDeckUpgrades(deckId, limit)
 3. **Telemetry**
    - Emit 	rackRecommendationServed when recommendations render.
    - Continue using 	rackBridgeInitiated / 	rackDeckImported so commerce conversion funnels stay measurable.
 4. **Storage**
-   - Persist generated seeds in ecommendations for personalized users; anonymous users fall back to deterministic seeds plus session cache.
+   - Persist generated seeds in 
+ecommendations for personalized users; anonymous users fall back to deterministic seeds plus session cache.
 
 ## Data Refresh
 
 - Trending seeds refresh hourly alongside 	rending_refresh cron.
 - Similar cards recompute nightly (top 2000 cards) with incremental updates when tags change.
-- Deck upgrades recompute on deck_imported + deck_card_added deltas (batch job; store results in ecommendations).
+- Deck upgrades recompute on deck_imported + deck_card_added deltas (batch job; store results in 
+ecommendations).
 
 With these scaffolds in place we can ship Phase 3 personalization quickly once trending analytics and cron jobs land.

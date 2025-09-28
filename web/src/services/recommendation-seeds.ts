@@ -19,6 +19,7 @@ export type CardRecommendationEntity = {
     rarity: string;
     manaCost: string | null;
     image: string | null;
+    typeLine: string | null;
     colorIdentity: string[];
   };
 };
@@ -98,6 +99,7 @@ const FALLBACK_TRENDING: { card: RecommendationSeed[]; deck: RecommendationSeed[
           rarity: "mythic",
           manaCost: "2BB",
           image: "https://cards.scryfall.io/art_crop/front/3/9/391fce5f-7779-4b1e-bbbe-1c71cc070918.jpg?1664574018",
+          typeLine: "Legendary Creature - Phyrexian Praetor",
           colorIdentity: ["B"],
         },
       },
@@ -128,6 +130,7 @@ const FALLBACK_TRENDING: { card: RecommendationSeed[]; deck: RecommendationSeed[
           rarity: "rare",
           manaCost: "2R",
           image: "https://cards.scryfall.io/art_crop/front/8/4/8424d417-f5df-4ddc-a9c2-d58fc9fb8ccc.jpg?1643594833",
+          typeLine: "Enchantment - Saga",
           colorIdentity: ["R"],
         },
       },
@@ -158,6 +161,7 @@ const FALLBACK_TRENDING: { card: RecommendationSeed[]; deck: RecommendationSeed[
           rarity: "mythic",
           manaCost: "3GWUB",
           image: "https://cards.scryfall.io/art_crop/front/3/4/34f762a0-2f27-44be-994b-15dfbdc97716.jpg?1675957081",
+          typeLine: "Legendary Creature - Phyrexian Angel",
           colorIdentity: ["G", "W", "U", "B"],
         },
       },
@@ -342,6 +346,7 @@ export async function getTrendingSeeds(options: TrendingSeedOptions = {}): Promi
               rarity: card.rarity,
               manaCost: card.manaCost ?? null,
               image: extractImage(card),
+              typeLine: card.typeLine ?? null,
               colorIdentity: card.colorIdentity,
             },
           },
@@ -485,6 +490,7 @@ export async function getSimilarCardSeeds(
             rarity: card.rarity,
             manaCost: card.manaCost ?? null,
             image: extractImage(card),
+              typeLine: card.typeLine ?? null,
             colorIdentity: card.colorIdentity,
           },
         },
@@ -588,6 +594,9 @@ export async function getDeckUpgradeSeeds(
 
   return seeds;
 }
+
+
+
 
 
 

@@ -10,10 +10,14 @@
         "build:static": "next build",
         "prisma:generate": "prisma generate",
         "prisma:migrate:deploy": "prisma migrate deploy",
-        "test": "vitest run"
+        "test": "vitest run",
+        "jobs:telemetry": "tsx scripts/run-ingestion.ts telemetry_rollup",
+        "jobs:trending": "tsx scripts/run-ingestion.ts trending_refresh",
+        "jobs:seed": "tsx scripts/run-ingestion.ts seed_sample"
     },
     "dependencies": {
         "@prisma/client": "^6.16.2",
+        "dotenv": "^17.2.2",
         "next": "15.5.4",
         "react": "19.1.0",
         "react-dom": "19.1.0"
@@ -32,6 +36,7 @@
         "jsdom": "^27.0.0",
         "prisma": "^6.16.2",
         "tailwindcss": "^4",
+        "tsx": "^4.20.6",
         "typescript": "^5",
         "vitest": "^3.2.4"
     }

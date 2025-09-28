@@ -602,6 +602,7 @@ type AddCardInput = {
   manaCost?: string | null;
   typeLine?: string | null;
   imageUrl?: string | null;
+  method?: "manual" | "suggestion" | "import" | "import_unresolved";
 };
 
 type ImportResult =
@@ -807,7 +808,12 @@ export function useDraftDeck() {
 
       updateDeck((current) => {
         const existing = current.cards.find((entry) => entry.cardId === card.cardId);
-        trackDeckCardAdded({ deckId: current.id, cardId: card.cardId, zone: "mainboard", method: "manual" });
+        trackDeckCardAdded({
+          deckId: current.id,
+          cardId: card.cardId,
+          zone: "mainboard",
+          method: card.method ?? "manual",
+        });
 
         if (existing) {
           return {
@@ -1158,3 +1164,4 @@ export function useDraftDeck() {
     syncError,
   };
 }
+

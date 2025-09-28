@@ -33,6 +33,12 @@ describe("useTrending", () => {
       format: null,
       count: 1,
       fallback: false,
+      hasDatabase: true,
+      lastCalculatedAt: null,
+      jobs: {
+        telemetryRollup: null,
+        trendingRefresh: null,
+      },
     },
   };
 
@@ -61,6 +67,7 @@ describe("useTrending", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/trending?scope=card&period=weekly&limit=3&format=modern");
     expect(result.current.entries).toHaveLength(1);
     expect(result.current.meta?.fallback).toBe(false);
+    expect(result.current.meta?.hasDatabase).toBe(true);
     expect(result.current.error).toBeNull();
   });
 
@@ -90,8 +97,3 @@ describe("useTrending", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
-
-
-
-
-

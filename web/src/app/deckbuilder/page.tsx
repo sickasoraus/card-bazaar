@@ -2,16 +2,20 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
   type ChangeEvent,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import Link from "next/link";
-
 import { useDraftDeck } from "@/hooks/use-draft-deck";
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
+import { useRecommendations, type RecommendationSeed, type UseRecommendationsResult } from "@/hooks/use-recommendations";
+import { mapRecommendationSource } from "@/lib/recommendation-utils";
+import { trackRecommendationServed } from "@/lib/telemetry";
 import type { ScryfallCard } from "@/services/scryfall";
 import { initiateCardBazaarBridge } from "@/services/card-bazaar-bridge";
 
@@ -73,6 +77,54 @@ export default function DeckBuilderPage() {
   const { data, isLoading, error, updateParams } = useScryfallSearch({ initialQuery: DEFAULT_QUERY });
 
   const cards = useMemo<ScryfallCard[]>(() => data?.data ?? [], [data]);
+  const {
+    seeds: recommendationSeeds,
+    meta: recommendationsMeta,
+    isLoading: isLoadingRecommendations,
+    error: recommendationsError,
+    refresh: refreshRecommendations,
+  } = useRecommendations({
+    scope: "card",
+    surface: "deck_builder",
+    format: deck.format ? deck.format.trim().toLowerCase() : null,
+    limit: 6,
+  });
+
+  const cardRecommendations = useMemo(
+    () => recommendationSeeds.filter(isCardRecommendationSeed),
+    [recommendationSeeds],
+  );
+
+  const servedRecommendationIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    cardRecommendations.forEach((seed) => {
+      if (servedRecommendationIdsRef.current.has(seed.id)) {
+        return;
+      }
+      trackRecommendationServed({
+        recommendationId: seed.id,
+        surface: "deck_builder",
+        algorithm: mapRecommendationSource(seed.source),
+      });
+      servedRecommendationIdsRef.current.add(seed.id);
+    });
+  }, [cardRecommendations]);
+
+  const handleAddRecommendedCard = useCallback(
+    (seed: CardRecommendationSeed) => {
+      const { card: cardEntity } = seed.entity;
+      addCard({
+        cardId: cardEntity.id,
+        name: cardEntity.name,
+        manaCost: cardEntity.manaCost,
+        typeLine: cardEntity.typeLine ?? null,
+        imageUrl: cardEntity.image ?? null,
+        method: "suggestion",
+      });
+    },
+    [addCard],
+  );
 
   const zoneBreakdown = useMemo(() => {
     const totals = {
@@ -612,6 +664,15 @@ export default function DeckBuilderPage() {
         </div>
       </section>
 
+      <RecommendationsSection
+        seeds={cardRecommendations}
+        meta={recommendationsMeta}
+        isLoading={isLoadingRecommendations}
+        error={recommendationsError}
+        onRefresh={refreshRecommendations}
+        onAdd={handleAddRecommendedCard}
+      />
+
       <section className="border-b border-white/10 bg-[color:var(--color-neutral-100)]/40 py-10">
         <div className="mx-auto flex w/full max-w-[1240px] flex-col gap-6 px-6">
           <h2 className="font-display text-2xl text-[color:var(--color-text-hero)]">Your current draft</h2>
@@ -767,6 +828,206 @@ export default function DeckBuilderPage() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+type CardRecommendationSeed = RecommendationSeed & {
+  entity: {
+    type: "card";
+    card: {
+      id: string;
+      name: string;
+      setCode: string;
+      rarity: string;
+      manaCost: string | null;
+      typeLine: string | null;
+      image: string | null;
+      colorIdentity: string[];
+    };
+  };
+};
+
+type RecommendationsSectionProps = {
+  seeds: CardRecommendationSeed[];
+  meta: UseRecommendationsResult["meta"];
+  isLoading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+  onAdd: (seed: CardRecommendationSeed) => void;
+};
+
+function RecommendationsSection({ seeds, meta, isLoading, error, onRefresh, onAdd }: RecommendationsSectionProps) {
+  const isFallback = meta?.resolver?.startsWith("fallback") ?? false;
+  const formatLabel = meta?.format ? meta.format.toUpperCase() : "All formats";
+  const resolverLabel = meta?.resolver ? formatResolver(meta.resolver) : "";
+
+  return (
+    <section className="border-y border-white/10 bg-[color:var(--color-neutral-200)]/15 py-12">
+      <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-8 px-6">
+        <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[6px] text-[color:var(--color-accent-highlight)]">
+              Suggested additions
+            </p>
+            <h2 className="font-display text-2xl text-[color:var(--color-text-hero)] sm:text-3xl">
+              Recommendations tuned to your deck draft
+            </h2>
+            <p className="max-w-3xl text-sm text-subtle">
+              These picks blend trending cards, similar shells, and fallback curation so the builder always gives you
+              something to test.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[2px] text-subtle">
+              <StatusPill tone={isFallback ? "warning" : "success"}>
+                {isFallback ? "Curated fallback seeds" : "Powered by Supabase metrics"}
+              </StatusPill>
+              <StatusPill tone="neutral">{formatLabel}</StatusPill>
+              {resolverLabel ? <StatusPill tone="neutral">Resolver: {resolverLabel}</StatusPill> : null}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="gradient-pill shadow-cta inline-flex items-center justify-center rounded-[var(--radius-pill)] px-5 py-2 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)] transition-transform hover:-translate-y-[2px]"
+            disabled={isLoading}
+          >
+            {isLoading ? "Refreshing..." : "Refresh suggestions"}
+          </button>
+        </header>
+
+        {error ? (
+          <div className="rounded-[var(--radius-card)] border border-rose-500/40 bg-rose-900/20 p-4 text-sm text-[color:var(--color-text-hero)]">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {isLoading && seeds.length === 0
+            ? Array.from({ length: 6 }).map((_, index) => (
+                <article
+                  key={`deck-recommendation-skeleton-${index}`}
+                  className="surface-card shadow-card flex flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 p-4 animate-pulse"
+                >
+                  <div className="h-[140px] rounded-[14px] bg-white/10" />
+                  <div className="h-4 w-3/4 rounded bg-white/10" />
+                  <div className="h-3 w-1/2 rounded bg-white/5" />
+                  <div className="h-8 w-full rounded bg-white/5" />
+                </article>
+              ))
+            : seeds.map((seed) => (
+                <RecommendationCardTile key={seed.id} seed={seed} onAdd={onAdd} />
+              ))}
+        </div>
+
+        {!isLoading && !seeds.length && !error ? (
+          <p className="rounded-[var(--radius-control)] border border-white/10 bg-white/5 p-4 text-sm text-subtle">
+            Recommendations will appear as soon as we have more activity for this format.
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+type RecommendationCardTileProps = {
+  seed: CardRecommendationSeed;
+  onAdd: (seed: CardRecommendationSeed) => void;
+};
+
+function RecommendationCardTile({ seed, onAdd }: RecommendationCardTileProps) {
+  const card = seed.entity.card;
+  const imageSrc = card.image ?? undefined;
+  const identity = card.colorIdentity.length ? card.colorIdentity.join(" / ") : "Colorless";
+  const trendScoreLabel = typeof seed.trendScore === "number" ? seed.trendScore.toFixed(1) : "--";
+  const algorithm = formatResolver(mapRecommendationSource(seed.source));
+
+  return (
+    <article className="surface-card hover:shadow-xl flex flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 bg-white/5 p-4 transition-transform duration-150 hover:-translate-y-[2px]">
+      <div className="relative h-[140px] overflow-hidden rounded-[14px] border border-white/10 bg-[color:var(--color-neutral-200)]/20">
+        {imageSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imageSrc} alt={card.name} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-[3px] text-subtle">
+            No art
+          </div>
+        )}
+        {seed.rank ? (
+          <span className="absolute left-3 top-3 rounded-full border border-white/20 bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-hero)]">
+            Rank {seed.rank}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-1">
+        <h3 className="font-display text-lg text-[color:var(--color-text-hero)]">{card.name}</h3>
+        <p className="text-[11px] uppercase tracking-[3px] text-subtle">
+          {card.setCode}  |  {identity}
+        </p>
+      </div>
+      <p className="text-xs text-subtle">{seed.reason}</p>
+      <dl className="grid grid-cols-2 gap-2 text-[11px] uppercase tracking-[2px] text-subtle">
+        <div>
+          <dt className="text-xs text-[color:var(--color-accent-highlight)]">Trend score</dt>
+          <dd className="text-[color:var(--color-text-hero)] font-semibold">{trendScoreLabel}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-[color:var(--color-accent-highlight)]">Source</dt>
+          <dd>{algorithm}</dd>
+        </div>
+      </dl>
+      <button
+        type="button"
+        onClick={() => onAdd(seed)}
+        className="gradient-pill shadow-cta mt-auto rounded-[var(--radius-pill)] px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)]"
+      >
+        Add to deck
+      </button>
+    </article>
+  );
+}
+
+function StatusPill({ children, tone }: { children: ReactNode; tone: "neutral" | "success" | "warning" }) {
+  const styles: Record<"neutral" | "success" | "warning", string> = {
+    neutral: "border-white/20 bg-white/10 text-[color:var(--color-text-body)]",
+    success: "border-emerald-300/40 bg-emerald-500/15 text-emerald-100",
+    warning: "border-amber-300/50 bg-amber-500/20 text-amber-100",
+  };
+
+  return (
+    <span className={`rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[2px] ${styles[tone]}`}>
+      {children}
+    </span>
+  );
+}
+
+function formatResolver(resolver: string): string {
+  switch (resolver) {
+    case "similar":
+    case "similar_card":
+    case "similar_cards":
+      return "Similar cards";
+    case "trending":
+    case "fallback-trending":
+      return "Trending";
+    case "deck-upgrades":
+      return "Deck upgrades";
+    case "static-fallback":
+      return "Static fallback";
+    default:
+      return resolver.replace(/_/g, " ");
+  }
+}
+
+function isCardRecommendationSeed(seed: RecommendationSeed): seed is CardRecommendationSeed {
+  return Boolean(seed.entity && seed.entity.type === "card" && (seed.entity as { card?: unknown }).card);
+}
+
+
 
 
 
