@@ -85,10 +85,20 @@ export async function GET(request: Request) {
   try {
     if (scope === "card" && subjectId) {
       seeds = await getSimilarCardSeeds(subjectId, { limit, format });
-      resolver = "similar";
+      resolver = seeds.some((seed) => {
+        const metrics = seed.metrics ?? {};
+        return Object.prototype.hasOwnProperty.call(metrics, 'similarity');
+      })
+        ? "similarity-model"
+        : "similar-heuristic";
     } else if (scope === "deck" && subjectId) {
       seeds = await getDeckUpgradeSeeds(subjectId, { limit });
-      resolver = "deck-upgrades";
+      resolver = seeds.some((seed) => {
+        const metrics = seed.metrics ?? {};
+        return Object.prototype.hasOwnProperty.call(metrics, 'upgradeScore');
+      })
+        ? "deck-upgrade-model"
+        : "deck-upgrade-heuristic";
     }
 
     if (!seeds.length) {

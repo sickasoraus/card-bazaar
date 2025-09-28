@@ -65,6 +65,38 @@ enum TrendingPeriod {
   weekly
 }
 
+enum AuthProvider {
+  supabase
+  card_bazaar
+}
+
+enum AuthSessionStatus {
+  active
+  revoked
+  expired
+}
+
+enum AuthAuditEventType {
+  link_initiated
+  link_succeeded
+  link_failed
+  session_refreshed
+  session_revoked
+}
+
+enum PrivacyRequestType {
+  telemetry_opt_out
+  telemetry_opt_in
+  data_export
+  data_delete
+}
+
+enum PrivacyRequestStatus {
+  pending
+  completed
+  failed
+}
+
 enum IngestionJobType {
   scryfall_bulk
   price_snapshot
@@ -95,6 +127,12 @@ model User {
   imports          Import[]
   events           EventLog[]
   recommendations  Recommendation[]
+  linkedAccounts   LinkedAccount[]
+  authBridgeSessions AuthBridgeSession[]
+  authAuditEvents  AuthAuditEvent[]
+  similarityBase   UserSimilarity[] @relation("UserSimilarityBase")
+  similarityPeers  UserSimilarity[] @relation("UserSimilarityPeer")
+  privacyRequests PrivacyRequest[]
 
   @@map("users")
 }
@@ -113,6 +151,68 @@ model Profile {
   @@map("profiles")
 }
 
+model LinkedAccount {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  provider AuthProvider
+  providerUserId String @map("provider_user_id")
+  accessToken String? @map("access_token")
+  refreshToken String? @map("refresh_token")
+  accessTokenExpiresAt DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scopes String[] @default([]) @map("scopes")
+  metadata Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+  bridgeSessions AuthBridgeSession[]
+  auditEvents AuthAuditEvent[]
+
+  @@unique([provider, providerUserId])
+  @@map("linked_accounts")
+}
+
+model AuthBridgeSession {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+  linkedAccountId String? @map("linked_account_id") @db.Uuid
+  status AuthSessionStatus
+  cardBazaarSessionId String? @map("card_bazaar_session_id")
+  supabaseSessionId String? @map("supabase_session_id")
+  issuedAt DateTime @default(now()) @map("issued_at")
+  expiresAt DateTime? @map("expires_at")
+  lastValidatedAt DateTime? @map("last_validated_at")
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  metadata Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+  linkedAccount LinkedAccount? @relation(fields: [linkedAccountId], references: [id])
+  auditEvents AuthAuditEvent[]
+
+  @@map("auth_bridge_sessions")
+}
+
+model AuthAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+  linkedAccountId String? @map("linked_account_id") @db.Uuid
+  sessionId String? @map("session_id") @db.Uuid
+  eventType AuthAuditEventType @map("event_type")
+  context Json?
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  user User? @relation(fields: [userId], references: [id])
+  linkedAccount LinkedAccount? @relation(fields: [linkedAccountId], references: [id])
+  session AuthBridgeSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([userId])
+  @@index([linkedAccountId])
+  @@map("auth_audit_events")
+}
 model Card {
   id            String   @id @default(uuid()) @db.Uuid
   scryfallId    String   @map("scryfall_id") @unique
@@ -133,6 +233,10 @@ model Card {
   printings     Printing[]
   tags          CardTag[]
   dailyMetrics  CardDailyMetric[]
+  similaritySources CardSimilarity[] @relation("CardSimilarityBase")
+  similarityTargets CardSimilarity[] @relation("CardSimilarityRelated")
+  upgradeCandidates DeckUpgradeCandidate[]
+
 
   @@map("cards")
 }
@@ -202,6 +306,8 @@ model Deck {
   owner       User?          @relation(fields: [userId], references: [id])
   cards       DeckCard[]
   dailyMetrics DeckDailyMetric[]
+  upgradeCandidates DeckUpgradeCandidate[]
+
 
   @@map("decks")
 }
@@ -296,6 +402,67 @@ model DeckDailyMetric {
 
   @@unique([deckId, metricDate])
   @@map("deck_daily_metrics")
+}
+
+model CardSimilarity {
+  id             String   @id @default(uuid()) @db.Uuid
+  cardId         String   @map("card_id") @db.Uuid
+  relatedCardId  String   @map("related_card_id") @db.Uuid
+  score          Decimal? @db.Decimal(8, 4)
+  components     Json?    @map("components")
+  rationale      String?  @map("rationale")
+  generatedAt    DateTime @default(now()) @map("generated_at")
+
+  card           Card     @relation("CardSimilarityBase", fields: [cardId], references: [id])
+  relatedCard    Card     @relation("CardSimilarityRelated", fields: [relatedCardId], references: [id])
+
+  @@unique([cardId, relatedCardId])
+  @@map("card_similarity")
+}
+
+model DeckUpgradeCandidate {
+  id           String   @id @default(uuid()) @db.Uuid
+  deckId       String   @map("deck_id") @db.Uuid
+  cardId       String   @map("card_id") @db.Uuid
+  score        Decimal? @db.Decimal(8, 4)
+  components   Json?    @map("components")
+  rationale    String?  @map("rationale")
+  generatedAt  DateTime @default(now()) @map("generated_at")
+
+  deck         Deck     @relation(fields: [deckId], references: [id])
+  card         Card     @relation(fields: [cardId], references: [id])
+
+  @@unique([deckId, cardId])
+  @@map("deck_upgrade_candidates")
+}
+
+model UserSimilarity {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  similarUserId    String   @map("similar_user_id") @db.Uuid
+  score            Decimal  @db.Decimal(8, 4)
+  sharedInteractions Int    @map("shared_interactions") @default(0)
+  lastComputedAt   DateTime @default(now()) @map("last_computed_at")
+
+  user             User     @relation("UserSimilarityBase", fields: [userId], references: [id])
+  similarUser      User     @relation("UserSimilarityPeer", fields: [similarUserId], references: [id])
+
+  @@unique([userId, similarUserId])
+  @@map("user_similarity_scores")
+}
+
+model PrivacyRequest {
+  id           String              @id @default(uuid()) @db.Uuid
+  userId       String?             @map("user_id") @db.Uuid
+  requestType  PrivacyRequestType  @map("request_type")
+  status       PrivacyRequestStatus @default(pending)
+  metadata     Json?
+  createdAt    DateTime            @default(now()) @map("created_at")
+  resolvedAt   DateTime?           @map("resolved_at")
+
+  user         User?               @relation(fields: [userId], references: [id])
+
+  @@map("privacy_requests")
 }
 
 model TrendingSnapshot {

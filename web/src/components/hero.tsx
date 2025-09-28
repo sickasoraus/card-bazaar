@@ -2,16 +2,16 @@ import Link from "next/link";
 
 const heroHighlights = [
   {
-    title: "Design tokens locked",
-    copy: "Palette, typography, and elevation rules mapped from Card Bazaar DNA.",
+    title: "Auth bridge drafted",
+    copy: "Card Bazaar OIDC flow defined with Supabase session hand-off and audit logging ready to wire up.",
   },
   {
-    title: "Static export ready",
-    copy: "Next.js shell compiled for GitHub Pages delivery tonight.",
+    title: "Similarity metrics seeded",
+    copy: "Phase 5 tables power stronger recommendations, upgrade suggestions, and trend rollups.",
   },
   {
-    title: "Schema synced",
-    copy: "Supabase tables + events drafted to unblock deck + analytics work.",
+    title: "Privacy controls online",
+    copy: "Telemetry opt-out, export, and deletion requests land in Supabase for compliance tracking.",
   },
 ];
 
@@ -28,13 +28,14 @@ export function HeroSection() {
       <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-12 px-6 pb-10 pt-16 lg:flex-row lg:items-center lg:gap-16">
         <div className="flex w-full flex-col gap-8 lg:w-1/2">
           <span className="text-xs font-semibold uppercase tracking-[6px] text-[color:var(--color-accent-highlight)]">
-            Phase 0 Sprint
+            Phase 5 Push
           </span>
           <h1 className="font-display text-4xl leading-tight text-[color:var(--color-text-hero)] sm:text-5xl lg:text-[56px]">
-            A refined MTG browser infused with Card Bazaar flair.
+            Metablazt is primed for shared identity and smarter personalization.
           </h1>
           <p className="max-w-xl text-base text-subtle sm:text-lg">
-            We are crystallizing the Metablazt shell: shared design language, GitHub Pages-ready static build, and the scaffolding for Scryfall-powered exploration.
+            We now have the SSO bridge plan, Supabase similarity metrics, and privacy tooling in place. The Next.js shell
+            stays static for GitHub Pages, while live data will light up once Vercel + Supabase go online.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <Link
@@ -56,21 +57,21 @@ export function HeroSection() {
             <div className="absolute left-6 top-[-40px] hidden h-24 w-24 rounded-full border border-white/10 bg-[color:var(--color-neutral-100)]/70 blur-[0px] lg:block" />
             <div className="relative flex flex-col gap-6">
               <HeroCard
-                title="Metablazt Alpha"
-                subtitle="Personalized deck insights pipeline"
-                tag="Pipeline"
+                title="Identity Bridge"
+                subtitle="Card Bazaar OAuth + Supabase alignment"
+                tag="SSO"
                 className="-rotate-3"
               />
               <HeroCard
-                title="Scryfall Sync"
-                subtitle="Phase 1 goal: daily card + price ingests"
+                title="Trend Engine"
+                subtitle="Daily card/deck metrics feeding recommendations"
                 tag="Data"
                 className="translate-x-8 rotate-2"
               />
               <HeroCard
-                title="Deck Studio"
-                subtitle="New builder layout with command zone awareness"
-                tag="Design"
+                title="Privacy Center"
+                subtitle="Opt-outs, exports, deletions wired into telemetry"
+                tag="Trust"
                 className="-translate-x-4"
               />
             </div>

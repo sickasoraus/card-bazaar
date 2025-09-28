@@ -14,7 +14,16 @@ type TelemetryType =
   | "bridge_initiated"
   | "recommendation_served"
   | "deck_simulator_action"
-  | "deck_autofill_action";
+  | "deck_autofill_action"
+  | "auth_link_initiated"
+  | "auth_link_succeeded"
+  | "auth_link_failed"
+  | "auth_session_refreshed"
+  | "auth_session_revoked"
+  | "privacy_opt_out"
+  | "privacy_opt_in"
+  | "privacy_data_export_requested"
+  | "privacy_data_delete_requested";
 
 type BaseTelemetryBody = {
   type: TelemetryType;
@@ -24,12 +33,13 @@ type BaseTelemetryBody = {
 };
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const DECK_SEED_VALUES = new Set(["blank", "template", "import"]);
+const DECK_SEED_VALUES = new Set(["blank", "template", "import", "autofill"]);
 const IMPORT_STATUS_VALUES = new Set(["pending", "processed", "failed", "success"]);
 const DECK_VIEW_SOURCE_VALUES = new Set(["builder", "gallery", "share", "unknown"]);
 const BRIDGE_SCOPE_VALUES = new Set(["card", "deck"]);
 const RECOMMENDATION_SURFACES = new Set(["homepage", "deck_builder", "card_detail"]);
 const RECOMMENDATION_ALGORITHMS = new Set(["trending", "similar_cards", "recent_activity", "manual"]);
+const AUTH_LINK_STAGES = new Set(["authorization", "token_exchange", "profile_sync"]);
 const SUPPORTED_EVENTS = new Set<TelemetryType>([
   "search_performed",
   "card_viewed",
@@ -43,6 +53,15 @@ const SUPPORTED_EVENTS = new Set<TelemetryType>([
   "recommendation_served",
   "deck_simulator_action",
   "deck_autofill_action",
+  "auth_link_initiated",
+  "auth_link_succeeded",
+  "auth_link_failed",
+  "auth_session_refreshed",
+  "auth_session_revoked",
+  "privacy_opt_out",
+  "privacy_opt_in",
+  "privacy_data_export_requested",
+  "privacy_data_delete_requested",
 ]);
 
 type ValidatedEvent = {
@@ -186,7 +205,7 @@ function validateTelemetryBody(body: unknown): ValidationResult {
         method === "manual" ||
         method === "suggestion" ||
         method === "import" ||
-        method === "import_unresolved"
+        method === "import_unresolved" || method === "autofill"
       ) {
         context.method = method;
       }
@@ -492,6 +511,133 @@ function validateTelemetryBody(body: unknown): ValidationResult {
           userId: normalizedUserId,
           sessionId: normalizedSessionId,
           subjectType: "autofill",
+          subjectId: null,
+          context,
+        },
+      };
+    }
+    case "auth_link_initiated":
+    case "auth_link_succeeded":
+    case "auth_link_failed": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: `${telemetryType} payload must be an object.` };
+      }
+      const { provider, stage, attemptId, redirectUri, providerUserId, errorCode, latencyMs } = payload as Record<string, unknown>;
+      if (typeof provider !== "string" || !provider.trim().length) {
+        return { ok: false, error: `${telemetryType} payload requires provider.` };
+      }
+      const normalizedProvider = provider.trim();
+      const normalizedStage = typeof stage === "string" ? stage.trim().toLowerCase() : "";
+      if (!AUTH_LINK_STAGES.has(normalizedStage)) {
+        return { ok: false, error: `${telemetryType} payload requires a supported stage.` };
+      }
+      const context: Prisma.JsonObject = {
+        provider: normalizedProvider,
+        stage: normalizedStage,
+      };
+      if (typeof attemptId === "string" && attemptId.trim().length) {
+        context.attemptId = attemptId.trim();
+      }
+      if (typeof redirectUri === "string" && redirectUri.trim().length) {
+        context.redirectUri = redirectUri.trim();
+      }
+      if (typeof latencyMs === "number" && Number.isFinite(latencyMs)) {
+        context.latencyMs = latencyMs;
+      }
+      if (telemetryType === "auth_link_succeeded" && typeof providerUserId === "string" && providerUserId.trim().length) {
+        context.providerUserId = providerUserId.trim();
+      }
+      if (telemetryType === "auth_link_failed") {
+        if (typeof errorCode !== "string" || !errorCode.trim().length) {
+          return { ok: false, error: "auth_link_failed payload requires errorCode." };
+        }
+        context.errorCode = errorCode.trim();
+      } else if (typeof errorCode === "string" && errorCode.trim().length) {
+        context.errorCode = errorCode.trim();
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "auth_link",
+          subjectId: null,
+          context,
+        },
+      };
+    }
+    case "auth_session_refreshed":
+    case "auth_session_revoked": {
+      if (!payload || typeof payload !== "object") {
+        return { ok: false, error: `${telemetryType} payload must be an object.` };
+      }
+      const { provider, sessionId: rawSessionId, reason } = payload as Record<string, unknown>;
+      if (typeof provider !== "string" || !provider.trim().length) {
+        return { ok: false, error: `${telemetryType} payload requires provider.` };
+      }
+      const normalizedProvider = provider.trim();
+      const trimmedSessionId = typeof rawSessionId === "string" && rawSessionId.trim().length ? rawSessionId.trim() : null;
+      if (telemetryType === "auth_session_refreshed" && !trimmedSessionId) {
+        return { ok: false, error: "auth_session_refreshed payload requires sessionId." };
+      }
+      const context: Prisma.JsonObject = { provider: normalizedProvider };
+      if (trimmedSessionId) {
+        context.sessionId = trimmedSessionId;
+      }
+      if (typeof reason === "string" && reason.trim().length) {
+        context.reason = reason.trim();
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "auth_session",
+          subjectId: trimmedSessionId && isUuid(trimmedSessionId) ? trimmedSessionId : null,
+          context,
+        },
+      };
+    }
+    case "privacy_opt_out":
+    case "privacy_opt_in": {
+      const context: Prisma.JsonObject = { action: telemetryType === "privacy_opt_out" ? "opt_out" : "opt_in" };
+      if (payload && typeof payload === "object") {
+        const { reason } = payload as Record<string, unknown>;
+        if (typeof reason === "string" && reason.trim().length) {
+          context.reason = reason.trim();
+        }
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "privacy",
+          subjectId: null,
+          context,
+        },
+      };
+    }
+    case "privacy_data_export_requested":
+    case "privacy_data_delete_requested": {
+      const action = telemetryType === "privacy_data_export_requested" ? "data_export" : "data_delete";
+      const context: Prisma.JsonObject = { action };
+      if (payload && typeof payload === "object") {
+        const { reason } = payload as Record<string, unknown>;
+        if (typeof reason === "string" && reason.trim().length) {
+          context.reason = reason.trim();
+        }
+      }
+      return {
+        ok: true,
+        data: {
+          eventType: telemetryType,
+          userId: normalizedUserId,
+          sessionId: normalizedSessionId,
+          subjectType: "privacy",
           subjectId: null,
           context,
         },

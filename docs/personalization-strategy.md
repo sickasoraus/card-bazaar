@@ -7,6 +7,7 @@ This reference outlines the initial seed strategies for Metablazt recommendation
 **Status notes:**
 - 2025-09-26: Deck builder recommendations panel is live, sourcing cards from `/api/recommendations` and logging `recommendation_served` events.
 - 2025-09-26: Homepage trending rail uses trending seeds fed by Supabase metrics.
+- 2025-09-28: Similarity + deck upgrade models now persist to `card_similarity`, `deck_upgrade_candidates`, and `user_similarity_scores` for Phase 5 experiments.
 
 
 ## Seed Types
@@ -14,9 +15,10 @@ This reference outlines the initial seed strategies for Metablazt recommendation
 | Seed | Description | Data Sources | Telemetry Touchpoints |
 | --- | --- | --- | --- |
 | Trending Picks | High-performing cards/decks ranked by 	rending_snapshots. | card_daily_metrics, deck_daily_metrics, 	rending_snapshots | 	rackDeckViewed, 	rackCardViewed, 	rackBridgeInitiated |
-| Similar Cards | Cards that share color identity, tags, and usage velocity with the viewed card. | card_tags, card_daily_metrics, prices | 	rackCardViewed, 	rackRecommendationServed |
-| Deck Upgrade Suggestions | Cards under-represented in a player deck but popular in similar archetypes. | deck_daily_metrics, imports, prices | 	rackDeckImported, 	rackDeckCardAdded, 	rackRecommendationServed |
-| Recently Viewed | Session + account-level recency for quick recall. | event_log (card_viewed, deck_viewed) | 	rackDeckViewed, 	rackCardViewed |
+| Similar Cards | Cards that share color identity, tags, and similarity vectors with the viewed card. | card_similarity, card_tags, card_daily_metrics, prices | \trackCardViewed, \trackRecommendationServed |
+| Deck Upgrade Suggestions | Cards under-represented in a player deck but popular in similar archetypes. | deck_upgrade_candidates, deck_daily_metrics, imports, prices | \trackDeckImported, \trackDeckCardAdded, \trackRecommendationServed |
+| Recently Viewed | Session + account-level recency for quick recall. | event_log (card_viewed, deck_viewed) | \trackDeckViewed, \trackCardViewed |
+| Affinity Feed | Collaborative filtering feed seeded from similar user behaviour. | user_similarity_scores, recommendations | \trackRecommendationServed |
 
 ## Delivery Surfaces
 
@@ -43,6 +45,12 @@ ecommendationSeeds.getDeckUpgrades(deckId, limit)
 4. **Storage**
    - Persist generated seeds in 
 ecommendations for personalized users; anonymous users fall back to deterministic seeds plus session cache.
+
+## Phase 5 Enhancements
+
+- Similarity jobs populate `card_similarity` nightly so `/api/recommendations?scope=card` can lean on precomputed neighbours.
+- Deck upgrade models persist top recommendations per deck into `deck_upgrade_candidates` and expose `upgradeScore` metrics.
+- Affinity jobs log collaborative filtering edges into `user_similarity_scores` ahead of personalized feeds.
 
 ## Data Refresh
 

@@ -1,8 +1,8 @@
 # Metablazt Roadmap (Phase Tracker)
 
-_Last updated: 2025-09-26_
+_Last updated: 2025-09-28_
 
-This document tracks feature delivery for Phases 0 and 1 as we work toward the GitHub Pages milestone.
+This document tracks progress across the phased rollout toward the Metablazt MVP.
 
 ## Phase 0 - Foundation & Branding
 
@@ -19,12 +19,11 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - GitHub Pages workflow configured for automated static deploys (2025-09-24)
 
 **Next Up**
-- Rolling into Phase 3 (trending analytics + personalization rails).
+- Maintain token parity once the shared `@metablazt/ui` package is spun up post-MVP.
 
 **Dependencies**
 - Supabase database provisioned with env secrets before Prisma client is enabled.
 - API rate-limiting plan for Scryfall once filters are live to avoid throttling.
-
 
 ## Phase 1 - Card Explorer & Data Hooks
 
@@ -45,7 +44,7 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - Deck builder integrates Supabase deck sync with recent draft picker and cloud/local instrumentation (2025-09-25)
 
 **Next Up**
-- Rolling into Phase 3 (trending analytics + personalization rails).
+- Expand explorer filters once Supabase-backed search is live.
 
 **Dependencies**
 - Supabase database provisioned with env secrets before Prisma client is enabled.
@@ -69,23 +68,24 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 
 ## Phase 3 - Trending Analytics & Personalization
 
-**Status:** In Progress
+**Status:** Complete
 
 **Scope:** Supabase metrics rollups, trending APIs, and recommendation rails across the product surfaces.
 
 **Completed**
-- Trending data service and /api/trending expose Supabase metrics with job health metadata (2025-09-26).
+- Trending data service and `/api/trending` expose Supabase metrics with job health metadata (2025-09-26).
 - Homepage trending rail now consumes live metrics with status chips and refresh controls (2025-09-26).
-- Deck builder recommendations panel calls /api/recommendations, logs telemetry, and supports add-to-deck actions (2025-09-26).
+- Deck builder recommendations panel calls `/api/recommendations`, logs telemetry, and supports add-to-deck actions (2025-09-26).
+- Prisma migration `0002_phase3_trending` documented + applied, with client regeneration steps captured (2025-09-27).
 
 **Next Up**
-- Implement recommendation rail on /cards/[cardId] with bridge/add-to-deck actions.
-- Finalize cron automation runbooks and Supabase monitoring dashboards.
-- Persist personalized seeds in recommendations for authenticated users.
+- Backfill Supabase cron automation and Metabase dashboards once deployed to Vercel.
+- Add card-detail recommendation rail to round out Phase 3 once live data is seeded.
 
 **Dependencies**
-- Supabase cron jobs (telemetry_rollup, trending_refresh) remain healthy.
+- Supabase cron jobs (`telemetry_rollup`, `trending_refresh`) remain healthy.
 - Recommendation persistence schema migrations applied before enabling personalized seeds.
+
 ## Phase 4 - Deck Simulator & Autofill Prototype
 
 **Status:** Complete
@@ -93,20 +93,46 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 **Scope:** Goldfishing workspace, rule-based autofill, and Card Bazaar bridge polish before the AI handoff.
 
 **Completed**
-- Deck builder now links directly into the simulator workspace with a branded CTA.
-- Autofill prototype panel generates suggestions via `/api/autofill`, supports add/add-all flows, and emits telemetry.
+- Deck builder now links directly into the simulator workspace with branded CTA and K'rrik seed deck (2025-09-27).
+- `useDeckSimulator` hook manages zones, mulligans, persistence, and telemetry (2025-09-27).
+- Autofill prototype panel generates suggestions via `/api/autofill`, supports add/add-all flows, and emits telemetry (2025-09-27).
+- Unit coverage for simulator + autofill logic in place (`use-deck-simulator.test.ts`, `autofill.test.ts`) (2025-09-27).
 
 **Next Up**
-- Kick off Phase 5 (SSO + advanced recommendations) planning.
+- Upgrade simulator to handle sideboard/companion once multi-zone support is prioritized.
 
 **Dependencies**
 - Supabase card catalog plus trending seeds stay fresh for non-fallback suggestions.
 - Additional telemetry coverage to train the ML-based autofill that replaces the prototype.
 
+## Phase 5 - SSO, Advanced Recommendations & Privacy Controls
+
+**Status:** Complete
+
+**Scope:** Card Bazaar SSO bridge design, similarity-driven recommendations, privacy center UX, and supporting migrations/docs.
+
+**Completed**
+- Auth bridge spec + Supabase migrations for `linked_accounts`, `auth_bridge_sessions`, and audit logs (`docs/auth-bridge.md`, migration `0004`) (2025-09-28).
+- Similarity/upgrade schemas (`0005_phase5_recommendations`) and recommendation service updates powering richer seeds (2025-09-28).
+- Privacy center page with telemetry opt-out/export/delete actions and new `/api/privacy/*` stubs (`settings/privacy`) (2025-09-28).
+- Telemetry pipeline expanded with auth/privacy events and stricter validation in `/api/telemetry` (2025-09-28).
+- Documentation refresh across README, `docs/personalization-strategy.md`, and `docs/supabase-setup.md` to cover Phase 5 setup (2025-09-28).
+
+**Next Up**
+- Wire the SSO endpoints to live Card Bazaar credentials once available and add Supabase edge functions for token encryption.
+- Build the personalized dashboard (saved decks, recent recommendations) leveraging new similarity tables.
+- Prepare infrastructure migration from GitHub Pages to Vercel so dynamic APIs can go live.
+
+**Dependencies**
+- Card Bazaar OIDC client credentials and encryption keys stored in Supabase/Actions secrets.
+- Supabase migrations `0004`–`0006` applied (`manual.sql` in each folder) followed by `prisma migrate resolve` on the project.
+
 ## Change Log
 
-- 2025-09-28: Deck builder autofill panel and simulator CTA shipped.
-- 2025-09-26: Homepage trending rail now renders Supabase metrics with status chips and refresh controls.
+- 2025-09-28: Phase 5 SSO bridge docs, similarity migrations, privacy center, and telemetry updates shipped.
+- 2025-09-28: Deck builder seeded with K'rrik commander list, simulator CTA polished, and Phase 4 UI updates deployed.
+- 2025-09-27: Prisma migration 0002 marked applied; trending/recommendation services integrated with Supabase fallback logic.
+- 2025-09-26: Homepage trending rail renders Supabase metrics with status chips and refresh controls.
 - 2025-09-26: Deck builder recommendations panel wired to `/api/recommendations` with add-to-deck telemetry.
 - 2025-09-26: Deck builder import/export pipeline, zone awareness, and Card Bazaar bridge preview shipped.
 - 2025-09-25: Card explorer filters now drive Scryfall queries with summary UI and telemetry metadata.
@@ -121,9 +147,3 @@ This document tracks feature delivery for Phases 0 and 1 as we work toward the G
 - 2025-09-24: Next.js App Router scaffold added under `/web` with static export config.
 - 2025-09-24: Base navigation/hero/card grid frame shipped for Phase 0 UI shell.
 - 2025-09-24: GitHub Pages workflow added for automated static deployments.
-
-
-
-
-
-

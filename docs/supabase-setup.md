@@ -52,6 +52,36 @@ Prisma Migrate cannot run directly through the pooler, so apply the schema once 
   npm run prisma:generate
   ```
 
+## 3d. Enable auth bridge tables (Phase 5)
+- Run `web/prisma/migrations/0004_phase5_auth_bridge/migration.sql` in the Supabase SQL editor to create `linked_accounts`, `auth_bridge_sessions`, and `auth_audit_events`.
+- Execute `web/prisma/migrations/0004_phase5_auth_bridge/manual.sql` to add partial unique indexes for nullable session identifiers.
+- Mark the migration as applied locally and regenerate Prisma:
+  ```bash
+  cd web
+  npx prisma migrate resolve --applied 0004_phase5_auth_bridge
+  npm run prisma:generate
+  ```
+- Add a Supabase secret `card_bazaar_oauth_secret` (or similar) so edge functions can exchange tokens without embedding credentials in the client.
+
+## 3e. Advanced recommendation tables (Phase 5)
+- Run `web/prisma/migrations/0005_phase5_recommendations/migration.sql` in the Supabase SQL editor to build similarity, deck upgrade, and user affinity tables.
+- No manual post-step required, but keep an eye on index build times if the tables grow large.
+- Locally, mark the migration as applied and regenerate Prisma:
+  ```bash
+  cd web
+  npx prisma migrate resolve --applied 0005_phase5_recommendations
+  npm run prisma:generate
+  ```
+
+## 3f. Privacy request logging (Phase 5)
+- Run `web/prisma/migrations/0006_phase5_privacy_controls/migration.sql` in Supabase to create `privacy_requests`.
+- Resolve the migration locally and regenerate Prisma:
+  ```bash
+  cd web
+  npx prisma migrate resolve --applied 0006_phase5_privacy_controls
+  npm run prisma:generate
+  ```
+
 ## 4. Using Prisma in the app
 - Import the shared client from `src/lib/prisma.ts` inside API routes or server actions.
 - Prisma Client will reuse the Session Pooler connection defined in `DATABASE_URL`.

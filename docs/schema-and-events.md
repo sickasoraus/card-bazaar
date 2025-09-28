@@ -1,4 +1,4 @@
-# Supabase Schema & Event Taxonomy (Phase 0â€“2)
+# Supabase Schema & Event Taxonomy (Phase 0-5)
 
 ## Core Tables
 
@@ -17,20 +17,37 @@
 - `ingestion_job_runs`: `id UUID PK`, `job_type public.IngestionJobType`, `status public.JobStatus`, `started_at timestamptz default now()`, `completed_at timestamptz`, `error_message text`, `metadata jsonb`.
 - `card_daily_metrics`: `id UUID PK`, `card_id UUID references cards`, `metric_date date`, `views integer default 0`, `unique_users integer default 0`, `deck_inclusions integer default 0`, `price_avg numeric(12,4)`, `price_change numeric(12,4)`, `created_at timestamptz default now()`.
 - `deck_daily_metrics`: `id UUID PK`, `deck_id UUID references decks`, `metric_date date`, `views integer default 0`, `unique_users integer default 0`, `imports integer default 0`, `exports integer default 0`, `bridge_requests integer default 0`, `win_rate numeric(5,2)`, `created_at timestamptz default now()`.
+- `linked_accounts`: `id UUID PK`, `user_id UUID references users on delete cascade`, `provider auth_provider_enum`, `provider_user_id text unique per provider`, OAuth token metadata, `scopes text[]`, `created_at`, `updated_at`.
+- `auth_bridge_sessions`: `id UUID PK`, `user_id UUID references users on delete cascade`, optional `linked_account_id`, session identifiers (`card_bazaar_session_id`, `supabase_session_id`), `status auth_session_status_enum`, timing data, metadata.
+- `auth_audit_events`: `id UUID PK`, optional `user_id`/`linked_account_id`/`session_id` FKs, `event_type auth_audit_event_enum`, `context jsonb`, `occurred_at timestamptz default now()`.
+- `card_similarity`: `card_id UUID`, `related_card_id UUID`, `score numeric(8,4)`, `components jsonb`, `rationale text`, `generated_at timestamptz`, unique `(card_id, related_card_id)`.
+- `deck_upgrade_candidates`: `deck_id UUID`, `card_id UUID`, `score numeric(8,4)`, `components jsonb`, `rationale text`, `generated_at timestamptz`, unique `(deck_id, card_id)`.
+- `user_similarity_scores`: `user_id UUID`, `similar_user_id UUID`, `score numeric(8,4)`, `shared_interactions integer`, `last_computed_at timestamptz`, unique `(user_id, similar_user_id)`.
+- `privacy_requests`: `id UUID PK`, optional `user_id UUID`, `request_type privacy_request_type_enum`, `status privacy_request_status_enum`, `metadata jsonb`, timestamps.
 
-## Event Taxonomy (Phase 1+ focus)
+## Event Taxonomy (Phase 5)
 
-- `search_performed`: context captures `query`, `filters`, `results_count`.
-- `card_viewed`: subject is card/printing; context includes `page`, `position`, `source` (e.g., trending, search).
-- `deck_viewed`: subject deck; context includes `source`, `format`, `card_count`, and normalized `source_category`.
-- `deck_card_added`: subject deck; context includes `card_id`, `zone`, `method` (manual, suggestion, import, import_unresolved) so unresolved imports are traceable.
-- `deck_created`: subject deck; context includes `format`, `seed` (blank, template, import).
+- `search_performed`: context captures `query`, `filters`, `results_count`, and optional `source_surface`.
+- `card_viewed`: subject is a card/printing; context includes `page`, `position`, `source` (trending, search, recommendation).
+- `deck_viewed`: subject deck; context tracks `source`, `format`, `card_count`, `source_category` (builder, gallery, share).
+- `deck_card_added`: subject deck; context includes `card_id`, `zone`, `method` (manual, suggestion, import, import_unresolved, autofill).
+- `deck_created`: subject deck; context includes `format`, `seed` (blank, template, import, autofill).
 - `deck_imported`: subject deck; context includes `source`, `card_count`, `matched_count`, `missing_count`.
-- `import_attempted`: subject import; context includes `source`, `status`, `error_code`, plus `card_count`, `matched_count`, `missing_count`, `merged_count` for import quality metrics.
-- `export_completed`: subject deck; context includes `export_format`, `cards_missing`, `destination` (local download, card bazaar bridge, etc.).
-- `bridge_initiated`: subject `scope` (card/deck); context captures `destination`, `missing_count`, `bridge_id`, and any local subject reference.
-- `recommendation_served`: subject recommendation; context includes `surface`, `algorithm`, `impression_count`, and optional `recommendation_id`.
-- `simulator_started`: future-proof flag for Phase 3+, but log structure ready with `starting_hand` sample toggle.
+- `import_attempted`: subject import; context includes `source`, `status`, `error_code`, `card_count`, `matched_count`, `missing_count`, `merged_count`.
+- `export_completed`: subject deck; context includes `export_format`, `cards_missing`, `destination` (download, card_bazaar_bridge, arena).
+- `bridge_initiated`: subject `scope` (card/deck); context captures `destination`, `missing_count`, `bridge_id`, and local references.
+- `recommendation_served`: subject recommendation; context includes `surface`, `algorithm`, `impression_count`, `recommendation_id`.
+- `deck_simulator_action`: subject simulator; context records `action` (draw, mulligan, reset), `deckId`, counts before/after.
+- `deck_autofill_action`: subject deck; context records `action`, `deckId`, `suggestionCount`.
+- `auth_link_initiated`: subject linked account; context includes `provider`, `redirect_uri`, `attempt_id`.
+- `auth_link_succeeded`: subject linked account; context includes `provider`, `provider_user_id`, `latency_ms`.
+- `auth_link_failed`: subject linked account; context includes `provider`, `error_code`, `stage` (authorization, token_exchange, profile_sync).
+- `auth_session_refreshed`: subject session; context includes `provider`, `session_id`, `refresh_reason` (expiry, manual).
+- `auth_session_revoked`: subject session; context includes `provider`, `session_id`, `reason` (logout, remote_revocation, idle_timeout).
+- `privacy_opt_out`: subject privacy; context includes `reason` and action=`opt_out`.
+- `privacy_opt_in`: subject privacy; context includes `reason` and action=`opt_in`.
+- `privacy_data_export_requested`: subject privacy; context includes `reason` and action=`data_export`.
+- `privacy_data_delete_requested`: subject privacy; context includes `reason` and action=`data_delete`.
 
 ## Notes
 
@@ -38,7 +55,7 @@
 - Prisma schema should mirror these definitions with enums for constrained fields.
 - Phase 1/2 use `cards`, `printings`, `prices`, `card_tags`, `decks`, `deck_cards`, `event_log`; later tables are ready for incremental rollout.
 - Deck draft persistence approach is detailed in `docs/deck-draft-persistence.md`.
-- Supabase cron jobs should log executions to `ingestion_job_runs` (scryfall_bulk, price_snapshot, telemetry_rollup, trending_refresh) so analytics can monitor latency/error rates.
+- Supabase cron jobs should log executions to `ingestion_job_runs` (scryfall_bulk, price_snapshot, telemetry_rollup, trending_refresh, recommendation_similarity, recommendation_personalization) so analytics can monitor latency/error rates.
 
 ## API Stubs (Phase 2)
 
@@ -47,15 +64,26 @@
 - `PUT /api/decks/cards`: Accepts deck metadata plus `{ printingId, quantity, zone }[]` to upsert deck cards during Supabase sync.
 - `POST /api/cart-bridge`: Accepts either `{ type: "card", cardId, name, setCode?, setName?, price? }` or deck manifests `{ type: "deck", deckId, name, format, totalCards, distinctCards, items[], missing[] }` to queue Card Bazaar bridge placeholders until the live integration is enabled. Returns `bridgeId`, user message, optional `summary`, and a `missing` array for unresolved cards.
 - `GET /api/trending`: Returns current trending cards/decks using `trending_snapshots`, optionally filtered by `scope`, `period`, or `format` query params.
+- `POST /api/auth/link`: bootstraps the Card Bazaar OIDC flow, returning authorize URL + PKCE verifier for the client.
+- `GET /api/auth/status`: lightweight read to show whether the current session is linked to Card Bazaar.
+- `POST /api/auth/session/refresh`: placeholder endpoint for refreshing Card Bazaar tokens (returns 501 until wired).
+- `POST /api/auth/session/revoke`: queues a revoke signal for Card Bazaar + Supabase sessions (202 Accepted in stub form).
 
-## Telemetry Helpers (Phase 2)
+## Telemetry Helpers (Phase 5)
 
-- `trackDeckCreated({ deckId, format, visibility, seed, source })` â€“ call when a new deck shell is created so lifecycle analytics stay accurate.
-- `trackDeckViewed({ deckId, source, format, cardCount })` â€“ log when a draft loads so daily engagement metrics stay accurate.
-- `trackDeckImported({ deckId, source, cardCount, matchedCount, missingCount })` â€“ fires after successful list imports to correlate telemetry with ingestion quality.
-- `trackImportAttempted({ importId, source, status, errorCode, cardCount, matchedCount, missingCount, mergedCount })` â€“ emit before/after CSV or Arena imports to monitor success vs. failure and how many cards still need manual mapping.
-- `trackExportCompleted({ deckId, exportFormat, cardsMissing, destination })` â€“ record when a cart/export hand-off finishes for downstream commerce analytics (local downloads, Card Bazaar bridge, etc.).
-- `trackBridgeInitiated({ scope, subjectId, destination, missingCount, bridgeId })` â€“ log bridge placeholders so we can measure deck-to-commerce funnels.
-- `trackRecommendationServed({ recommendationId, surface, algorithm, impressionCount })` â€“ instrumentation for personalization rails once they ship.
-- `trackDeckCardAdded({ deckId, cardId, zone, method })` â€“ method now includes `import_unresolved` when the card could not be matched to a Scryfall ID.
-- Existing helpers (`trackSearchPerformed`, `trackCardViewed`) stay unchanged.
+- `trackSearchPerformed({ query, filters, page, totalResults, sourceSurface })` – wraps `search_performed`.
+- `trackCardViewed({ cardId, source, surface })` – lightweight helper for `card_viewed`.
+- `trackDeckCreated({ deckId, format, visibility, seed, source })` – ensures lifecycle metrics stay accurate.
+- `trackDeckViewed({ deckId, source, format, cardCount })` – logs builder/gallery engagement.
+- `trackDeckCardAdded({ deckId, cardId, zone, method })` – now includes autofill-only methods.
+- `trackDeckImported({ deckId, source, cardCount, matchedCount, missingCount })` – consolidates import telemetry.
+- `trackImportAttempted({ importId, source, status, errorCode, cardCount, matchedCount, missingCount, mergedCount })` – records pre/post import states.
+- `trackExportCompleted({ deckId, exportFormat, cardsMissing, destination })` – covers downloads and Card Bazaar bridge pushes.
+- `trackBridgeInitiated({ scope, subjectId, destination, missingCount, bridgeId })` – funnels into commerce analytics.
+- `trackRecommendationServed({ recommendationId, surface, algorithm, impressionCount })` – personalization measurement hook.
+- `trackDeckSimulatorAction({ action, deckId, cardCount, count, destination })` – emits `deck_simulator_action`.
+- `trackDeckAutofillAction({ action, deckId, suggestionCount })` – captures `deck_autofill_action`.
+- `trackAuthLinkEvent({ stage, status, provider, attemptId, errorCode })` – maps to `auth_link_initiated|succeeded|failed`.
+- `trackAuthSessionEvent({ action, provider, sessionId, reason })` – covers `auth_session_refreshed` and `auth_session_revoked`.
+- `trackPrivacyEvent(type, { reason })` – emits privacy opt-in/out and export/delete requests for compliance tracking.
+

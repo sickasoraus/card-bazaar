@@ -21,14 +21,14 @@ type DeckCardAddedPayload = {
   deckId: string;
   cardId: string;
   zone: string;
-  method?: "manual" | "suggestion" | "import" | "import_unresolved";
+  method?: "manual" | "suggestion" | "import" | "import_unresolved" | "autofill";
 };
 
 type DeckCreatedPayload = {
   deckId: string;
   format?: string;
   visibility?: "private" | "unlisted" | "public";
-  seed?: "blank" | "template" | "import";
+  seed?: "blank" | "template" | "import" | "autofill";
   source?: "builder" | "import" | "template" | "unknown";
   cardCount?: number;
 };
@@ -102,6 +102,32 @@ type AutofillActionPayload = {
   suggestionCount?: number;
 };
 
+type PrivacyEventPayload = {
+  reason?: string;
+};
+
+type PrivacyEventType =
+  | 'privacy_opt_out'
+  | 'privacy_opt_in'
+  | 'privacy_data_export_requested'
+  | 'privacy_data_delete_requested';
+
+
+type AuthLinkEventPayload = {
+  provider: "card_bazaar" | string;
+  stage: "authorization" | "token_exchange" | "profile_sync";
+  attemptId?: string;
+  redirectUri?: string;
+  providerUserId?: string;
+  errorCode?: string;
+  latencyMs?: number;
+};
+
+type AuthSessionEventPayload = {
+  provider: "card_bazaar" | string;
+  sessionId?: string;
+  reason?: string;
+};
 
 type TelemetryEnvelope =
   | { type: "search_performed"; payload: SearchPerformedPayload }
@@ -115,7 +141,16 @@ type TelemetryEnvelope =
   | { type: "bridge_initiated"; payload: BridgeInitiatedPayload }
   | { type: "deck_simulator_action"; payload: SimulatorActionPayload }
   | { type: "deck_autofill_action"; payload: AutofillActionPayload }
-  | { type: "recommendation_served"; payload: RecommendationServedPayload };
+  | { type: "recommendation_served"; payload: RecommendationServedPayload }
+  | { type: "auth_link_initiated"; payload: AuthLinkEventPayload }
+  | { type: "auth_link_succeeded"; payload: AuthLinkEventPayload }
+  | { type: "auth_link_failed"; payload: AuthLinkEventPayload }
+  | { type: "auth_session_refreshed"; payload: AuthSessionEventPayload }
+  | { type: "auth_session_revoked"; payload: AuthSessionEventPayload }
+  | { type: "privacy_opt_out"; payload: PrivacyEventPayload }
+  | { type: "privacy_opt_in"; payload: PrivacyEventPayload }
+  | { type: "privacy_data_export_requested"; payload: PrivacyEventPayload }
+  | { type: "privacy_data_delete_requested"; payload: PrivacyEventPayload };
 
 const debugMode = () => process.env.NEXT_PUBLIC_TELEMETRY_DEBUG === "true";
 
@@ -201,3 +236,30 @@ export function trackSimulatorAction(payload: SimulatorActionPayload) {
 export function trackAutofillAction(payload: AutofillActionPayload) {
   emitTelemetry({ type: "deck_autofill_action", payload });
 }
+
+export function trackAuthLinkEvent(
+  status: "initiated" | "succeeded" | "failed",
+  payload: AuthLinkEventPayload,
+) {
+  const type =
+    status === "initiated"
+      ? "auth_link_initiated"
+      : status === "succeeded"
+        ? "auth_link_succeeded"
+        : "auth_link_failed";
+  emitTelemetry({ type, payload });
+}
+
+export function trackAuthSessionEvent(
+  action: "refreshed" | "revoked",
+  payload: AuthSessionEventPayload,
+) {
+  const type = action === "refreshed" ? "auth_session_refreshed" : "auth_session_revoked";
+  emitTelemetry({ type, payload });
+}
+
+
+export function trackPrivacyEvent(type: PrivacyEventType, payload: PrivacyEventPayload = {}) {
+  emitTelemetry({ type, payload });
+}
+
