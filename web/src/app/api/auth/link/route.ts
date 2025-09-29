@@ -2,12 +2,24 @@ import { NextResponse } from "next/server";
 import { generatePkcePair, buildAuthorizeUrl } from "@/services/auth-bridge";
 
 const SSO_ENABLED = process.env.NEXT_PUBLIC_SSO_ENABLED === "true";
+const HAS_SSO_CONFIG = Boolean(
+  process.env.CARDBAZAAR_OIDC_CLIENT_ID &&
+    process.env.CARDBAZAAR_OIDC_CLIENT_SECRET &&
+    process.env.CARDBAZAAR_OIDC_ISSUER &&
+    process.env.CARDBAZAAR_OIDC_REDIRECT_URI,
+);
 
 export async function POST(request: Request) {
-  if (!SSO_ENABLED) {
+  if (!SSO_ENABLED || !HAS_SSO_CONFIG) {
     return NextResponse.json(
-      { error: "Card Bazaar SSO disabled in static export." },
-      { status: 501 },
+      {
+        authorizeUrl: null,
+        verifier: null,
+        attemptId: null,
+        stub: true,
+        message: "Card Bazaar SSO bridge is not configured yet. Set NEXT_PUBLIC_SSO_ENABLED=true and provide OIDC credentials to enable this endpoint.",
+      },
+      { status: 200 },
     );
   }
 

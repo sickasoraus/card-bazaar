@@ -101,4 +101,13 @@ Prisma Migrate cannot run directly through the pooler, so apply the schema once 
 ### Need direct migrations later?
 If you want Prisma to execute migrations automatically, either tunnel with the [Supabase CLI](https://supabase.com/docs/guides/cli/local-development#database-connect) or run from an environment with IPv6 access to the "Direct Connection" endpoint, then switch the URL back to the pooler for normal usage.
 
-With this setup, later phases can persist decks, telemetry, and ingested card data directly into Supabase.
+With this setup, later phases can persist decks, telemetry, and ingested card data directly into Supabase.## 6. Preparing for server deployment (post-GitHub Pages)
+
+GitHub Pages serves the static export only; once you provision a real OIDC provider and want live API routes, deploy `web/` to Vercel (or another Node runtime) instead:
+
+1. Create a new Vercel project from the `metablazt` repo and set the framework to Next.js.
+2. Add the Supabase environment variables (`DATABASE_URL`, `DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `CARDBAZAAR_OIDC_*`, etc.) in the Vercel dashboard.
+3. Remove the GitHub Pages workflow once Vercel is live to avoid conflicting deployments.
+4. Update `NEXT_PUBLIC_BASE_PATH`/`assetPrefix` if you no longer need the GitHub Pages base path.
+
+With a server deployment, `/api/*` routes run in the Node runtime, so the privacy endpoints and SSO bridge can talk to Supabase securely.

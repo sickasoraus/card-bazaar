@@ -64,3 +64,5 @@ Refer to `ROADMAP.md` for the latest milestone status.
 ## Privacy Controls (Phase 5 Preview)
 
 - `/settings/privacy` surfaces telemetry toggles, export, and deletion requests. API handlers queue requests in `privacy_requests` when Supabase is available and fall back to static messaging on GitHub Pages.
+\n## Next Build Priorities\n\n- Provision a production OIDC provider for Card Bazaar, populate the CARDBAZAAR_OIDC_* secrets, and enable real SSO flows.\n- Migrate deployment from GitHub Pages to a server runtime (Vercel) so Next.js API routes can use Supabase securely.\n- Ship the personalized dashboard experience backed by authenticated recommendations.\n
+

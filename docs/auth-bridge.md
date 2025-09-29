@@ -42,3 +42,6 @@
 - `NEXT_PUBLIC_SSO_ENABLED` gates the API stubs so static exports return 501 until real SSO is wired.
 - `NEXT_PUBLIC_SSO_CLIENT_ID` and `NEXT_PUBLIC_CARDBAZAAR_ORIGIN` inform the authorize URL builder.
 - Server-side secrets (`CARDBAZAAR_OIDC_CLIENT_ID`, `CARDBAZAAR_OIDC_CLIENT_SECRET`, `CARDBAZAAR_OIDC_ISSUER`, `CARDBAZAAR_OIDC_REDIRECT_URI`, `CARDBAZAAR_ENCRYPTION_KEY`) must live in Supabase config or GitHub Actions secrets before enabling SSO.
+## Current Status (Phase 5 Stub)
+- Card Bazaar SSO is not yet connected to a live OIDC provider. NEXT_PUBLIC_SSO_ENABLED stays alse, and the /api/auth/* endpoints return stub responses so the UI can message "demo mode" instead of failing.
+- When the provider is ready, flip NEXT_PUBLIC_SSO_ENABLED=true, populate the CARDBAZAAR_OIDC_* secrets, and the bridge will start performing the real PKCE + token exchange flow.

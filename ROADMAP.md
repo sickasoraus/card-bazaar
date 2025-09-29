@@ -119,7 +119,7 @@ This document tracks progress across the phased rollout toward the Metablazt MVP
 - Documentation refresh across README, `docs/personalization-strategy.md`, and `docs/supabase-setup.md` to cover Phase 5 setup (2025-09-28).
 
 **Next Up**
-- Wire the SSO endpoints to live Card Bazaar credentials once available and add Supabase edge functions for token encryption.
+- Adopt a real OIDC provider for Card Bazaar, populate the `CARDBAZAAR_OIDC_*` secrets, and flip `NEXT_PUBLIC_SSO_ENABLED=true` so the bridge leaves demo mode.
 - Build the personalized dashboard (saved decks, recent recommendations) leveraging new similarity tables.
 - Prepare infrastructure migration from GitHub Pages to Vercel so dynamic APIs can go live.
 
@@ -147,3 +147,5 @@ This document tracks progress across the phased rollout toward the Metablazt MVP
 - 2025-09-24: Next.js App Router scaffold added under `/web` with static export config.
 - 2025-09-24: Base navigation/hero/card grid frame shipped for Phase 0 UI shell.
 - 2025-09-24: GitHub Pages workflow added for automated static deployments.
+
+## Post-Phase 5 Backlog\n\n- Adopt a production OIDC provider for Card Bazaar and supply the CARDBAZAAR_OIDC_* secrets so the bridge leaves demo mode.\n- Move the app off GitHub Pages to a server environment (e.g., Vercel) so /api/* routes run with Supabase credentials.\n- Build the personalized dashboard experience backed by live recommendation metrics and Supabase-authenticated sessions.\n- Stand up operational jobs (token encryption edge functions, cron monitors) once the server deployment is live.\n\n

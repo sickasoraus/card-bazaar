@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const navLinks = [
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/#cards", label: "Cards" },
   { href: "/#decks", label: "Decks" },
   { href: "/#trending", label: "Trending" },
@@ -45,4 +46,5 @@ export function NavigationBar() {
     </header>
   );
 }
+
 

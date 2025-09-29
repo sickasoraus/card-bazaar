@@ -28,6 +28,10 @@ export async function POST(request: Request) {
       ok: true,
       status: hasDb ? "pending" : "recorded-static",
       message: "Data deletion request queued.",
+      stub: !hasDb,
+      note: hasDb
+        ? undefined
+        : "Supabase privacy storage is not connected; deletion requests are noted locally until the bridge is configured.",
     },
     { status: 202 },
   );

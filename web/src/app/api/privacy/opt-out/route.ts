@@ -28,6 +28,10 @@ export async function POST(request: Request) {
       ok: true,
       status: hasDb ? "pending" : "recorded-static",
       message: "Telemetry opt-out recorded.",
+      stub: !hasDb,
+      note: hasDb
+        ? undefined
+        : "Supabase privacy storage is not connected; preference stored locally until the bridge is configured.",
     },
     { status: 202 },
   );

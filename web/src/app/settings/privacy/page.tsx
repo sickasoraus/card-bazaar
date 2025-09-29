@@ -8,6 +8,19 @@ const STORAGE_KEY = "metablazt.telemetry.optOut";
 
 type InFlightAction = "telemetry" | "export" | "delete" | null;
 
+type PrivacyPreferenceResponse = {
+  optOut: boolean;
+  source: string;
+  note?: string | null;
+  stub?: boolean;
+  lastRequest: null | {
+    type: string;
+    status: string;
+    createdAt: string;
+    resolvedAt: string | null;
+  };
+};
+
 async function postPrivacy(endpoint: string, body: Record<string, unknown>) {
   const response = await fetch(endpoint, {
     method: "POST",
@@ -18,7 +31,16 @@ async function postPrivacy(endpoint: string, body: Record<string, unknown>) {
     const detail = await response.text();
     throw new Error(detail || `Request failed: ${response.status}`);
   }
-  return response.json() as Promise<{ ok: boolean; message?: string; status?: string }>;
+  return response.json() as Promise<{ ok: boolean; message?: string; status?: string; stub?: boolean; note?: string }>;
+}
+
+async function fetchPreferences(): Promise<PrivacyPreferenceResponse> {
+  const response = await fetch("/api/privacy/preferences");
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Failed to load privacy preferences (${response.status}).`);
+  }
+  return response.json() as Promise<PrivacyPreferenceResponse>;
 }
 
 export default function PrivacySettingsPage() {
@@ -26,6 +48,8 @@ export default function PrivacySettingsPage() {
   const [action, setAction] = useState<InFlightAction>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loadingPreference, setLoadingPreference] = useState(true);
+  const [stubNote, setStubNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -35,19 +59,60 @@ export default function PrivacySettingsPage() {
     setTelemetryOptOut(stored === "1");
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function hydrate() {
+      try {
+        const data = await fetchPreferences();
+        if (cancelled) {
+          return;
+        }
+        setTelemetryOptOut(data.optOut);
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(STORAGE_KEY, data.optOut ? "1" : "0");
+        }
+        if (data.note) {
+          setStatusMessage(data.note);
+        }
+        if (data.stub) {
+          setStubNote(
+            data.note ??
+              "Privacy preferences are operating in demo mode until the Supabase connection is fully wired.",
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage((error as Error).message ?? "Unable to load current privacy preferences.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingPreference(false);
+        }
+      }
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const isTelemetryPending = action === "telemetry";
   const isExportPending = action === "export";
   const isDeletionPending = action === "delete";
+  const isTelemetryDisabled = isTelemetryPending || loadingPreference;
 
   const telemetryButtonLabel = useMemo(
     () => (telemetryOptOut ? "Enable advanced tracking" : "Disable advanced tracking"),
     [telemetryOptOut],
   );
 
-  const telemetryStatusCopy = useMemo(
-    () => (telemetryOptOut ? "Advanced tracking is disabled." : "Advanced tracking is enabled."),
-    [telemetryOptOut],
-  );
+  const telemetryStatusCopy = useMemo(() => {
+    if (loadingPreference) {
+      return "Checking your current preference...";
+    }
+    return telemetryOptOut ? "Advanced tracking is disabled." : "Advanced tracking is enabled.";
+  }, [loadingPreference, telemetryOptOut]);
 
   const handleTelemetryToggle = async (nextValue: boolean) => {
     setAction("telemetry");
@@ -55,7 +120,7 @@ export default function PrivacySettingsPage() {
     setErrorMessage(null);
     try {
       const endpoint = nextValue ? "/api/privacy/opt-out" : "/api/privacy/opt-in";
-      const { message } = await postPrivacy(endpoint, {
+      const { message, stub, note } = await postPrivacy(endpoint, {
         source: "settings-privacy",
       });
       setTelemetryOptOut(nextValue);
@@ -64,6 +129,9 @@ export default function PrivacySettingsPage() {
       }
       trackPrivacyEvent(nextValue ? "privacy_opt_out" : "privacy_opt_in", { reason: "settings-privacy" });
       setStatusMessage(message ?? (nextValue ? "Advanced tracking disabled." : "Advanced tracking enabled."));
+      if (stub) {
+        setStubNote(note ?? "Requests are queued locally until Supabase privacy storage is configured.");
+      }
     } catch (error) {
       setErrorMessage((error as Error).message || "Unable to update telemetry preference right now.");
     } finally {
@@ -80,7 +148,7 @@ export default function PrivacySettingsPage() {
         source: "settings-privacy",
       });
       trackPrivacyEvent("privacy_data_export_requested", { reason: "settings-privacy" });
-      setStatusMessage(message ?? "Export request queued. We&apos;ll reach out via email once it's ready.");
+      setStatusMessage(message ?? "Export request queued. We&apos;ll reach out via email once it&apos;s ready.");
     } catch (error) {
       setErrorMessage((error as Error).message || "Unable to queue an export request right now.");
     } finally {
@@ -106,7 +174,7 @@ export default function PrivacySettingsPage() {
   };
 
   const toggleButtonClass = `rounded-[var(--radius-pill)] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] transition-transform ${
-    isTelemetryPending ? "cursor-not-allowed opacity-60" : "hover:-translate-y-[1px]"
+    isTelemetryDisabled ? "cursor-not-allowed opacity-60" : "hover:-translate-y-[1px]"
   }`;
 
   const secondaryButtonClass = `mt-4 w-full rounded-[var(--radius-control)] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-[2px] transition-colors ${
@@ -140,6 +208,11 @@ export default function PrivacySettingsPage() {
           {errorMessage}
         </div>
       ) : null}
+      {stubNote ? (
+        <div className="rounded-md border border-yellow-400/40 bg-yellow-500/10 px-4 py-3 text-xs text-yellow-100">
+          {stubNote}
+        </div>
+      ) : null}
 
       <section className="rounded-[20px] border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
         <div className="flex items-start justify-between gap-4">
@@ -153,10 +226,10 @@ export default function PrivacySettingsPage() {
           <button
             type="button"
             onClick={() => handleTelemetryToggle(!telemetryOptOut)}
-            disabled={isTelemetryPending}
+            disabled={isTelemetryDisabled}
             className={toggleButtonClass}
           >
-            {telemetryButtonLabel}
+            {loadingPreference ? "Loading..." : telemetryButtonLabel}
           </button>
         </div>
         <p className="mt-4 text-xs text-[color:var(--color-text-subtle)]">Status: {telemetryStatusCopy}</p>
@@ -190,3 +263,5 @@ export default function PrivacySettingsPage() {
     </main>
   );
 }
+
+
