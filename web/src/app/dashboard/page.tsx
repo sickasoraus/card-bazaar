@@ -6,7 +6,6 @@ import { useMemo } from "react";
 
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { useTrending } from "@/hooks/use-trending";
-import { withBasePath } from "@/lib/with-base-path";
 
 function formatNumber(value: number | string | undefined) {
   if (value === undefined || value === null) {
@@ -146,7 +145,7 @@ export default function DashboardPage() {
         <aside className="space-y-4 rounded-[20px] border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
           <h2 className="font-display text-2xl text-[color:var(--color-text-hero)]">Privacy snapshot</h2>
           <p className="text-sm text-[color:var(--color-text-subtle)]">
-            Manage analytics on the <Link href={withBasePath("/settings/privacy")} className="underline">
+            Manage analytics on the <Link href="/settings/privacy" className="underline">
               privacy settings page
             </Link>.
           </p>
@@ -209,13 +208,13 @@ export default function DashboardPage() {
                   </dl>
                   <div className="mt-4 flex items-center gap-2 text-xs text-[color:var(--color-text-subtle)]">
                     <Link
-                      href={withBasePath("/deckbuilder")}
+                      href="/deckbuilder"
                       className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition hover:border-white/40"
                     >
                       Open builder
                     </Link>
                     <Link
-                      href={withBasePath("/deckbuilder/simulator")}
+                      href="/deckbuilder/simulator"
                       className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition hover:border-white/40"
                     >
                       Test upgrade

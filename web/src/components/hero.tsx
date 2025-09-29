@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { withBasePath } from "@/lib/with-base-path";
 
 const heroHighlights = [
   {
@@ -40,13 +39,13 @@ export function HeroSection() {
           </p>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <Link
-              href={withBasePath("/#cards")}
+              href="/#cards"
               className="gradient-pill shadow-cta rounded-[var(--radius-pill)] px-6 py-3 text-sm font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)] transition-transform hover:-translate-y-[2px]"
             >
               Browse Cards Preview
             </Link>
             <Link
-              href={withBasePath("/#roadmap")}
+              href="/#roadmap"
               className="text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-accent-highlight)] underline-offset-8 transition-colors hover:underline"
             >
               View Roadmap

@@ -1,6 +1,5 @@
-'use client';
+﻿'use client';
 
-import { withBasePath } from "@/lib/with-base-path";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 
@@ -73,7 +72,7 @@ export function DeckBuilderPreviewSection() {
             </p>
           </div>
           <Link
-            href={withBasePath("/#cards")}
+            href="/#cards"
             className="gradient-pill shadow-cta inline-flex items-center justify-center rounded-[var(--radius-pill)] px-5 py-2 text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)] transition-transform hover:-translate-y-[2px]"
           >
             Back to cards
