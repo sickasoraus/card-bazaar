@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   typedRoutes: true,
+  env: {
+    NEXT_PUBLIC_BASE_PATH: isGithubActions ? `/${repoName}` : '',
+  },
   basePath: isGithubActions ? `/${repoName}` : undefined,
   assetPrefix: isGithubActions ? `/${repoName}/` : undefined,
   trailingSlash: true,

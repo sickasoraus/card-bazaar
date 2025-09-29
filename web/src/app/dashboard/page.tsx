@@ -6,10 +6,11 @@ import { useMemo } from "react";
 
 import { useRecommendations } from "@/hooks/use-recommendations";
 import { useTrending } from "@/hooks/use-trending";
+import { withBasePath } from "@/lib/with-base-path";
 
 function formatNumber(value: number | string | undefined) {
   if (value === undefined || value === null) {
-    return "�";
+    return "–";
   }
   const numeric = typeof value === "string" ? Number(value) : value;
   if (!Number.isFinite(numeric)) {
@@ -63,8 +64,8 @@ export default function DashboardPage() {
         <p className="font-display text-sm uppercase tracking-[4px] text-[color:var(--color-accent-highlight)]">Personalized Dashboard</p>
         <h1 className="font-display text-4xl text-[color:var(--color-text-hero)] sm:text-5xl">{heroMessage}</h1>
         <p className="max-w-2xl text-sm text-[color:var(--color-text-subtle)]">
-          Your dashboard blends trending signals, upgrade suggestions, and privacy status. Once Supabase auth and the
-          Card Bazaar bridge are live, these sections will reflect your actual deck activity.
+          Your dashboard blends trending signals, upgrade suggestions, and privacy status. Once Supabase auth and the Card Bazaar bridge are live,
+          these sections will reflect your actual deck activity.
         </p>
       </header>
 
@@ -108,7 +109,7 @@ export default function DashboardPage() {
                     </div>
                     <h3 className="mt-4 font-display text-lg text-[color:var(--color-text-hero)]">{entry.card?.name ?? "Unknown"}</h3>
                     <p className="text-xs uppercase tracking-[2px] text-[color:var(--color-text-subtle)]">
-                      {entry.card?.setCode ?? "�"} � {entry.card?.rarity ?? "�"}
+                      {entry.card?.setCode ?? "–"} · {entry.card?.rarity ?? "–"}
                     </p>
                     {entry.card?.image ? (
                       <Image
@@ -132,7 +133,7 @@ export default function DashboardPage() {
                       <div>
                         <dt className="uppercase tracking-[2px]">Deck adds</dt>
                         <dd className="font-semibold text-[color:var(--color-text-hero)]">
-                          {formatNumber(entry.components.deck_inclusions as number | undefined)}
+                          {formatNumber(entry.components.deck_inclusions as number | string | undefined)}
                         </dd>
                       </div>
                     </dl>
@@ -145,20 +146,17 @@ export default function DashboardPage() {
         <aside className="space-y-4 rounded-[20px] border border-white/10 bg-white/5 p-6 shadow-lg shadow-black/20">
           <h2 className="font-display text-2xl text-[color:var(--color-text-hero)]">Privacy snapshot</h2>
           <p className="text-sm text-[color:var(--color-text-subtle)]">
-            Manage analytics on the <Link href="/settings/privacy" className="underline">
+            Manage analytics on the <Link href={withBasePath("/settings/privacy")} className="underline">
               privacy settings page
-            </Link>
-            .
+            </Link>.
           </p>
           <div className="rounded-[16px] border border-white/10 bg-white/5 p-4 text-xs text-[color:var(--color-text-subtle)]">
             <p>
-              Telemetry events currently store to local demo storage. Once Supabase credentials are configured, your
-              opt-out state will sync automatically.
+              Telemetry events currently store to local demo storage. Once Supabase credentials are configured, your opt-out state will sync automatically.
             </p>
           </div>
           <div className="rounded-[16px] border border-blue-400/40 bg-blue-500/10 p-4 text-xs text-blue-100">
-            Card Bazaar SSO bridge is running in demo mode. Connect a real OIDC provider to unlock cross-product
-            personalization.
+            Card Bazaar SSO bridge is running in demo mode. Connect a real OIDC provider to unlock cross-product personalization.
           </div>
         </aside>
       </section>
@@ -200,20 +198,26 @@ export default function DashboardPage() {
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-[color:var(--color-text-subtle)]">
                     <div>
                       <dt className="uppercase tracking-[2px]">Rank</dt>
-                      <dd className="font-semibold text-[color:var(--color-text-hero)]">{seed.rank ?? "�"}</dd>
+                      <dd className="font-semibold text-[color:var(--color-text-hero)]">{seed.rank ?? "–"}</dd>
                     </div>
                     <div>
                       <dt className="uppercase tracking-[2px]">Trend</dt>
                       <dd className="font-semibold text-[color:var(--color-text-hero)]">
-                        {formatNumber(seed.trendScore)}
+                        {formatNumber(seed.trendScore ?? seed.metrics?.trendScore)}
                       </dd>
                     </div>
                   </dl>
                   <div className="mt-4 flex items-center gap-2 text-xs text-[color:var(--color-text-subtle)]">
-                    <Link href="/deckbuilder" className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition hover:border-white/40">
+                    <Link
+                      href={withBasePath("/deckbuilder")}
+                      className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition hover:border-white/40"
+                    >
                       Open builder
                     </Link>
-                    <Link href="/deckbuilder/simulator" className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition hover:border-white/40">
+                    <Link
+                      href={withBasePath("/deckbuilder/simulator")}
+                      className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition hover:border-white/40"
+                    >
                       Test upgrade
                     </Link>
                   </div>
@@ -227,9 +231,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="font-display text-2xl text-[color:var(--color-text-hero)]">Trending decks</h2>
-            <p className="text-sm text-[color:var(--color-text-subtle)]">
-              Spotlight on public lists that are gaining momentum.
-            </p>
+            <p className="text-sm text-[color:var(--color-text-subtle)]">Spotlight on public lists that are gaining momentum.</p>
           </div>
           <button
             type="button"
@@ -241,7 +243,7 @@ export default function DashboardPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {trendingDecks.isLoading && trendingDecks.entries.length === 0
-            ? Array.from({ length: 3 }).map((_, index) => <SectionCardSkeleton key={`deck-trending-${index}`} label="Loading" />)
+            ? Array.from({ length: 3 }).map((_, index) => <SectionCardSkeleton key={`trending-deck-${index}`} label="Loading" />)
             : trendingDecks.entries.map((entry) => (
                 <article
                   key={entry.subjectId}
@@ -252,13 +254,11 @@ export default function DashboardPage() {
                       #{entry.rank}
                     </span>
                     <span className="text-[11px] font-semibold uppercase tracking-[2px] text-[color:var(--color-accent-highlight)]">
-                      {entry.deck?.format ?? "�"}
+                      {entry.deck?.format ?? "–"}
                     </span>
                   </div>
                   <h3 className="mt-3 font-display text-lg text-[color:var(--color-text-hero)]">{entry.deck?.name ?? "Deck"}</h3>
-                  <p className="text-xs text-[color:var(--color-text-subtle)]">
-                    Visibility: {entry.deck?.visibility ?? "�"}
-                  </p>
+                  <p className="text-xs text-[color:var(--color-text-subtle)]">Visibility: {entry.deck?.visibility ?? "–"}</p>
                   <dl className="mt-3 grid grid-cols-2 gap-2 text-[11px] text-[color:var(--color-text-subtle)]">
                     <div>
                       <dt className="uppercase tracking-[2px]">Trend</dt>
@@ -281,11 +281,4 @@ export default function DashboardPage() {
     </main>
   );
 }
-
-
-
-
-
-
-
 
