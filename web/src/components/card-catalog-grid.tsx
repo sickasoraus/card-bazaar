@@ -45,7 +45,7 @@ export function CardCatalogGrid({ cards, isLoading, error, onRetry }: CardCatalo
     <div className="relative">
       {isLoading ? <CatalogSkeleton /> : null}
       <div
-        className="grid gap-5"
+        className="grid gap-4"
         style={{ gridTemplateColumns: "repeat(auto-fit, minmax(214px, 1fr))" }}
         aria-live="polite"
       >
@@ -68,8 +68,8 @@ function CatalogCardTile({ card }: { card: CatalogCard }) {
       <Link
         href={detailHref}
         prefetch={false}
-        className="group block overflow-hidden rounded-[18px] border border-white/15 bg-black/40 shadow-[0_14px_40px_-20px_rgba(0,0,0,0.85)] transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_20px_50px_-18px_rgba(0,0,0,0.9)]"
-        style={{ aspectRatio: CARD_ASPECT_RATIO }}
+        className="group relative block overflow-hidden rounded-[18px] border border-white/15 bg-black/40 shadow-[0_14px_40px_-20px_rgba(0,0,0,0.85)] transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_20px_50px_-18px_rgba(0,0,0,0.9)]"
+        style={{ aspectRatio: `${CARD_ASPECT_RATIO}` }}
       >
         {card.imageUrl ? (
           <Image

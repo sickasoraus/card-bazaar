@@ -102,8 +102,8 @@ export function CatalogSection() {
           </p>
         </header>
 
-        <div className="grid gap-10 lg:grid-cols-[360px,minmax(0,1fr)]">
-          <aside className="surface-card shadow-card flex h-fit flex-col gap-6 rounded-[var(--radius-card)] border border-white/10 bg-[color:var(--color-neutral-100)]/70 p-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2">
+        <div className="grid gap-8 lg:grid-cols-[280px,minmax(0,1fr)]">
+          <aside className="surface-card shadow-card flex h-fit flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 bg-[color:var(--color-neutral-100)]/60 p-5 text-sm lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:min-w-[0] lg:overflow-y-auto">
             <div className="flex flex-col gap-2">
               <label htmlFor="catalog-search" className="text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
                 Search cards
@@ -117,7 +117,7 @@ export function CatalogSection() {
               />
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">Sort by</span>
               <select
                 value={filters.sort}
@@ -132,7 +132,7 @@ export function CatalogSection() {
               </select>
             </div>
 
-            <FacetGroup title="Formats">
+            <FacetGroup title="Formats" description="Tap to narrow by legality">
               <div className="flex flex-wrap gap-2">
                 {formatFacets.map((facet) => {
                   const active = activeFormat.has(facet.value);
@@ -154,7 +154,7 @@ export function CatalogSection() {
               </div>
             </FacetGroup>
 
-            <FacetGroup title="Colors">
+            <FacetGroup title="Colors" description="Identity or pip colors">
               <div className="flex flex-wrap gap-2">
                 {COLOR_OPTIONS.map((code) => {
                   const active = activeColors.has(code);
@@ -178,7 +178,7 @@ export function CatalogSection() {
               </div>
             </FacetGroup>
 
-            <FacetGroup title="Rarity">
+            <FacetGroup title="Rarity" description="Quick look tiers">
               <div className="flex flex-wrap gap-2">
                 {RARITY_OPTIONS.map((rarity) => {
                   const active = activeRarities.has(rarity);
@@ -301,10 +301,15 @@ export function CatalogSection() {
   );
 }
 
-function FacetGroup({ title, children }: { title: string; children: ReactNode }) {
+function FacetGroup({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-3">
-      <span className="text-[11px] font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">{title}</span>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">{title}</span>
+        {description ? (
+          <span className="text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-subtle)] opacity-70">{description}</span>
+        ) : null}
+      </div>
       {children}
     </div>
   );
