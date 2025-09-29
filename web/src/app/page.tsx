@@ -9,9 +9,9 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-[color:var(--color-surface-primary)]">
       <NavigationBar />
       <main className="flex-1">
+        <CatalogSection />
         <HeroSection />
         <TrendingRail />
-        <CatalogSection />
         <DeckBuilderPreviewSection />
       </main>
       <footer className="border-t border-white/10 bg-[color:var(--color-neutral-100)]/70 py-6">

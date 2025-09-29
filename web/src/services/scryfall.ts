@@ -40,6 +40,9 @@ export type ScryfallCard = {
   prices?: Record<string, string | null>;
   colors?: string[];
   color_identity?: string[];
+  legalities?: Record<string, string>;
+  flavor_text?: string;
+  lang?: string;
   power?: string;
   toughness?: string;
   layout?: string;
