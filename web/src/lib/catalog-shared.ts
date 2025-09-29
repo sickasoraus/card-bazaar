@@ -23,6 +23,10 @@ type FetchOptions = {
 
 const SCRYFALL_API_PAGE_SIZE = 175;
 
+function hasImage(card: ScryfallCard) {
+  return Boolean(card.image_uris?.png || card.image_uris?.large || card.image_uris?.normal);
+}
+
 export function buildScryfallQuery(filters: CatalogFilters): { query: string; order?: string; dir?: "asc" | "desc" } {
   const tokens: string[] = [];
 
@@ -50,6 +54,8 @@ export function buildScryfallQuery(filters: CatalogFilters): { query: string; or
   if (typeof filters.cmcMax === "number") {
     tokens.push(`cmc<=${filters.cmcMax}`);
   }
+
+  tokens.push('is:highres');
 
   const query = tokens.length ? tokens.join(" ") : "*";
 
@@ -177,11 +183,12 @@ export async function fetchScryfallCatalog(
 
   const firstPage = await searchCards(params, { signal });
   const collected: ScryfallCard[] = [...firstPage.data];
+  const collectedWithImages: ScryfallCard[] = firstPage.data.filter(hasImage);
   let totalCards = firstPage.total_cards ?? firstPage.data.length;
   let nextPage = firstPage;
   let currentScryfallPage = initialScryfallPage;
 
-  while (collected.length < desiredEndIndex && nextPage.has_more) {
+  while (collectedWithImages.length < desiredEndIndex && nextPage.has_more) {
     if (signal?.aborted) {
       break;
     }
@@ -196,17 +203,19 @@ export async function fetchScryfallCatalog(
       { signal },
     );
     collected.push(...nextPage.data);
+    collectedWithImages.push(...nextPage.data.filter(hasImage));
     totalCards = nextPage.total_cards ?? totalCards;
 
-    if (currentScryfallPage - initialScryfallPage > 3) {
+    if (currentScryfallPage - initialScryfallPage > 4) {
       break;
     }
   }
 
-  const sliced = collected.slice(desiredStartIndex, desiredEndIndex);
+  const sliced = collectedWithImages.slice(desiredStartIndex, desiredEndIndex);
   const cards = sliced.map(mapScryfallCard);
-  const totalPages = Math.max(1, Math.ceil(totalCards / filters.pageSize));
-  const facets = buildFallbackFacets(collected);
+  const totalFilteredCount = Math.max(collectedWithImages.length, cards.length);
+  const totalPages = Math.max(1, Math.ceil(totalFilteredCount / filters.pageSize));
+  const facets = buildFallbackFacets(collectedWithImages.length ? collectedWithImages : collected);
 
   return {
     data: cards,

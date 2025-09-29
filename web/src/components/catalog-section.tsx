@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
 
 import { CardCatalogGrid } from "@/components/card-catalog-grid";
 import { useCardCatalog } from "@/hooks/use-card-catalog";
@@ -89,13 +90,21 @@ export function CatalogSection() {
           <span className="text-xs font-semibold uppercase tracking-[6px] text-[color:var(--color-accent-highlight)]">
             Meta staples snapshot
           </span>
-          <div className="flex flex-wrap items-baseline gap-4">
-            <h2 className="font-display text-3xl text-[color:var(--color-text-hero)] sm:text-4xl">
-              Top 100 staples across Standard, Modern, Commander, and Brawl
-            </h2>
-            <span className="text-xs uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
-              {`Showing ${cards.length.toLocaleString()} of ${pagination.total.toLocaleString()} cards • Page ${pagination.page} of ${pagination.totalPages}`}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="font-display text-3xl text-[color:var(--color-text-hero)] sm:text-4xl">
+                Top 100 staples across Standard, Modern, Commander, and Brawl
+              </h2>
+            </div>
+            <div className="flex flex-col items-end gap-2 text-right text-xs uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
+              <span>{`Showing ${cards.length.toLocaleString()} of ${pagination.total.toLocaleString()} cards • Page ${pagination.page} of ${pagination.totalPages}`}</span>
+              <Link
+                href="/deckbuilder"
+                className="gradient-pill shadow-cta inline-flex items-center gap-2 rounded-[var(--radius-pill)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[3px] text-[color:var(--color-text-hero)] transition hover:shadow-[0_12px_30px_-20px_rgba(255,193,138,0.9)]"
+              >
+                Create a deck
+              </Link>
+            </div>
           </div>
           <p className="max-w-3xl text-sm text-[color:var(--color-text-subtle)]">
             Dial in format, color, and rarity to surface the cards dominating tonight&apos;s tables. We pull this feed directly from Scryfall so it always reflects the latest legal snapshot.
