@@ -46,7 +46,7 @@ export function CardCatalogGrid({ cards, isLoading, error, onRetry }: CardCatalo
       {isLoading ? <CatalogSkeleton /> : null}
       <div
         className="grid gap-4"
-        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))" }}
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(248px, 1fr))" }}
         aria-live="polite"
       >
         {cards.map((card) => (
@@ -76,7 +76,7 @@ function CatalogCardTile({ card }: { card: CatalogCard }) {
             src={card.imageUrl}
             alt={card.name}
             fill
-            sizes="(max-width: 768px) 90vw, (max-width: 1280px) 36vw, 24vw"
+            sizes="(max-width: 768px) 65vw, (max-width: 1280px) 22vw, 15vw"
             className="object-cover transition-transform duration-200 group-hover:scale-[1.04]"
             priority={false}
           />
@@ -100,7 +100,7 @@ function CatalogCardTile({ card }: { card: CatalogCard }) {
 function CatalogSkeleton() {
   return (
     <div className="absolute inset-0 grid place-items-center bg-[color:var(--color-neutral-100)]/55">
-      <div className="grid w-full max-w-[1200px] gap-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(480px, 1fr))" }}>
+      <div className="grid w-full max-w-[1200px] gap-5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(248px, 1fr))" }}>
         {Array.from({ length: 9 }).map((_, index) => (
           <div
             key={`catalog-skeleton-${index}`}
