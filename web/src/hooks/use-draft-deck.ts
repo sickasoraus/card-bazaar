@@ -666,6 +666,10 @@ export function useDraftDeck() {
     });
   }, []);
 
+  const saveDeck = useCallback(() => {
+    updateDeck((current) => ({ ...current }));
+  }, [updateDeck]);
+
   const updateDeckMeta = useCallback(
     (updates: Partial<Pick<DraftDeck, "name" | "format" | "visibility">>) => {
       updateDeck((current) => ({
@@ -1151,6 +1155,7 @@ export function useDraftDeck() {
     decrementCard,
     removeCard,
     updateDeckMeta,
+    saveDeck,
     resetDeck,
     loadDraft,
     deleteDraft,

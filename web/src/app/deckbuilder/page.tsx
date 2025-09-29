@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDraftDeck } from "@/hooks/use-draft-deck";
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
@@ -149,6 +150,7 @@ function DeckBuilderPageInner() {
     decrementCard,
     removeCard,
     updateDeckMeta,
+    saveDeck,
     resetDeck,
     loadDraft,
     deleteDraft,
@@ -622,6 +624,12 @@ function DeckBuilderPageInner() {
     }
   }, [deck.cards, syncToSupabase]);
 
+  const handleManualSave = useCallback(() => {
+    saveDeck();
+    setLinkFeedbackTone("success");
+    setLinkFeedback("Deck saved to your library.");
+  }, [saveDeck]);
+
   const lastSyncedLabel = useMemo(() => {
     if (!deck.lastSyncedAt) {
       return null;
@@ -831,6 +839,16 @@ function DeckBuilderPageInner() {
                     <option value="public">Public</option>
                   </select>
                 </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleManualSave}
+                  className="gradient-pill shadow-cta rounded-[var(--radius-pill)] px-4 py-2 text-xs font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)]"
+                >
+                  Save deck
+                </button>
+                <span className="text-[10px] uppercase tracking-[2px] text-subtle">Auto-save runs, but use save to mark checkpoints.</span>
               </div>
               {isImportPanelOpen ? (
                 <div className="surface-card shadow-card flex flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 p-5">
@@ -1260,7 +1278,37 @@ type DeckLibraryPanelProps = {
   isProcessingLink: boolean;
 };
 
+type DeckPreviewCard = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  quantity: number;
+};
+
 function DeckLibraryPanel({ drafts, onCreateDeck, onResumeDraft, onDeleteDraft, isProcessingLink }: DeckLibraryPanelProps) {
+  const [preview, setPreview] = useState<{ deckId: string | null; cards: DeckPreviewCard[] }>({ deckId: null, cards: [] });
+
+  const handleTogglePreview = useCallback((deckId: string) => {
+    setPreview((current) => {
+      if (current.deckId === deckId) {
+        return { deckId: null, cards: [] };
+      }
+      return { deckId, cards: readDeckPreviewCards(deckId) };
+    });
+  }, []);
+
+  useEffect(() => {
+    setPreview((current) => {
+      if (!current.deckId) {
+        return current;
+      }
+      if (!drafts.some((draft) => draft.id === current.deckId)) {
+        return { deckId: null, cards: [] };
+      }
+      return { deckId: current.deckId, cards: readDeckPreviewCards(current.deckId) };
+    });
+  }, [drafts]);
+
   return (
     <aside className="surface-card shadow-card flex h-fit flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 p-5 text-sm text-subtle">
       <div className="flex items-center justify-between gap-2">
@@ -1280,38 +1328,76 @@ function DeckLibraryPanel({ drafts, onCreateDeck, onResumeDraft, onDeleteDraft, 
       ) : null}
       {drafts.length ? (
         <ul className="space-y-2">
-          {drafts.map((draft) => (
-            <li
-              key={draft.id}
-              className="rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-3 py-2"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-1">
-                  <p className="font-semibold text-[color:var(--color-text-hero)]">{draft.name}</p>
-                  <p className="text-[10px] uppercase tracking-[1.5px] text-subtle">
-                    {draft.format} - {draft.badge} - {draft.lastUpdatedLabel}
-                  </p>
+          {drafts.map((draft) => {
+            const isPreviewing = preview.deckId === draft.id;
+            const cards = isPreviewing ? preview.cards : [];
+            return (
+              <li
+                key={draft.id}
+                className="rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-3 py-2"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1">
+                    <p className="font-semibold text-[color:var(--color-text-hero)]">{draft.name}</p>
+                    <p className="text-[10px] uppercase tracking-[1.5px] text-subtle">
+                      {draft.format} - {draft.badge} - {draft.lastUpdatedLabel}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-[10px] uppercase tracking-[2px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onResumeDraft(draft.id);
+                        setPreview({ deckId: draft.id, cards: readDeckPreviewCards(draft.id) });
+                      }}
+                      disabled={draft.isCurrent}
+                      className="rounded-[var(--radius-pill)] border border-white/20 px-2 py-1 text-[color:var(--color-text-body)] hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {draft.isCurrent ? "Current" : "Open"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePreview(draft.id)}
+                      className="rounded-[var(--radius-pill)] border border-white/20 px-2 py-1 text-[color:var(--color-text-body)] hover:border-white/40"
+                    >
+                      {isPreviewing ? "Hide cards" : "View cards"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteDraft(draft.id)}
+                      className="rounded-[var(--radius-pill)] border border-rose-500/40 px-2 py-1 text-rose-200 hover:border-rose-300/60"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1 text-[10px] uppercase tracking-[2px]">
-                  <button
-                    type="button"
-                    onClick={() => onResumeDraft(draft.id)}
-                    disabled={draft.isCurrent}
-                    className="rounded-[var(--radius-pill)] border border-white/20 px-2 py-1 text-[color:var(--color-text-body)] hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {draft.isCurrent ? "Current" : "Open"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDeleteDraft(draft.id)}
-                    className="rounded-[var(--radius-pill)] border border-rose-500/40 px-2 py-1 text-rose-200 hover:border-rose-300/60"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
+                {isPreviewing ? (
+                  cards.length ? (
+                    <div className="mt-3 grid grid-cols-4 gap-2">
+                      {cards.map((card) => (
+                        <figure key={card.id} className="relative h-36 overflow-hidden rounded-[12px] border border-white/10 bg-black/40">
+                          {card.imageUrl ? (
+                            <Image src={card.imageUrl} alt={card.name} fill className="object-cover" sizes="120px" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] uppercase tracking-[2px] text-subtle">
+                              No art
+                            </div>
+                          )}
+                          <figcaption className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-[10px] font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)]">
+                            {card.quantity}x {card.name}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-2 rounded-[var(--radius-control)] border border-dashed border-white/20 bg-black/30 px-3 py-2 text-[11px] text-subtle">
+                      No cards saved in this deck yet.
+                    </p>
+                  )
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 px-3 py-2 text-[11px] text-subtle">
@@ -1320,6 +1406,52 @@ function DeckLibraryPanel({ drafts, onCreateDeck, onResumeDraft, onDeleteDraft, 
       )}
     </aside>
   );
+}
+
+function readDeckPreviewCards(deckId: string): DeckPreviewCard[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  const raw = window.localStorage.getItem(`metablazt:draft:${deckId}`);
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(raw) as { cards?: Array<Record<string, unknown>> } | null;
+    if (!parsed || !Array.isArray(parsed.cards)) {
+      return [];
+    }
+    const map = new Map<string, DeckPreviewCard>();
+    parsed.cards.forEach((entry) => {
+      const id = typeof entry?.cardId === "string" ? entry.cardId : typeof entry?.id === "string" ? entry.id : "";
+      if (!id) {
+        return;
+      }
+      const name = typeof entry?.name === "string" ? entry.name : "Unknown card";
+      const imageUrl = typeof entry?.imageUrl === "string" ? entry.imageUrl : null;
+      const quantity = typeof entry?.quantity === "number" && Number.isFinite(entry.quantity) ? entry.quantity : 1;
+      const existing = map.get(id);
+      if (existing) {
+        existing.quantity += quantity;
+        if (!existing.imageUrl && imageUrl) {
+          existing.imageUrl = imageUrl;
+        }
+        return;
+      }
+      map.set(id, { id, name, imageUrl, quantity });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => {
+        if (b.quantity !== a.quantity) {
+          return b.quantity - a.quantity;
+        }
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, 8);
+  } catch (error) {
+    console.warn("Failed to read deck preview", error);
+    return [];
+  }
 }
 
 type CardRecommendationSeed = RecommendationSeed & {
