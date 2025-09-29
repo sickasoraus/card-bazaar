@@ -82,28 +82,28 @@ export function CatalogSection() {
   const activeRarities = new Set(filters.rarities);
 
   return (
-    <section id="cards" className="relative isolate bg-[color:var(--color-neutral-200)]/20 py-20">
+    <section id="cards" className="relative isolate bg-[color:var(--color-neutral-200)]/25 py-24">
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/30 to-transparent" aria-hidden />
-      <div className="mx-auto flex w-full max-w-[1240px] flex-col gap-10 px-6">
+      <div className="mx-auto flex w-full max-w-[1380px] flex-col gap-10 px-6">
         <header className="flex flex-col gap-4">
           <span className="text-xs font-semibold uppercase tracking-[6px] text-[color:var(--color-accent-highlight)]">
-            Explore the library
+            Meta staples snapshot
           </span>
           <div className="flex flex-wrap items-baseline gap-4">
             <h2 className="font-display text-3xl text-[color:var(--color-text-hero)] sm:text-4xl">
-              Top 100 cards pulled straight from Scryfall
+              Top 100 staples across Standard, Modern, Commander, and Brawl
             </h2>
             <span className="text-xs uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
               {`Showing ${cards.length.toLocaleString()} of ${pagination.total.toLocaleString()} cards • Page ${pagination.page} of ${pagination.totalPages}`}
             </span>
           </div>
           <p className="max-w-3xl text-sm text-[color:var(--color-text-subtle)]">
-            Instantly filter by format, color, and rarity. We pull these rankings directly from Scryfall so the gallery always reflects what players are casting right now.
+            Dial in format, color, and rarity to surface the cards dominating tonight&apos;s tables. We pull this feed directly from Scryfall so it always reflects the latest legal snapshot.
           </p>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[320px,1fr]">
-          <aside className="surface-card shadow-card flex flex-col gap-6 rounded-[var(--radius-card)] border border-white/10 bg-[color:var(--color-neutral-100)]/60 p-6">
+        <div className="grid gap-10 lg:grid-cols-[360px,minmax(0,1fr)]">
+          <aside className="surface-card shadow-card flex h-fit flex-col gap-6 rounded-[var(--radius-card)] border border-white/10 bg-[color:var(--color-neutral-100)]/70 p-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2">
             <div className="flex flex-col gap-2">
               <label htmlFor="catalog-search" className="text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
                 Search cards

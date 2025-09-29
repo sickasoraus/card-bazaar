@@ -98,7 +98,8 @@ async function runDatabaseQuery(filters: CatalogFilters): Promise<CatalogRespons
     formats,
     popularity,
     price_low,
-    price_high
+    price_high,
+    edhrec_rank
   `;
 
   const results = await prisma.$queryRaw<DbCatalogRow[]>(
@@ -275,6 +276,7 @@ function mapDbRowToCatalogCard(row: DbCatalogRow): CatalogCard {
     priceLow: row.price_low,
     priceHigh: row.price_high,
     scryfallUri: null,
+    edhrecRank: row.edhrec_rank ?? null,
   };
 }
 
@@ -296,6 +298,7 @@ type DbCatalogRow = {
   popularity: number | null;
   price_low: number | null;
   price_high: number | null;
+  edhrec_rank: number | null;
 };
 
 function buildTextArray(values: string[]): Prisma.Sql {

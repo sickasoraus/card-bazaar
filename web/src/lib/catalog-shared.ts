@@ -106,6 +106,7 @@ export function mapScryfallCard(card: ScryfallCard): CatalogCard {
     priceLow: Number.isFinite(priceLow) ? priceLow : null,
     priceHigh: Number.isFinite(priceHigh) ? priceHigh : null,
     scryfallUri: typeof card.scryfall_uri === "string" ? card.scryfall_uri : null,
+    edhrecRank: typeof card.edhrec_rank === "number" ? card.edhrec_rank : null,
   };
 
 }

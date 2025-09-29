@@ -17,6 +17,7 @@ export type CatalogCard = {
   priceLow: number | null;
   priceHigh: number | null;
   scryfallUri: string | null;
+  edhrecRank: number | null;
 };
 
 export type CatalogFacet = {

@@ -36,6 +36,7 @@ export type ScryfallCard = {
   collector_number?: string;
   rarity?: string;
   scryfall_uri?: string;
+  edhrec_rank?: number;
   prices?: Record<string, string | null>;
   colors?: string[];
   color_identity?: string[];
