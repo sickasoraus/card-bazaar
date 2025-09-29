@@ -1,4 +1,4 @@
-# Supabase Schema & Event Taxonomy (Phase 0-5)
+ï»¿# Supabase Schema & Event Taxonomy (Phase 0-5)
 
 ## Core Tables
 
@@ -8,6 +8,7 @@
 - `printings`: `id UUID PK`, `card_id UUID references cards`, `set_code text`, `collector_number text`, `frame text`, `promo_types text[]`, `finishes text[]`, `released_at date`, `stock_status text`, `card_bazaar_sku text`, `created_at timestamptz default now()`
 - `prices`: `id UUID PK`, `printing_id UUID references printings`, `source text check (source in ('scryfall','mtggoldfish'))`, `currency text default 'USD'`, `retail numeric`, `buylist numeric`, `foil_retail numeric`, `foil_buylist numeric`, `sampled_at timestamptz`
 - `card_tags`: `id UUID PK`, `card_id UUID references cards`, `tag_slug text`, `tag_label text`, `tag_source text check (tag_source in ('editorial','inferred'))`, `assigned_by UUID references users`, `assigned_at timestamptz default now()`
+- `card_format_legalities`: `card_id UUID references cards`, `format text`, `status text`, `updated_at timestamptz default now()`, primary key `(card_id, format)` with index on `(format, status)`
 - `decks`: `id UUID PK`, `user_id UUID references users`, `name text`, `format text`, `power_tier text check (power_tier in ('casual','mid','competitive','cedh'))`, `description text`, `visibility text check (visibility in ('private','unlisted','public')) default 'private'`, `created_at timestamptz default now()`, `updated_at timestamptz default now()`
 - `deck_cards`: `deck_id UUID references decks`, `printing_id UUID references printings`, `quantity integer`, `zone text check (zone in ('mainboard','sideboard','maybeboard','commander'))`, `primary key(deck_id, printing_id, zone)`
 - `imports`: `id UUID PK`, `user_id UUID references users`, `source text check (source in ('csv','mtg_arena_txt','text_list'))`, `raw_payload text`, `normalized jsonb`, `status text check (status in ('pending','processed','failed'))`, `processed_at timestamptz`, `created_at timestamptz default now()`
@@ -24,6 +25,10 @@
 - `deck_upgrade_candidates`: `deck_id UUID`, `card_id UUID`, `score numeric(8,4)`, `components jsonb`, `rationale text`, `generated_at timestamptz`, unique `(deck_id, card_id)`.
 - `user_similarity_scores`: `user_id UUID`, `similar_user_id UUID`, `score numeric(8,4)`, `shared_interactions integer`, `last_computed_at timestamptz`, unique `(user_id, similar_user_id)`.
 - `privacy_requests`: `id UUID PK`, optional `user_id UUID`, `request_type privacy_request_type_enum`, `status privacy_request_status_enum`, `metadata jsonb`, timestamps.
+
+## Catalog Views
+
+- `card_catalog_view`: flattened card metadata for search results (card identity, mana stats, parsed card types/subtypes, color identity, legality formats aggregated from `card_format_legalities`, primary image URL, popularity signal from `trending_snapshots`, and latest USD price range). Read-only, refreshed by database view.
 
 ## Event Taxonomy (Phase 5)
 
@@ -71,19 +76,21 @@
 
 ## Telemetry Helpers (Phase 5)
 
-- `trackSearchPerformed({ query, filters, page, totalResults, sourceSurface })` – wraps `search_performed`.
-- `trackCardViewed({ cardId, source, surface })` – lightweight helper for `card_viewed`.
-- `trackDeckCreated({ deckId, format, visibility, seed, source })` – ensures lifecycle metrics stay accurate.
-- `trackDeckViewed({ deckId, source, format, cardCount })` – logs builder/gallery engagement.
-- `trackDeckCardAdded({ deckId, cardId, zone, method })` – now includes autofill-only methods.
-- `trackDeckImported({ deckId, source, cardCount, matchedCount, missingCount })` – consolidates import telemetry.
-- `trackImportAttempted({ importId, source, status, errorCode, cardCount, matchedCount, missingCount, mergedCount })` – records pre/post import states.
-- `trackExportCompleted({ deckId, exportFormat, cardsMissing, destination })` – covers downloads and Card Bazaar bridge pushes.
-- `trackBridgeInitiated({ scope, subjectId, destination, missingCount, bridgeId })` – funnels into commerce analytics.
-- `trackRecommendationServed({ recommendationId, surface, algorithm, impressionCount })` – personalization measurement hook.
-- `trackDeckSimulatorAction({ action, deckId, cardCount, count, destination })` – emits `deck_simulator_action`.
-- `trackDeckAutofillAction({ action, deckId, suggestionCount })` – captures `deck_autofill_action`.
-- `trackAuthLinkEvent({ stage, status, provider, attemptId, errorCode })` – maps to `auth_link_initiated|succeeded|failed`.
-- `trackAuthSessionEvent({ action, provider, sessionId, reason })` – covers `auth_session_refreshed` and `auth_session_revoked`.
-- `trackPrivacyEvent(type, { reason })` – emits privacy opt-in/out and export/delete requests for compliance tracking.
+- `trackSearchPerformed({ query, filters, page, totalResults, sourceSurface })` â€“ wraps `search_performed`.
+- `trackCardViewed({ cardId, source, surface })` â€“ lightweight helper for `card_viewed`.
+- `trackDeckCreated({ deckId, format, visibility, seed, source })` â€“ ensures lifecycle metrics stay accurate.
+- `trackDeckViewed({ deckId, source, format, cardCount })` â€“ logs builder/gallery engagement.
+- `trackDeckCardAdded({ deckId, cardId, zone, method })` â€“ now includes autofill-only methods.
+- `trackDeckImported({ deckId, source, cardCount, matchedCount, missingCount })` â€“ consolidates import telemetry.
+- `trackImportAttempted({ importId, source, status, errorCode, cardCount, matchedCount, missingCount, mergedCount })` â€“ records pre/post import states.
+- `trackExportCompleted({ deckId, exportFormat, cardsMissing, destination })` â€“ covers downloads and Card Bazaar bridge pushes.
+- `trackBridgeInitiated({ scope, subjectId, destination, missingCount, bridgeId })` â€“ funnels into commerce analytics.
+- `trackRecommendationServed({ recommendationId, surface, algorithm, impressionCount })` â€“ personalization measurement hook.
+- `trackDeckSimulatorAction({ action, deckId, cardCount, count, destination })` â€“ emits `deck_simulator_action`.
+- `trackDeckAutofillAction({ action, deckId, suggestionCount })` â€“ captures `deck_autofill_action`.
+- `trackAuthLinkEvent({ stage, status, provider, attemptId, errorCode })` â€“ maps to `auth_link_initiated|succeeded|failed`.
+- `trackAuthSessionEvent({ action, provider, sessionId, reason })` â€“ covers `auth_session_refreshed` and `auth_session_revoked`.
+- `trackPrivacyEvent(type, { reason })` â€“ emits privacy opt-in/out and export/delete requests for compliance tracking.
+
+
 

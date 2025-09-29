@@ -1,4 +1,4 @@
-import { CardGridFrame } from "@/components/card-grid";
+import { CatalogSection } from "@/components/catalog-section";
 import { DeckBuilderPreviewSection } from "@/components/deck-builder-preview";
 import { HeroSection } from "@/components/hero";
 import { NavigationBar } from "@/components/navigation";
@@ -11,7 +11,7 @@ export default function Home() {
       <main className="flex-1">
         <HeroSection />
         <TrendingRail />
-        <CardGridFrame />
+        <CatalogSection />
         <DeckBuilderPreviewSection />
       </main>
       <footer className="border-t border-white/10 bg-[color:var(--color-neutral-100)]/70 py-6">
