@@ -103,7 +103,7 @@ export function CatalogSection() {
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[180px,minmax(0,1fr)]">
-          <aside className="surface-card shadow-card flex h-fit flex-col gap-2 rounded-[var(--radius-card)] border border-white/15 bg-[color:var(--color-neutral-100)]/55 p-3 text-[10px] lg:sticky lg:top-28 lg:max-h-[calc(100vh-7rem)] lg:min-w-0 lg:overflow-y-auto">
+          <aside className="surface-card shadow-card flex h-fit flex-col gap-2 rounded-[var(--radius-card)] border border-white/15 bg-[color:var(--color-neutral-100)]/55 p-3 text-[10px] lg:sticky lg:top-24 lg:z-30 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:min-w-0 lg:overflow-y-auto">
             <div className="flex flex-col gap-2">
               <label htmlFor="catalog-search" className="text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
                 Search cards
