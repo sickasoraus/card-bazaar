@@ -59,7 +59,7 @@ export function CardCatalogGrid({ cards, isLoading, error, onRetry }: CardCatalo
 
 function CatalogCardTile({ card }: { card: CatalogCard }) {
   const detailHref = `/cards/${card.id}` as CardDetailRoute;
-  const addToDeckHref = `/deckbuilder?add=${encodeURIComponent(card.id)}`;
+  const addToDeckHref = { pathname: "/deckbuilder", query: { add: card.id } } as const;
 
   return (
     <article className="flex flex-col gap-3">
@@ -90,12 +90,13 @@ function CatalogCardTile({ card }: { card: CatalogCard }) {
           >
             View details
           </Link>
-          <a
+          <Link
             href={addToDeckHref}
+            prefetch={false}
             className="rounded-[var(--radius-pill)] bg-[color:var(--color-accent-highlight)] px-3 py-1 text-center text-[11px] font-semibold uppercase tracking-[2px] text-black transition hover:bg-[color:var(--color-accent-highlight)]/90"
           >
             Add to deck
-          </a>
+          </Link>
         </div>
       </div>
       <Link
@@ -123,3 +124,4 @@ function CatalogSkeleton() {
     </div>
   );
 }
+

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { CardCatalogGrid } from "@/components/card-catalog-grid";
 import { useCardCatalog } from "@/hooks/use-card-catalog";
+import { useDeckLibrary, type DeckLibraryEntry } from "@/hooks/use-deck-library";
 import type { CatalogFacet } from "@/types/catalog";
 
 const SORT_OPTIONS = [
@@ -47,6 +48,8 @@ export function CatalogSection() {
     resetFilters,
     refetch,
   } = useCardCatalog();
+
+  const { decks: libraryDecks, activeDeckId: libraryActiveDeckId, isHydrated: deckLibraryReady } = useDeckLibrary();
 
   const [searchInput, setSearchInput] = useState(filters.search);
   const [cmcMin, setCmcMinInput] = useState<number | "">(filters.cmcMin ?? "");
@@ -110,6 +113,10 @@ export function CatalogSection() {
             Dial in format, color, and rarity to surface the cards dominating tonight&apos;s tables. We pull this feed directly from Scryfall so it always reflects the latest legal snapshot.
           </p>
         </header>
+
+        {deckLibraryReady ? (
+          <DeckLibraryPreview decks={libraryDecks} activeDeckId={libraryActiveDeckId} />
+        ) : null}
 
         <div className="grid gap-8 lg:grid-cols-[180px,minmax(0,1fr)]">
           <aside className="surface-card shadow-card flex h-fit flex-col gap-2 rounded-[var(--radius-card)] border border-white/15 bg-[color:var(--color-neutral-100)]/55 p-3 text-[10px] lg:self-start">
@@ -309,6 +316,74 @@ export function CatalogSection() {
     </section>
   );
 }
+
+type DeckLibraryPreviewProps = {
+  decks: DeckLibraryEntry[];
+  activeDeckId: string | null;
+};
+
+function DeckLibraryPreview({ decks, activeDeckId }: DeckLibraryPreviewProps) {
+  const displayDecks = decks.slice(0, 4);
+  const deckCountLabel = decks.length === 0 ? "No decks yet" : `${decks.length} deck${decks.length === 1 ? '' : 's'} saved`;
+
+  return (
+    <div className="surface-card shadow-card flex flex-col gap-3 rounded-[var(--radius-card)] border border-white/15 bg-[color:var(--color-neutral-100)]/45 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col">
+          <span className="text-[11px] font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
+            Your decks
+          </span>
+          <span className="text-xs text-[color:var(--color-text-subtle)]">
+            Quick access to drafts saved on this device
+          </span>
+        </div>
+        <Link
+          href="/deckbuilder?new=1"
+          className="rounded-[var(--radius-pill)] border border-white/20 px-4 py-1 text-[11px] font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)] transition hover:border-white/40"
+        >
+          New deck
+        </Link>
+      </div>
+      {displayDecks.length ? (
+        <ul className="space-y-2">
+          {displayDecks.map((deck) => (
+            <li key={deck.id}>
+              <Link
+                href={`/deckbuilder?deck=${deck.id}`}
+                className={`flex items-center justify-between gap-2 rounded-[var(--radius-control)] border px-3 py-2 text-sm transition-colors ${deck.id === activeDeckId ? "border-[color:var(--color-accent-highlight)]/60 bg-[color:var(--color-accent-highlight)]/10 text-[color:var(--color-text-hero)]" : "border-white/15 bg-black/40 text-[color:var(--color-text-body)] hover:border-white/35"}`}
+              >
+                <span className="flex flex-col">
+                  <span className="font-semibold">{deck.name}</span>
+                  <span className="text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-subtle)]">
+                    {deck.format}
+                  </span>
+                </span>
+                {deck.id === activeDeckId ? (
+                  <span className="rounded-full border border-white/25 px-2 py-1 text-[10px] font-semibold uppercase tracking-[2px] text-[color:var(--color-text-hero)]">
+                    Active
+                  </span>
+                ) : (
+                  <span className="text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-subtle)]">Open</span>
+                )}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-black/30 px-3 py-2 text-sm text-[color:var(--color-text-subtle)]">
+          Create a deck to start collecting cards. We will keep your last ten drafts here.
+        </p>
+      )}
+      <div className="flex items-center justify-between text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-subtle)]">
+        <span>{deckCountLabel}</span>
+        <Link href="/deckbuilder" className="text-[color:var(--color-accent-highlight)] hover:underline">
+          Manage decks
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 
 function FacetGroup({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (

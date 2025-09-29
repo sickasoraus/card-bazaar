@@ -60,6 +60,7 @@ This document tracks progress across the phased rollout toward the Metablazt MVP
 - Multi-format deck import pipeline (text, MTG Arena `.txt`, CSV) with Scryfall resolution, unresolved tracking, and telemetry metrics.
 - Deck builder UI refresh with import workspace, zone/resolution indicators, and export options (JSON, MTG Arena text, CSV).
 - Card Bazaar bridge payload helper + `/api/cart-bridge` stub for both single-card and deck manifests.
+- Local deck library sidebar plus catalog handoff into the builder shipped (2025-09-29).
 
 **Next Up**
 - Surface deck suggestions and card-recommendation hooks once personalization jobs land.
@@ -129,6 +130,7 @@ This document tracks progress across the phased rollout toward the Metablazt MVP
 
 ## Change Log
 
+ - 2025-09-29: Deck library sidebar connected to catalog Add to deck flow, with automatic deck selection when arriving from cards.
  - 2025-09-29: Catalog filters now stream top-100 high-res staples per format/color/type, card detail pages fetch client-side on GitHub Pages, and hover overlays add deckbuilder CTAs.
 - 2025-09-28: Phase 5 SSO bridge docs, similarity migrations, privacy center, and telemetry updates shipped.
 - 2025-09-28: Deck builder seeded with K'rrik commander list, simulator CTA polished, and Phase 4 UI updates deployed.
@@ -150,3 +152,4 @@ This document tracks progress across the phased rollout toward the Metablazt MVP
 - 2025-09-24: GitHub Pages workflow added for automated static deployments.
 
 ## Post-Phase 5 Backlog\n\n- Adopt a production OIDC provider for Card Bazaar and supply the CARDBAZAAR_OIDC_* secrets so the bridge leaves demo mode.\n- Move the app off GitHub Pages to a server environment (e.g., Vercel) so /api/* routes run with Supabase credentials.\n- Build the personalized dashboard experience backed by live recommendation metrics and Supabase-authenticated sessions.\n- Stand up operational jobs (token encryption edge functions, cron monitors) once the server deployment is live.\n\n
+

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -11,11 +12,13 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDraftDeck } from "@/hooks/use-draft-deck";
 import { useScryfallSearch } from "@/hooks/use-scryfall-search";
 import { useRecommendations, type RecommendationSeed, type UseRecommendationsResult } from "@/hooks/use-recommendations";
 import { mapRecommendationSource } from "@/lib/recommendation-utils";
 import { trackAutofillAction, trackRecommendationServed } from "@/lib/telemetry";
+import { fetchCardById } from "@/services/scryfall";
 import type { ScryfallCard } from "@/services/scryfall";
 import type { AutofillSuggestion } from "@/services/autofill";
 import { initiateCardBazaarBridge } from "@/services/card-bazaar-bridge";
@@ -129,8 +132,14 @@ const EXPORT_OPTIONS = [
 
 type DeckVisibility = "private" | "unlisted" | "public";
 
-export default function DeckBuilderPage() {
+function DeckBuilderPageInner() {
   const [searchInput, setSearchInput] = useState(DEFAULT_QUERY);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [linkFeedback, setLinkFeedback] = useState<string | null>(null);
+  const [linkFeedbackTone, setLinkFeedbackTone] = useState<"success" | "error">("success");
+  const [isProcessingLink, setIsProcessingLink] = useState(false);
 
   const {
     deck,
@@ -194,6 +203,14 @@ export default function DeckBuilderPage() {
   );
 
   const servedRecommendationIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!linkFeedback) {
+      return;
+    }
+    const timer = window.setTimeout(() => setLinkFeedback(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [linkFeedback]);
 
   useEffect(() => {
     cardRecommendations.forEach((seed) => {
@@ -648,14 +665,23 @@ export default function DeckBuilderPage() {
   );
 
   const handleLoadDraft = useCallback(
-    (draftId: string) => {
-      if (draftId === deck.id) {
-        return;
+    (draftId: string, options: { quiet?: boolean } = {}) => {
+      if (!draftId || draftId === deck.id) {
+        return false;
       }
       const loaded = loadDraft(draftId);
       if (!loaded) {
-        window.alert("We couldn't open that draft. It may have been removed.");
+        if (!options.quiet) {
+          setLinkFeedbackTone("error");
+          setLinkFeedback("We couldn't open that draft. It may have been removed.");
+        }
+        return false;
       }
+      if (!options.quiet) {
+        setLinkFeedbackTone("success");
+        setLinkFeedback("Loaded deck from your library.");
+      }
+      return true;
     },
     [deck.id, loadDraft],
   );
@@ -666,9 +692,83 @@ export default function DeckBuilderPage() {
         return;
       }
       deleteDraft(draftId);
+      setLinkFeedbackTone("success");
+      setLinkFeedback("Deck removed from this device.");
     },
     [deleteDraft],
   );
+
+  const handleCreateDeck = useCallback(() => {
+    resetDeck();
+    setLinkFeedbackTone("success");
+    setLinkFeedback("Started a new deck draft.");
+  }, [resetDeck]);
+
+  useEffect(() => {
+    const deckParam = searchParams?.get("deck");
+    const newParam = searchParams?.get("new");
+    const addParam = searchParams?.get("add");
+
+    if (!deckParam && !newParam && !addParam) {
+      return;
+    }
+
+    const next = new URLSearchParams(searchParams?.toString() ?? "");
+    let shouldReplace = false;
+
+    if (deckParam) {
+      const loaded = handleLoadDraft(deckParam, { quiet: true });
+      if (!loaded) {
+        setLinkFeedbackTone("error");
+        setLinkFeedback("We couldn't open that draft. It may have been removed.");
+      } else {
+        setLinkFeedbackTone("success");
+        setLinkFeedback("Loaded deck from your library.");
+      }
+      next.delete("deck");
+      shouldReplace = true;
+    }
+
+    if (newParam !== null && typeof newParam !== "undefined") {
+      resetDeck();
+      setLinkFeedbackTone("success");
+      setLinkFeedback("Started a new deck draft.");
+      next.delete("new");
+      shouldReplace = true;
+    }
+
+    if (addParam) {
+      setIsProcessingLink(true);
+      const safeCardId = addParam;
+      (async () => {
+        try {
+          const card = await fetchCardById(safeCardId);
+          addCard({
+            cardId: card.id,
+            name: card.name,
+            manaCost: card.mana_cost,
+            typeLine: card.type_line,
+            imageUrl: card.image_uris?.small ?? card.image_uris?.normal ?? null,
+          });
+          setLinkFeedbackTone("success");
+          setLinkFeedback(`Added ${card.name} to your deck.`);
+        } catch (error) {
+          console.warn("Failed to add catalog card", error);
+          setLinkFeedbackTone("error");
+          setLinkFeedback("We couldn't add that card from Scryfall. Try again from the catalog.");
+        } finally {
+          setIsProcessingLink(false);
+        }
+      })();
+      next.delete("add");
+      shouldReplace = true;
+    }
+
+    if (shouldReplace) {
+      const query = next.toString();
+      router.replace(query ? `/deckbuilder?${query}` : "/deckbuilder", { scroll: false });
+    }
+  }, [addCard, handleLoadDraft, resetDeck, router, searchParams]);
 
   return (
     <div className="bg-[color:var(--color-surface-primary)] min-h-screen pb-16">
@@ -677,8 +777,27 @@ export default function DeckBuilderPage() {
           <nav className="text-xs uppercase tracking-[3px] text-subtle">
             <Link href="/">Home</Link> <span className="mx-2 text-white/40">/</span> Deck Builder (Phase 1 preview)
           </nav>
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">
+          <div className="grid gap-6 lg:grid-cols-[260px,minmax(0,1fr),320px]">
+            <DeckLibraryPanel
+              drafts={formattedDrafts}
+              onCreateDeck={handleCreateDeck}
+              onResumeDraft={handleLoadDraft}
+              onDeleteDraft={handleDeleteDraft}
+              isProcessingLink={isProcessingLink}
+            />
             <div className="flex flex-col gap-4">
+              {linkFeedback ? (
+                <div
+                  className={`rounded-[var(--radius-control)] border px-4 py-3 text-sm ${
+                    linkFeedbackTone === "success"
+                      ? "border-emerald-400/40 bg-emerald-500/15 text-[color:var(--color-text-hero)]"
+                      : "border-rose-500/40 bg-rose-500/15 text-[color:var(--color-text-hero)]"
+                  }`}
+                >
+                  {linkFeedback}
+                </div>
+              ) : null}
+
               <input
                 className="w-full rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-4 py-3 text-sm text-[color:var(--color-text-hero)] placeholder:text-subtle focus:border-[color:var(--color-accent-highlight)] focus:outline-none"
                 value={deck.name}
@@ -921,49 +1040,6 @@ export default function DeckBuilderPage() {
                   </ul>
                 </div>
               ) : null}
-              <div className="mt-4 space-y-2">
-                <h3 className="text-[11px] uppercase tracking-[2px] text-subtle">Recent drafts</h3>
-                {formattedDrafts.length ? (
-                  <ul className="space-y-2">
-                    {formattedDrafts.map((draft) => (
-                      <li
-                        key={draft.id}
-                        className="rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-3 py-2"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold text-[color:var(--color-text-hero)]">{draft.name}</p>
-                            <p className="text-[10px] uppercase tracking-[1.5px] text-subtle">
-                              {draft.format} . {draft.badge} draft . {draft.lastUpdatedLabel}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleLoadDraft(draft.id)}
-                              disabled={draft.isCurrent}
-                              className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 text-[10px] uppercase tracking-[2px] text-[color:var(--color-text-body)] hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                              {draft.isCurrent ? "Current" : "Resume"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDraft(draft.id)}
-                              className="rounded-[var(--radius-pill)] border border-rose-500/40 px-3 py-1 text-[10px] uppercase tracking-[2px] text-rose-200 hover:border-rose-300/60"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-[11px] text-subtle">
-                    Drafts you open will appear here so you can jump back later. We keep the last ten.
-                  </p>
-                )}
-              </div>
             </aside>
           </div>
         </div>
@@ -1155,6 +1231,96 @@ export default function DeckBuilderPage() {
 
 
 
+
+
+export default function DeckBuilderPage() {
+  return (
+    <Suspense fallback={<DeckBuilderPageFallback />}>
+      <DeckBuilderPageInner />
+    </Suspense>
+  );
+}
+
+function DeckBuilderPageFallback() {
+  return <div className="bg-[color:var(--color-surface-primary)] min-h-screen" />;
+}
+
+type DeckLibraryPanelProps = {
+  drafts: Array<{
+    id: string;
+    name: string;
+    format: string;
+    badge: string;
+    lastUpdatedLabel: string;
+    isCurrent: boolean;
+  }>;
+  onCreateDeck: () => void;
+  onResumeDraft: (id: string) => void;
+  onDeleteDraft: (id: string) => void;
+  isProcessingLink: boolean;
+};
+
+function DeckLibraryPanel({ drafts, onCreateDeck, onResumeDraft, onDeleteDraft, isProcessingLink }: DeckLibraryPanelProps) {
+  return (
+    <aside className="surface-card shadow-card flex h-fit flex-col gap-3 rounded-[var(--radius-card)] border border-white/10 p-5 text-sm text-subtle">
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-display text-lg text-[color:var(--color-text-hero)]">Deck library</span>
+        <button
+          type="button"
+          onClick={onCreateDeck}
+          className="rounded-[var(--radius-pill)] border border-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[2px] text-[color:var(--color-text-body)] hover:border-white/40"
+        >
+          New deck
+        </button>
+      </div>
+      {isProcessingLink ? (
+        <p className="rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-[color:var(--color-text-hero)]">
+          Adding card from your catalog selection...
+        </p>
+      ) : null}
+      {drafts.length ? (
+        <ul className="space-y-2">
+          {drafts.map((draft) => (
+            <li
+              key={draft.id}
+              className="rounded-[var(--radius-control)] border border-white/10 bg-white/5 px-3 py-2"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <p className="font-semibold text-[color:var(--color-text-hero)]">{draft.name}</p>
+                  <p className="text-[10px] uppercase tracking-[1.5px] text-subtle">
+                    {draft.format} - {draft.badge} - {draft.lastUpdatedLabel}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1 text-[10px] uppercase tracking-[2px]">
+                  <button
+                    type="button"
+                    onClick={() => onResumeDraft(draft.id)}
+                    disabled={draft.isCurrent}
+                    className="rounded-[var(--radius-pill)] border border-white/20 px-2 py-1 text-[color:var(--color-text-body)] hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {draft.isCurrent ? "Current" : "Open"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteDraft(draft.id)}
+                    className="rounded-[var(--radius-pill)] border border-rose-500/40 px-2 py-1 text-rose-200 hover:border-rose-300/60"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="rounded-[var(--radius-control)] border border-dashed border-white/20 bg-white/5 px-3 py-2 text-[11px] text-subtle">
+          Drafts you save will appear here for quick access. We keep the last ten on this device.
+        </p>
+      )}
+    </aside>
+  );
+}
 
 type CardRecommendationSeed = RecommendationSeed & {
   entity: {
