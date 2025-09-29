@@ -1,6 +1,6 @@
 # Metablazt Roadmap (Phase Tracker)
 
-_Last updated: 2025-09-28_
+_Last updated: 2025-09-29_
 
 This document tracks progress across the phased rollout toward the Metablazt MVP.
 
@@ -129,6 +129,7 @@ This document tracks progress across the phased rollout toward the Metablazt MVP
 
 ## Change Log
 
+ - 2025-09-29: Catalog filters now stream top-100 high-res staples per format/color/type, card detail pages fetch client-side on GitHub Pages, and hover overlays add deckbuilder CTAs.
 - 2025-09-28: Phase 5 SSO bridge docs, similarity migrations, privacy center, and telemetry updates shipped.
 - 2025-09-28: Deck builder seeded with K'rrik commander list, simulator CTA polished, and Phase 4 UI updates deployed.
 - 2025-09-27: Prisma migration 0002 marked applied; trending/recommendation services integrated with Supabase fallback logic.
