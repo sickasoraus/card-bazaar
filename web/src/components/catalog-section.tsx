@@ -102,8 +102,8 @@ export function CatalogSection() {
           </p>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[280px,minmax(0,1fr)]">
-          <aside className="surface-card shadow-card flex h-fit flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 bg-[color:var(--color-neutral-100)]/60 p-5 text-sm lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:min-w-[0] lg:overflow-y-auto">
+        <div className="grid gap-8 lg:grid-cols-[220px,minmax(0,1fr)]">
+          <aside className="surface-card shadow-card flex h-fit flex-col gap-3 rounded-[var(--radius-card)] border border-white/15 bg-[color:var(--color-neutral-100)]/55 p-4 text-[11px] lg:sticky lg:top-24 lg:max-h-[calc(100vh-6rem)] lg:min-w-0 lg:overflow-y-auto">
             <div className="flex flex-col gap-2">
               <label htmlFor="catalog-search" className="text-xs font-semibold uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
                 Search cards
@@ -113,7 +113,7 @@ export function CatalogSection() {
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="eg. dragon tutor"
-                className="rounded-[var(--radius-control)] border border-white/15 bg-black/40 px-3 py-2 text-sm text-[color:var(--color-text-body)] outline-none focus:border-[color:var(--color-accent-highlight)]"
+                className="rounded-[var(--radius-control)] border border-white/20 bg-black/35 px-2.5 py-1.5 text-xs text-[color:var(--color-text-body)] outline-none focus:border-[color:var(--color-accent-highlight)]"
               />
             </div>
 
@@ -122,7 +122,7 @@ export function CatalogSection() {
               <select
                 value={filters.sort}
                 onChange={(event) => setSort(event.target.value as typeof filters.sort)}
-                className="rounded-[var(--radius-control)] border border-white/15 bg-black/40 px-3 py-2 text-sm text-[color:var(--color-text-body)]"
+                className="rounded-[var(--radius-control)] border border-white/20 bg-black/35 px-2.5 py-1.5 text-xs text-[color:var(--color-text-body)]"
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -133,7 +133,7 @@ export function CatalogSection() {
             </div>
 
             <FacetGroup title="Formats" description="Tap to narrow by legality">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {formatFacets.map((facet) => {
                   const active = activeFormat.has(facet.value);
                   return (
@@ -155,7 +155,7 @@ export function CatalogSection() {
             </FacetGroup>
 
             <FacetGroup title="Colors" description="Identity or pip colors">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {COLOR_OPTIONS.map((code) => {
                   const active = activeColors.has(code);
                   const count = colorFacets.get(code) ?? 0;
@@ -179,7 +179,7 @@ export function CatalogSection() {
             </FacetGroup>
 
             <FacetGroup title="Rarity" description="Quick look tiers">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {RARITY_OPTIONS.map((rarity) => {
                   const active = activeRarities.has(rarity);
                   const count = rarityFacets.get(rarity) ?? 0;
