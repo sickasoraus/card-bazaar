@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 
@@ -91,15 +91,14 @@ export function CatalogSection() {
           </span>
           <div className="flex flex-wrap items-baseline gap-4">
             <h2 className="font-display text-3xl text-[color:var(--color-text-hero)] sm:text-4xl">
-              Browse every card with live filters
+              Top 100 cards pulled straight from Scryfall
             </h2>
             <span className="text-xs uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">
-              {pagination.total.toLocaleString()} cards ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ Page {pagination.page} of {pagination.totalPages}
+              {`Showing ${cards.length.toLocaleString()} of ${pagination.total.toLocaleString()} cards • Page ${pagination.page} of ${pagination.totalPages}`}
             </span>
           </div>
           <p className="max-w-3xl text-sm text-[color:var(--color-text-subtle)]">
-            Search across formats, colors, and rarity. Results update instantly from the Supabase catalog; while we finish
-            the server bridge the UI runs on Scryfall demo data.
+            Instantly filter by format, color, and rarity. We pull these rankings directly from Scryfall so the gallery always reflects what players are casting right now.
           </p>
         </header>
 
@@ -253,12 +252,7 @@ export function CatalogSection() {
           </aside>
 
           <div className="flex flex-col gap-6">
-            <CardCatalogGrid
-              cards={cards}
-              isLoading={isLoading}
-              error={error}
-              onRetry={refetch}
-            />
+            <CardCatalogGrid cards={cards} isLoading={isLoading} error={error} onRetry={refetch} />
 
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-card)] border border-white/10 bg-[color:var(--color-neutral-100)]/40 px-4 py-3 text-xs text-[color:var(--color-text-body)]">
               <div className="flex items-center gap-3">
@@ -292,7 +286,7 @@ export function CatalogSection() {
                   onChange={(event) => setPageSize(Number(event.target.value))}
                   className="rounded-[var(--radius-control)] border border-white/15 bg-black/40 px-2 py-1 text-[color:var(--color-text-body)]"
                 >
-                  {[12, 24, 36, 48].map((size) => (
+                  {[60, 80, 100, 120].map((size) => (
                     <option key={size} value={size}>
                       {size}
                     </option>

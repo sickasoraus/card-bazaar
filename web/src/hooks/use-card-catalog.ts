@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { fetchScryfallCatalog, type CatalogFilters, type SortOption } from "@/lib/catalog-shared";
 import type {
   CatalogCard,
   CatalogFacets,
@@ -10,7 +11,7 @@ import type {
   CatalogResponse,
 } from "@/types/catalog";
 
-const DEFAULT_PAGE_SIZE = 24;
+const DEFAULT_PAGE_SIZE = 100;
 const DEFAULT_STATE: CatalogFiltersState = {
   search: "",
   formats: [],
@@ -21,7 +22,7 @@ const DEFAULT_STATE: CatalogFiltersState = {
   cmcMax: null,
   page: 1,
   pageSize: DEFAULT_PAGE_SIZE,
-  sort: "relevance",
+  sort: "popularity",
 };
 
 const EMPTY_FACETS: CatalogFacets = {
@@ -48,7 +49,7 @@ type CatalogFiltersState = {
   cmcMax: number | null;
   page: number;
   pageSize: number;
-  sort: NonNullable<CatalogQuery["sort"]>;
+  sort: SortOption;
 };
 
 export type UseCardCatalogResult = {
@@ -82,10 +83,12 @@ export function useCardCatalog(initial?: CatalogQuery): UseCardCatalogResult {
   const [error, setError] = useState<string | null>(null);
 
   const queryString = useMemo(() => buildQueryString(filters), [filters]);
-  const endpoint = useMemo(() => `/api/cards/search${queryString}`, [queryString]);
+  const endpoint = `/api/cards/search${queryString}`;
 
   const fetchCatalog = useCallback(
     async (signal?: AbortSignal) => {
+      const normalizedFilters = toCatalogFilters(filters);
+
       setIsLoading(true);
       setError(null);
       try {
@@ -97,16 +100,16 @@ export function useCardCatalog(initial?: CatalogQuery): UseCardCatalogResult {
           },
         });
 
-        if (signal?.aborted) {
-          return;
-        }
-
         const payload = (await response
           .json()
           .catch(() => ({}))) as Partial<CatalogResponse> & { error?: string };
 
         if (!response.ok) {
           throw new Error(payload?.error || `Card catalog request failed (${response.status})`);
+        }
+
+        if (signal?.aborted) {
+          return;
         }
 
         setCards(Array.isArray(payload?.data) ? payload.data : []);
@@ -118,21 +121,42 @@ export function useCardCatalog(initial?: CatalogQuery): UseCardCatalogResult {
           totalPages: 1,
         });
         setMeta(payload?.meta ?? { hasDatabase: false, fallback: true });
-      } catch (cause: unknown) {
+      } catch {
         if (signal?.aborted) {
           return;
         }
-        if (cause instanceof DOMException && cause.name === "AbortError") {
-          return;
+        try {
+          const fallback = await fetchScryfallCatalog(normalizedFilters, { signal });
+          if (signal?.aborted) {
+            return;
+          }
+          setCards(fallback.data);
+          setFacets(fallback.facets);
+          setPagination(fallback.pagination);
+          setMeta(fallback.meta);
+          setError(null);
+        } catch (fallbackError: unknown) {
+          if (signal?.aborted) {
+            return;
+          }
+          setCards([]);
+          setFacets(EMPTY_FACETS);
+          setPagination({
+            page: filters.page,
+            pageSize: filters.pageSize,
+            total: 0,
+            totalPages: 1,
+          });
+          setMeta({ hasDatabase: false, fallback: true });
+          setError(fallbackError instanceof Error ? fallbackError.message : "Unable to load cards.");
         }
-        setError(cause instanceof Error ? cause.message : "Unable to load cards.");
       } finally {
         if (!signal?.aborted) {
           setIsLoading(false);
         }
       }
     },
-    [endpoint, filters.page, filters.pageSize],
+    [endpoint, filters],
   );
 
   useEffect(() => {
@@ -169,7 +193,7 @@ export function useCardCatalog(initial?: CatalogQuery): UseCardCatalogResult {
   }, [updateFilters]);
 
   const setPageSize = useCallback((pageSize: number) => {
-    const normalized = clamp(Math.floor(pageSize), 6, 60);
+    const normalized = clamp(Math.floor(pageSize), 12, MAX_ALLOWED_PAGE_SIZE);
     updateFilters((prev) => ({
       ...prev,
       pageSize: normalized,
@@ -210,8 +234,8 @@ export function useCardCatalog(initial?: CatalogQuery): UseCardCatalogResult {
   }, [updateFilters]);
 
   const setCmcRange = useCallback((min: number | null, max: number | null) => {
-    const normalizedMin = Number.isFinite(min ?? NaN) ? (min as number) : null;
-    const normalizedMax = Number.isFinite(max ?? NaN) ? (max as number) : null;
+    const normalizedMin = sanitizeNumber(min);
+    const normalizedMax = sanitizeNumber(max);
     updateFilters((prev) => ({
       ...prev,
       cmcMin: normalizedMin,
@@ -263,8 +287,8 @@ function createInitialState(initial?: CatalogQuery): CatalogFiltersState {
     cmcMin: sanitizeNumber(initial.cmcMin),
     cmcMax: sanitizeNumber(initial.cmcMax),
     page: Math.max(1, Math.floor(initial.page ?? 1)),
-    pageSize: clamp(Math.floor(initial.pageSize ?? DEFAULT_PAGE_SIZE), 6, 60),
-    sort: initial.sort ?? "relevance",
+    pageSize: clamp(Math.floor(initial.pageSize ?? DEFAULT_PAGE_SIZE), 12, MAX_ALLOWED_PAGE_SIZE),
+    sort: (initial.sort as SortOption | undefined) ?? "popularity",
   });
 }
 
@@ -279,8 +303,23 @@ function sanitizeState(state: CatalogFiltersState): CatalogFiltersState {
     cmcMin: sanitizeNumber(state.cmcMin),
     cmcMax: sanitizeNumber(state.cmcMax),
     page: Math.max(1, Math.floor(state.page)),
-    pageSize: clamp(Math.floor(state.pageSize), 6, 60),
-    sort: state.sort ?? "relevance",
+    pageSize: clamp(Math.floor(state.pageSize), 12, MAX_ALLOWED_PAGE_SIZE),
+    sort: state.sort ?? "popularity",
+  };
+}
+
+function toCatalogFilters(state: CatalogFiltersState): CatalogFilters {
+  return {
+    search: state.search.trim().length ? state.search.trim() : null,
+    formats: state.formats,
+    colors: state.colors,
+    types: state.types,
+    rarities: state.rarities,
+    cmcMin: sanitizeNumber(state.cmcMin),
+    cmcMax: sanitizeNumber(state.cmcMax),
+    page: state.page,
+    pageSize: state.pageSize,
+    sort: state.sort,
   };
 }
 
@@ -316,6 +355,7 @@ function buildQueryString(filters: CatalogFiltersState): string {
   return query.length ? `?${query}` : "";
 }
 
+
 function toggleValue(collection: string[], raw: string): string[] {
   const value = raw.trim().toLowerCase();
   if (!value.length) {
@@ -327,6 +367,7 @@ function toggleValue(collection: string[], raw: string): string[] {
   }
   return [...collection, value];
 }
+
 
 function normalizeArray(values: string[] | undefined | null): string[] {
   if (!values || !values.length) {
@@ -348,9 +389,16 @@ function sanitizeNumber(value: number | null | undefined): number | null {
   return value;
 }
 
+const MAX_ALLOWED_PAGE_SIZE = 200;
+
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) {
     return min;
   }
   return Math.min(Math.max(value, min), max);
 }
+
+
+
+
+

@@ -1,97 +1,18 @@
-"use client";
-
-import Link from "next/link";
+﻿"use client";
 
 import Image from "next/image";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { useVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
+import Link from "next/link";
 
 import type { CatalogCard } from "@/types/catalog";
 
-const GAP_PX = 24;
-const CARD_ASPECT_RATIO = 1.395; // MTG card proportion
-
-export type CardCatalogGridProps = {
+type CardCatalogGridProps = {
   cards: CatalogCard[];
   isLoading: boolean;
   error: string | null;
   onRetry?: () => void;
-  onCardClick?: (card: CatalogCard) => void;
-  emptyMessage?: string;
 };
 
-export function CardCatalogGrid({
-  cards,
-  isLoading,
-  error,
-  onRetry,
-  onCardClick,
-  emptyMessage = "No cards match the current filters.",
-}: CardCatalogGridProps) {
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [containerWidth, setContainerWidth] = useState<number>(0);
-
-  useResizeObserver(scrollRef, setContainerWidth);
-
-  const columnCount = useMemo(() => determineColumnCount(containerWidth), [containerWidth]);
-  const rowCount = Math.max(1, Math.ceil(cards.length / columnCount));
-
-  const cardDimensions = useMemo(() => {
-    if (!containerWidth || columnCount === 0) {
-      return { width: 0, height: 0 };
-    }
-    const totalGap = GAP_PX * (columnCount - 1);
-    const width = Math.max(160, (containerWidth - totalGap) / columnCount);
-    const height = width * CARD_ASPECT_RATIO + 96;
-    return { width, height };
-  }, [columnCount, containerWidth]);
-
-  const virtualizer = useVirtualizer({
-    count: rowCount,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => cardDimensions.height || 400,
-    overscan: 6,
-  });
-
-  const virtualRows = virtualizer.getVirtualItems();
-  const renderRow = useCallback(
-    (virtualRow: VirtualItem) => {
-      const rowIndex = virtualRow.index;
-      const start = rowIndex * columnCount;
-      const rowCards = cards.slice(start, start + columnCount);
-      if (!rowCards.length) {
-        return null;
-      }
-      return (
-        <div
-          key={virtualRow.key}
-          style={{
-            position: "absolute",
-            top: `${virtualRow.start}px`,
-            left: 0,
-            width: "100%",
-            height: `${(virtualRow.size ?? cardDimensions.height)}px`,
-          }}
-        >
-          <div
-            className="grid"
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-              gap: GAP_PX,
-              paddingBottom: GAP_PX,
-            }}
-          >
-            {rowCards.map((card) => (
-              <CatalogCardTile key={card.id} card={card} onClick={onCardClick} />
-            ))}
-          </div>
-        </div>
-      );
-    },
-    [cards, columnCount, onCardClick, cardDimensions.height],
-  );
-
+export function CardCatalogGrid({ cards, isLoading, error, onRetry }: CardCatalogGridProps) {
   if (error && !isLoading) {
     return (
       <div className="surface-card rounded-[var(--radius-card)] border border-rose-500/40 bg-rose-900/20 p-6 text-sm text-[color:var(--color-text-hero)]">
@@ -112,40 +33,32 @@ export function CardCatalogGrid({
   if (!cards.length && !isLoading) {
     return (
       <div className="surface-card rounded-[var(--radius-card)] border border-white/10 bg-white/5 p-6 text-sm text-[color:var(--color-text-subtle)]">
-        {emptyMessage}
+        No cards match the current filters.
       </div>
     );
   }
 
   return (
-    <div
-      ref={scrollRef}
-      className="relative h-[720px] overflow-y-auto rounded-[var(--radius-card)] border border-white/10 bg-white/5"
-      style={{ scrollBehavior: "smooth" }}
-    >
+    <div className="relative">
+      {isLoading ? <CatalogSkeleton /> : null}
       <div
-        style={{
-          height: `${virtualizer.getTotalSize()}px`,
-          position: "relative",
-          width: "100%",
-        }}
+        className="grid gap-6"
+        style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}
+        aria-live="polite"
       >
-        {virtualRows.map((virtualRow) => renderRow(virtualRow))}
+        {cards.map((card) => (
+          <CatalogCardTile key={card.id} card={card} />
+        ))}
       </div>
-      {isLoading && cards.length === 0 ? <CatalogSkeleton /> : null}
     </div>
   );
 }
 
-function CatalogCardTile({ card, onClick }: { card: CatalogCard; onClick?: (card: CatalogCard) => void }) {
+function CatalogCardTile({ card }: { card: CatalogCard }) {
   const detailHref = {
     pathname: "/cards/[cardId]",
     query: { cardId: card.id },
   } as const;
-
-  const handleNavigate = useCallback(() => {
-    onClick?.(card);
-  }, [card, onClick]);
 
   const colors = card.colorIdentity.length ? card.colorIdentity : card.colors;
 
@@ -154,19 +67,18 @@ function CatalogCardTile({ card, onClick }: { card: CatalogCard; onClick?: (card
       <Link
         href={detailHref}
         prefetch={false}
-        onClick={handleNavigate}
         className="group flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-highlight)] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
         <div
           className="relative overflow-hidden rounded-[12px] border border-white/10 bg-black/40"
-          style={{ paddingTop: `${CARD_ASPECT_RATIO * 100}%` }}
+          style={{ paddingTop: "139.5%" }}
         >
           {card.imageUrl ? (
             <Image
               src={card.imageUrl}
               alt={card.name}
               fill
-              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+              sizes="(max-width: 768px) 45vw, (max-width: 1280px) 22vw, 12vw"
               className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
               priority={false}
             />
@@ -200,13 +112,10 @@ function CatalogCardTile({ card, onClick }: { card: CatalogCard; onClick?: (card
         </div>
       </Link>
       <div className="flex items-center justify-between text-sm">
-        <span className="text-[color:var(--color-text-subtle)]">
-          {`${formatPrice(card.priceLow)} - ${formatPrice(card.priceHigh)}`}
-        </span>
+        <span className="text-[color:var(--color-text-subtle)]">{formatPrice(card.priceLow, card.priceHigh)}</span>
         <Link
           href={detailHref}
           prefetch={false}
-          onClick={handleNavigate}
           className="rounded-[var(--radius-pill)] border border-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[2px] text-[color:var(--color-accent-highlight)] transition hover:border-white/40"
         >
           View details
@@ -219,8 +128,8 @@ function CatalogCardTile({ card, onClick }: { card: CatalogCard; onClick?: (card
 function CatalogSkeleton() {
   return (
     <div className="absolute inset-0 grid place-items-center bg-[color:var(--color-neutral-100)]/40">
-      <div className="grid w-full max-w-[640px] gap-4 sm:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, index) => (
+      <div className="grid w-full max-w-[960px] gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+        {Array.from({ length: 12 }).map((_, index) => (
           <div
             key={`catalog-skeleton-${index}`}
             className="h-64 animate-pulse rounded-[var(--radius-card)] bg-[color:var(--color-neutral-200)]/40"
@@ -253,18 +162,6 @@ function ColorPips({ colors }: { colors: string[] }) {
     </div>
   );
 }
-function determineColumnCount(width: number): number {
-  if (width >= 1440) {
-    return 5;
-  }
-  if (width >= 1180) {
-    return 4;
-  }
-  if (width >= 860) {
-    return 3;
-  }
-  return width > 0 ? 2 : 0;
-}
 
 function colorToHex(color: string): string {
   switch (color.toLowerCase()) {
@@ -278,33 +175,26 @@ function colorToHex(color: string): string {
       return "#F19375";
     case "g":
       return "#85C589";
-    default:
+    case "c":
       return "#E2E8F0";
+    default:
+      return "#CBD5F5";
   }
 }
 
-function formatPrice(value: number | null): string {
+function formatPrice(low: number | null, high: number | null): string {
+  const lowLabel = normalizePrice(low);
+  const highLabel = normalizePrice(high);
+  if (lowLabel && highLabel && lowLabel !== highLabel) {
+    return `${lowLabel} - ${highLabel}`;
+  }
+  return lowLabel ?? highLabel ?? "--";
+}
+
+function normalizePrice(value: number | null): string | null {
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    return "--";
+    return null;
   }
   const formatted = value >= 100 ? value.toFixed(0) : value.toFixed(2);
-  return `${formatted}`;
-}
-
-function useResizeObserver(ref: RefObject<HTMLElement | null>, onResize: (width: number) => void) {
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element) {
-      return;
-    }
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry?.contentRect?.width != null) {
-        onResize(entry.contentRect.width);
-      }
-    });
-    observer.observe(element);
-    onResize(element.getBoundingClientRect().width);
-    return () => observer.disconnect();
-  }, [ref, onResize]);
+  return `$${formatted}`;
 }
