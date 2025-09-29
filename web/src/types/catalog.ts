@@ -1,4 +1,4 @@
-﻿export type CatalogCard = {
+export type CatalogCard = {
   id: string;
   name: string;
   setCode: string;
@@ -16,6 +16,7 @@
   popularity: number | null;
   priceLow: number | null;
   priceHigh: number | null;
+  scryfallUri: string | null;
 };
 
 export type CatalogFacet = {

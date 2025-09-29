@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -59,71 +59,87 @@ function CatalogCardTile({ card }: { card: CatalogCard }) {
     pathname: "/cards/[cardId]",
     query: { cardId: card.id },
   } as const;
-
+  const externalHref =
+    typeof card.scryfallUri === "string" && card.scryfallUri.length ? card.scryfallUri : null;
+  const isExternal = Boolean(externalHref);
   const colors = card.colorIdentity.length ? card.colorIdentity : card.colors;
+  const linkClassName =
+    "group flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-highlight)] focus-visible:ring-offset-2 focus-visible:ring-offset-black";
+  const linkContent = (
+    <>
+      <div
+        className="relative overflow-hidden rounded-[12px] border border-white/10 bg-black/40"
+        style={{ paddingTop: "139.5%" }}
+      >
+        {card.imageUrl ? (
+          <Image
+            src={card.imageUrl}
+            alt={card.name}
+            fill
+            sizes="(max-width: 768px) 45vw, (max-width: 1280px) 22vw, 12vw"
+            className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+            priority={false}
+          />
+        ) : (
+          <div className="absolute inset-0 grid place-items-center text-xs text-[color:var(--color-text-subtle)]">
+            Image unavailable
+          </div>
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 text-right">
+          <span className="font-display text-sm text-[color:var(--color-text-hero)]">{card.manaCost ?? "--"}</span>
+        </div>
+      </div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col">
+          <span className="text-left text-base font-semibold text-[color:var(--color-text-hero)] transition-colors group-hover:text-[color:var(--color-accent-highlight)]">
+            {card.name}
+          </span>
+          <span className="text-[11px] uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">{card.typeLine}</span>
+        </div>
+        <ColorPips colors={colors} />
+      </div>
+      <p className="line-clamp-3 text-sm text-[color:var(--color-text-subtle)]">{card.oracleText ?? "No rules text"}</p>
+      <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[2px] text-[color:var(--color-text-subtle)]">
+        <span className="rounded-full border border-white/10 px-2 py-1 text-[color:var(--color-text-body)]">{card.setCode || "SET"}</span>
+        <span className="rounded-full border border-white/10 px-2 py-1 text-[color:var(--color-text-body)]">{card.rarity}</span>
+        {card.formats.slice(0, 3).map((format) => (
+          <span key={format} className="rounded-full border border-white/10 px-2 py-1 text-[color:var(--color-text-body)]">
+            {format}
+          </span>
+        ))}
+      </div>
+    </>
+  );
+  const viewDetailsClass =
+    "rounded-[var(--radius-pill)] border border-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[2px] text-[color:var(--color-accent-highlight)] transition hover:border-white/40";
 
   return (
     <article className="surface-card hover:shadow-lg flex h-full flex-col gap-4 rounded-[var(--radius-card)] border border-white/10 bg-[color:var(--color-neutral-100)]/70 p-4 transition-transform duration-150 hover:-translate-y-1">
-      <Link
-        href={detailHref}
-        prefetch={false}
-        className="group flex flex-col gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent-highlight)] focus-visible:ring-offset-2 focus-visible:ring-offset-black"
-      >
-        <div
-          className="relative overflow-hidden rounded-[12px] border border-white/10 bg-black/40"
-          style={{ paddingTop: "139.5%" }}
-        >
-          {card.imageUrl ? (
-            <Image
-              src={card.imageUrl}
-              alt={card.name}
-              fill
-              sizes="(max-width: 768px) 45vw, (max-width: 1280px) 22vw, 12vw"
-              className="object-cover transition-transform duration-200 group-hover:scale-[1.03]"
-              priority={false}
-            />
-          ) : (
-            <div className="absolute inset-0 grid place-items-center text-xs text-[color:var(--color-text-subtle)]">
-              Image unavailable
-            </div>
-          )}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 text-right">
-            <span className="font-display text-sm text-[color:var(--color-text-hero)]">{card.manaCost ?? "--"}</span>
-          </div>
-        </div>
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col">
-            <span className="text-left text-base font-semibold text-[color:var(--color-text-hero)] transition-colors group-hover:text-[color:var(--color-accent-highlight)]">
-              {card.name}
-            </span>
-            <span className="text-[11px] uppercase tracking-[3px] text-[color:var(--color-text-subtle)]">{card.typeLine}</span>
-          </div>
-          <ColorPips colors={colors} />
-        </div>
-        <p className="line-clamp-3 text-sm text-[color:var(--color-text-subtle)]">{card.oracleText ?? "No rules text"}</p>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[2px] text-[color:var(--color-text-subtle)]">
-          <span className="rounded-full border border-white/10 px-2 py-1 text-[color:var(--color-text-body)]">{card.setCode || "SET"}</span>
-          <span className="rounded-full border border-white/10 px-2 py-1 text-[color:var(--color-text-body)]">{card.rarity}</span>
-          {card.formats.slice(0, 3).map((format) => (
-            <span key={format} className="rounded-full border border-white/10 px-2 py-1 text-[color:var(--color-text-body)]">
-              {format}
-            </span>
-          ))}
-        </div>
-      </Link>
+      {isExternal && externalHref ? (
+        <a href={externalHref} target="_blank" rel="noopener noreferrer" className={linkClassName}>
+          {linkContent}
+        </a>
+      ) : (
+        <Link href={detailHref} prefetch={false} className={linkClassName}>
+          {linkContent}
+        </Link>
+      )}
       <div className="flex items-center justify-between text-sm">
         <span className="text-[color:var(--color-text-subtle)]">{formatPrice(card.priceLow, card.priceHigh)}</span>
-        <Link
-          href={detailHref}
-          prefetch={false}
-          className="rounded-[var(--radius-pill)] border border-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[2px] text-[color:var(--color-accent-highlight)] transition hover:border-white/40"
-        >
-          View details
-        </Link>
+        {isExternal && externalHref ? (
+          <a href={externalHref} target="_blank" rel="noopener noreferrer" className={viewDetailsClass}>
+            View details
+          </a>
+        ) : (
+          <Link href={detailHref} prefetch={false} className={viewDetailsClass}>
+            View details
+          </Link>
+        )}
       </div>
     </article>
   );
 }
+
 
 function CatalogSkeleton() {
   return (

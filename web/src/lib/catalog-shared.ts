@@ -1,4 +1,4 @@
-﻿import { searchCards, type CardSearchParams, type ScryfallCard } from "@/services/scryfall";
+import { searchCards, type CardSearchParams, type ScryfallCard } from "@/services/scryfall";
 import type { CatalogCard, CatalogFacet, CatalogFacets, CatalogResponse } from "@/types/catalog";
 
 export type SortOption = "relevance" | "name" | "cmc" | "price" | "popularity";
@@ -105,7 +105,9 @@ export function mapScryfallCard(card: ScryfallCard): CatalogCard {
     popularity: null,
     priceLow: Number.isFinite(priceLow) ? priceLow : null,
     priceHigh: Number.isFinite(priceHigh) ? priceHigh : null,
+    scryfallUri: typeof card.scryfall_uri === "string" ? card.scryfall_uri : null,
   };
+
 }
 
 export function buildFallbackFacets(cards: ScryfallCard[]): CatalogFacets {

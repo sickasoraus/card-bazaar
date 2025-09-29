@@ -274,6 +274,7 @@ function mapDbRowToCatalogCard(row: DbCatalogRow): CatalogCard {
     popularity: row.popularity,
     priceLow: row.price_low,
     priceHigh: row.price_high,
+    scryfallUri: null,
   };
 }
 
