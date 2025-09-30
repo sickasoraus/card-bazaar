@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/binder", label: "My Binder" },
   { href: "/#cards", label: "Cards" },
   { href: "/#decks", label: "Decks" },
   { href: "/#trending", label: "Trending" },
