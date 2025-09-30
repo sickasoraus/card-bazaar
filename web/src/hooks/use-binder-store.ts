@@ -366,9 +366,9 @@ function summariseErrors(errors: string[]): string {
   }
   const unique = Array.from(new Set(errors));
   if (unique.length <= 3) {
-    return unique.join(" • ");
+    return unique.join(" - ");
   }
-  const head = unique.slice(0, 3).join(" • ");
+  const head = unique.slice(0, 3).join(" - ");
   const remaining = unique.length - 3;
-  return `${head} • +${remaining} more`;
+  return `${head} - +${remaining} more`;
 }
