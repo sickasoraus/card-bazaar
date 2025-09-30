@@ -12,6 +12,10 @@ export default function BinderPage() {
   const binder = useActiveBinder();
   const binders = useBinderStore((state) => state.binders);
   const upsertVariant = useBinderStore((state) => state.upsertVariant);
+  const lastSyncedAt = useBinderStore((state) => state.lastSyncedAt);
+  const syncBinderPricing = useBinderStore((state) => state.syncBinderPricing);
+  const isSyncingPrices = useBinderStore((state) => state.isSyncingPrices);
+  const pricingError = useBinderStore((state) => state.pricingError);
   const [sheetIndex, setSheetIndex] = useState(0);
 
   useEffect(() => {
@@ -37,14 +41,15 @@ export default function BinderPage() {
                 Handle your collection like it is in your hands.
               </h1>
               <p className="max-w-2xl text-sm text-white/70">
-                Flip between nine-pocket sheets, see hourly valuations, and launch listings to Auction (beta) without leaving your binder view.
-                This MVP runs on demo data today—hook it into Supabase once the Card Bazaar bridge lands.
+                Flip between nine-pocket sheets, sync live valuations, and launch listings to Auction (beta) without leaving your binder view.
+                This MVP runs on demo data today—wire it into Supabase once the Card Bazaar bridge lands.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-[11px] uppercase tracking-[3px] text-white/60">
               <span>Binders ready: {binders.length}</span>
               {binder ? <span>Active binder: {binder.name}</span> : null}
               <span>Hourly price sync prototype</span>
+              {lastSyncedAt ? <span>Last sync {new Date(lastSyncedAt).toLocaleTimeString()}</span> : null}
             </div>
           </div>
         </section>
@@ -82,6 +87,10 @@ export default function BinderPage() {
                 onAddCard={({ slotIndex, variant }) =>
                   upsertVariant({ binderId: binder.id, sheetIndex, slotIndex, variant })
                 }
+                onSyncPricing={() => syncBinderPricing(binder.id)}
+                isSyncingPricing={isSyncingPrices}
+                lastSyncedAt={lastSyncedAt}
+                pricingError={pricingError}
               />
               <div className="flex flex-col gap-6">
                 <div className="rounded-[22px] border border-white/10 bg-white/5 p-5">
@@ -107,3 +116,4 @@ export default function BinderPage() {
     </div>
   );
 }
+

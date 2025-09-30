@@ -27,9 +27,22 @@ type BinderSidebarProps = {
   sheetIndex: number;
   onChangeSheet: (index: number) => void;
   onAddCard: (payload: { slotIndex: number; variant: Binder["sheets"][number]["slots"][number]["variants"][number] }) => void;
+  onSyncPricing: () => void;
+  isSyncingPricing: boolean;
+  lastSyncedAt: string | null;
+  pricingError: string | null;
 };
 
-export function BinderSidebar({ binder, sheetIndex, onChangeSheet, onAddCard }: BinderSidebarProps) {
+export function BinderSidebar({
+  binder,
+  sheetIndex,
+  onChangeSheet,
+  onAddCard,
+  onSyncPricing,
+  isSyncingPricing,
+  lastSyncedAt,
+  pricingError,
+}: BinderSidebarProps) {
   const binders = useBinderStore((state) => state.binders);
   const activeBinderId = useBinderStore((state) => state.activeBinderId);
   const setActiveBinder = useBinderStore((state) => state.setActiveBinder);
@@ -129,6 +142,26 @@ export function BinderSidebar({ binder, sheetIndex, onChangeSheet, onAddCard }: 
             </button>
           </div>
         </div>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onSyncPricing}
+            disabled={isSyncingPricing}
+            className="rounded-[12px] border border-white/20 bg-black/25 px-4 py-2 text-[11px] font-semibold uppercase tracking-[2px] text-white/80 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSyncingPricing ? "Syncing prices..." : "Sync hourly prices"}
+          </button>
+          {lastSyncedAt ? (
+            <span className="text-[11px] uppercase tracking-[2px] text-white/60">
+              Last sync {formatLastSynced(lastSyncedAt)}
+            </span>
+          ) : null}
+        </div>
+        {pricingError ? (
+          <p className="mt-2 rounded-[12px] border border-red-400/30 bg-red-500/10 px-3 py-2 text-[11px] text-red-200">
+            {pricingError}
+          </p>
+        ) : null}
         <div className="mt-4 flex flex-wrap gap-2">
           {binders.map((entry) => (
             <button
@@ -151,7 +184,7 @@ export function BinderSidebar({ binder, sheetIndex, onChangeSheet, onAddCard }: 
         <div className="grid gap-4 sm:grid-cols-2">
           <MetricCard label="Total Value" value={formatCurrency(binder.totalValue)} trend={binder.hourlyChange} />
           <MetricCard label="Cards Logged" value={`${binder.totalCards}`} trend={filledSlots} trendSuffix=" slots" />
-          <MetricCard label="Last Sync" value={new Date(binder.updatedAt).toLocaleTimeString()} trendLabel="Hourly" />
+          <MetricCard label="Last Sync" value={formatLastSynced(lastSyncedAt ?? binder.updatedAt)} trendLabel="Hourly" />
           <MetricCard label="Liquidity Score" value={`${binder.liquidityScore}`} trendLabel="Auction ready" />
         </div>
         <div className="mt-5">
@@ -342,3 +375,16 @@ function buildValuePath(points: Binder["valueHistory"]) {
   const fill = `${stroke} L${coords[coords.length - 1]?.x ?? 240},80 L0,80 Z`;
   return { stroke, fill };
 }
+
+function formatLastSynced(timestamp: string): string {
+  try {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.valueOf())) {
+      return "n/a";
+    }
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "n/a";
+  }
+}
+

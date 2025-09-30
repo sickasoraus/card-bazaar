@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 
 import { getBinderLimits, getDemoBinderState } from "@/services/binder-demo-data";
 import { createEmptyBinder, recalculateBinderMetrics } from "@/services/binder-utils";
+import { buildPricingKey, fetchPricesForRequests, type ScryfallPricingRequest } from "@/services/scryfall-pricing";
 import type { Binder, BinderCardVariant, BinderBenchmark, BinderValuePoint, MyBinderState } from "@/types/binder";
 
 const STORAGE_KEY = "card-bazaar-my-binder-v1";
@@ -12,6 +13,14 @@ const STORAGE_KEY = "card-bazaar-my-binder-v1";
 const DEFAULT_STATE = getDemoBinderState();
 
 export type BinderCreationResult = { success: true; binder: Binder } | { success: false; error: string };
+
+type VariantCoordinate = {
+  sheetIndex: number;
+  slotIndex: number;
+  variantIndex: number;
+  variantId: string;
+  variantName: string;
+};
 
 export type BinderStore = MyBinderState & {
   setActiveBinder: (id: string) => void;
@@ -34,6 +43,7 @@ export type BinderStore = MyBinderState & {
   }) => void;
   setBenchmarks: (benchmarks: BinderBenchmark[]) => void;
   recordValuationSnapshot: (payload: { binderId: string; value: number; timestamp?: string }) => void;
+  syncBinderPricing: (binderId: string) => Promise<void>;
   resetToDemo: () => void;
 };
 
@@ -192,10 +202,13 @@ export const useBinderStore = create<BinderStore>()(
             if (binder.id !== binderId) {
               return binder;
             }
-            const points: BinderValuePoint[] = [...binder.valueHistory, {
-              timestamp: timestamp ?? new Date().toISOString(),
-              value: Math.round(value),
-            }];
+            const points: BinderValuePoint[] = [
+              ...binder.valueHistory,
+              {
+                timestamp: timestamp ?? new Date().toISOString(),
+                value: Math.round(value),
+              },
+            ];
             const history = points.slice(-48);
             const prior = history.length > 1 ? history[history.length - 2].value : value;
             const hourlyChange = prior ? Math.round(((value - prior) / prior) * 10000) / 100 : 0;
@@ -209,6 +222,112 @@ export const useBinderStore = create<BinderStore>()(
           }),
           lastSyncedAt: timestamp ?? new Date().toISOString(),
         }));
+      },
+      syncBinderPricing: async (binderId) => {
+        const { binders, isSyncingPrices } = get();
+        if (isSyncingPrices) {
+          return;
+        }
+
+        const binderIndex = binders.findIndex((entry) => entry.id === binderId);
+        if (binderIndex < 0) {
+          set({ pricingError: "Binder not found." });
+          return;
+        }
+
+        const binder = structuredClone(binders[binderIndex]) as Binder;
+        const requestMap = new Map<string, ScryfallPricingRequest>();
+        const variantMap = new Map<string, VariantCoordinate[]>();
+
+        binder.sheets.forEach((sheet, sheetIndex) => {
+          sheet.slots.forEach((slot, slotIndex) => {
+            slot.variants.forEach((variant, variantIndex) => {
+              if (!variant.setCode?.trim() || !variant.collectorNumber?.trim()) {
+                return;
+              }
+              const request: ScryfallPricingRequest = {
+                setCode: variant.setCode,
+                collectorNumber: variant.collectorNumber,
+                finish: variant.finish,
+              };
+              const key = buildPricingKey(request);
+              if (!requestMap.has(key)) {
+                requestMap.set(key, request);
+              }
+              const coords = variantMap.get(key) ?? [];
+              coords.push({
+                sheetIndex,
+                slotIndex,
+                variantIndex,
+                variantId: variant.id,
+                variantName: variant.name,
+              });
+              variantMap.set(key, coords);
+            });
+          });
+        });
+
+        if (!requestMap.size) {
+          set({ pricingError: "Add cards with set + collector numbers to sync pricing." });
+          return;
+        }
+
+        set({ isSyncingPrices: true, pricingError: null });
+
+        try {
+          const priceResults = await fetchPricesForRequests(Array.from(requestMap.values()));
+          const now = new Date().toISOString();
+          const errors: string[] = [];
+
+          variantMap.forEach((coordinates, key) => {
+            const priceResult = priceResults.get(key);
+            coordinates.forEach((coordinate) => {
+              const variant = binder.sheets[coordinate.sheetIndex]?.slots[coordinate.slotIndex]?.variants[coordinate.variantIndex];
+              if (!variant) {
+                return;
+              }
+
+              if (priceResult && priceResult.price !== null) {
+                const previousValue = variant.pricing.currentValue;
+                const changePercent = previousValue
+                  ? Math.round((((priceResult.price - previousValue) / previousValue) * 100) * 100) / 100
+                  : 0;
+
+                variant.pricing = {
+                  ...variant.pricing,
+                  currentValue: priceResult.price,
+                  change24h: changePercent,
+                  lastUpdated: now,
+                };
+              } else {
+                variant.pricing = {
+                  ...variant.pricing,
+                  lastUpdated: now,
+                };
+                if (priceResult?.error) {
+                  errors.push(`${coordinate.variantName}: ${priceResult.error}`);
+                }
+              }
+            });
+          });
+
+          const updatedBinder = recalculateBinderMetrics(binder);
+          const nextBinders = [...binders];
+          nextBinders[binderIndex] = updatedBinder;
+
+          set({
+            binders: nextBinders,
+            lastSyncedAt: now,
+            isSyncingPrices: false,
+            pricingError: errors.length ? summariseErrors(errors) : null,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unknown pricing error";
+          set({
+            isSyncingPrices: false,
+            pricingError: message,
+          });
+        }
       },
       resetToDemo: () => {
         set(getDemoBinderState());
@@ -226,6 +345,8 @@ export const useBinderStore = create<BinderStore>()(
       merge: (persisted, current) => ({
         ...current,
         ...persisted,
+        isSyncingPrices: false,
+        pricingError: null,
       }),
     },
   ),
@@ -237,4 +358,17 @@ export function useActiveBinder(): Binder | null {
 
 export function useBinderBenchmarks(): BinderBenchmark[] {
   return useBinderStore((state) => state.benchmarks);
+}
+
+function summariseErrors(errors: string[]): string {
+  if (!errors.length) {
+    return "";
+  }
+  const unique = Array.from(new Set(errors));
+  if (unique.length <= 3) {
+    return unique.join(" • ");
+  }
+  const head = unique.slice(0, 3).join(" • ");
+  const remaining = unique.length - 3;
+  return `${head} • +${remaining} more`;
 }

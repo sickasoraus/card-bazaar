@@ -78,4 +78,6 @@ export type MyBinderState = {
   binders: Binder[];
   benchmarks: BinderBenchmark[];
   lastSyncedAt: string | null;
+  isSyncingPrices: boolean;
+  pricingError: string | null;
 };
