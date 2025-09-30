@@ -1,37 +1,68 @@
-# Card Bazaar
+# metablazt
 
-Card Bazaar is a Magic: The Gathering singles marketplace concept site.  
-This version (1.3 FIXED) fetches live card images from the [Scryfall API](https://scryfall.com/docs/api)  
-and displays them in a two-column grid with interactive hover overlays showing pricing and condition variants.
+Magic the Gathering Card Database and deck builder.
 
-## Features
-- Fetches MTG card art from the Scryfall API
-- Real-time pricing from Scryfall (USD) with condition multipliers (NM=1.00, EX=0.85, VG=0.75)
-- Prices are shown only when a card is hovered/selected, integrated into condition buttons (NM/EX/VG)
-- Price trend color on condition buttons (green if up since last seen, red if down)
-- Variant selector for different conditions/prices
-- Double-click card art to add it to your cart and remove items from the cart menu
+## Project Structure
 
-Notes:
-- Prices are refreshed on page load; last-seen comparison is stored locally per browser.
+- `/web` – Next.js App Router frontend (TypeScript, Tailwind, Prisma-ready) configured for static export.
+- `/docs` – architecture references and deployment guides (`schema-and-events.md`, `design-tokens.md`, `supabase-setup.md`, `trending-analytics.md`, `personalization-strategy.md`).
 
-## Mobile Friendly
-- Responsive layout: single-column grid on smaller screens.
-- Touch behavior: tap a card to reveal condition buttons (desktop uses hover).
+## Getting Started
 
-## Local Development
-- Recommended: Use VS Code with the Live Server or Live Preview extension.
-- Or serve locally via terminal:
-  - Node: `npx http-server -p 5173` then open http://localhost:5173
-  - Python: `py -m http.server 5173` then open http://localhost:5173
-- Tests: `npm test` (Node 18+)
+```bash
+cd web
+npm install
+npm run dev
+```
 
-## Roadmap & Planning
-- See `docs/ROADMAP.md` for categorized features, impact/difficulty, and priorities.
-- Contribution and workflow guidance: see `CONTRIBUTING.md`.
+The card explorer hits live Scryfall search; use the preset chips or filter controls to see the integration in action. Telemetry emits to the console when `NEXT_PUBLIC_TELEMETRY_DEBUG=true`.
 
-## Live Demo
-(Once GitHub Pages is enabled, the link will appear here.)
+## Static Export Preview
 
----
-*Note: This is a prototype for demonstration purposes only and is not an actual storefront.*
+```bash
+cd web
+npm run build
+# Static output available in web/out for GitHub Pages deployment
+```
+
+## Supabase + Prisma
+
+1. Copy `web/.env.example` to `.env.local` and fill in `DATABASE_URL` from Supabase.
+2. Apply the initial schema:
+   ```bash
+   cd web
+   npx prisma migrate deploy
+   ```
+3. Generate the Prisma client when ready for server usage:
+   ```bash
+   npm run prisma:generate
+   ```
+
+See `docs/supabase-setup.md` for the full walkthrough (Phase 5 adds steps for migrations `0004`–`0006`, PKCE secrets, and privacy workflows).
+
+## Current Highlights
+
+**Phase 4 – Simulator & Autofill**
+- Deck builder import workspace supports quantity/name text, MTG Arena `.txt`, and CSV lists with automatic Scryfall resolution.
+- Goldfish simulator (`/deckbuilder/simulator`) runs mulligans/draws with telemetry and persists state locally.
+- Rule-based autofill suggestions hit `/api/autofill`, with add-to-deck + Card Bazaar bridge actions and coverage in vitest.
+
+**Phase 5 – SSO & Privacy Readiness**
+- Auth bridge plan documented in `docs/auth-bridge.md`, with PKCE helpers, stubbed API routes, and telemetry instrumentation.
+- Similarity + upgrade tables wired into `/api/recommendations` so richer seeds are ready once cron jobs feed Supabase.
+- Privacy center (`/settings/privacy`) lets users opt out of telemetry or queue export/deletion requests; APIs persist to `privacy_requests` when Supabase is available.
+
+Refer to `ROADMAP.md` for the latest milestone status.
+
+## Card Bazaar SSO (Phase 5 Preview)
+
+- Populate the Card Bazaar credentials in `web/.env.local` (`CARDBAZAAR_OIDC_*`, `NEXT_PUBLIC_SSO_CLIENT_ID`, `NEXT_PUBLIC_CARDBAZAAR_ORIGIN`).
+- `POST /api/auth/link` returns the authorize URL + PKCE verifier; pair it with `logAuthLink` helpers in `@/services/auth-bridge` to emit telemetry.
+- `GET /api/auth/status` responds with the current bridge state (stubbed until Supabase policies are live).
+- See `docs/auth-bridge.md` for the architecture diagram, security constraints, and open TODOs before launch.
+
+## Privacy Controls (Phase 5 Preview)
+
+- `/settings/privacy` surfaces telemetry toggles, export, and deletion requests. API handlers queue requests in `privacy_requests` when Supabase is available and fall back to static messaging on GitHub Pages.
+\n## Next Build Priorities\n\n- Provision a production OIDC provider for Card Bazaar, populate the CARDBAZAAR_OIDC_* secrets, and enable real SSO flows.\n- Migrate deployment from GitHub Pages to a server runtime (Vercel) so Next.js API routes can use Supabase securely.\n- Ship the personalized dashboard experience backed by authenticated recommendations.\n
+
