@@ -85,6 +85,8 @@ const DEMO_STATE: MyBinderState = {
   binders: DEMO_BINDERS,
   benchmarks: DEMO_BENCHMARKS,
   lastSyncedAt: "2025-09-29T23:00:00.000Z",
+  isSyncingPrices: false,
+  pricingError: null,
 };
 
 export function getDemoBinderState(): MyBinderState {
@@ -374,3 +376,5 @@ function buildValueHistory(currentValue: number, options: { length?: number; noi
     };
   });
 }
+
+
