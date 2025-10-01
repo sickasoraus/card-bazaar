@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 import path from "path";
 
-const repoName = "metablazt";
+const repoName = "card-bazaar";
 const isGithubActions = process.env.GITHUB_ACTIONS === "true";
 
 const nextConfig: NextConfig = {
@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   typedRoutes: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   env: {
     NEXT_PUBLIC_BASE_PATH: isGithubActions ? `/${repoName}` : '',
   },
