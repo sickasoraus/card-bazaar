@@ -42,7 +42,7 @@ export default function BinderPage() {
               </h1>
               <p className="max-w-2xl text-sm text-white/70">
                 Flip between nine-pocket sheets, sync live valuations, and launch listings to Auction (beta) without leaving your binder view.
-                This MVP runs on demo data today-wire it into Supabase once the Card Bazaar bridge lands.
+                This MVP runs on demo data today—wire it into Supabase once the Card Bazaar bridge lands.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-[11px] uppercase tracking-[3px] text-white/60">
@@ -59,7 +59,7 @@ export default function BinderPage() {
             <div className="rounded-[22px] border border-white/10 bg-white/5 p-10 text-center">
               <h2 className="font-display text-3xl text-[color:var(--color-text-hero)]">No binder yet</h2>
               <p className="mt-2 text-sm text-white/70">
-                Create your first binder to start tracking cards. This MVP seeds with demo data-sync it with Card Bazaar once the API is live.
+                Create your first binder to start tracking cards. This MVP seeds with demo data—sync it with Card Bazaar once the API is live.
               </p>
               <button
                 type="button"
