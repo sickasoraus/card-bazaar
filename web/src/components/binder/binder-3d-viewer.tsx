@@ -134,7 +134,7 @@ const CardPanel = memo(function CardPanel({ index, card, hovered, onHover }: Car
           />
           <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 via-black/10 to-transparent px-2 py-1 text-[10px] uppercase tracking-[1.5px] text-white/80">
             <span className="truncate">{card.name}</span>
-            {card.quantity > 1 ? <span className="font-semibold">x{card.quantity}</span> : null}
+            {card.quantity > 1 ? <span className="font-semibold">×{card.quantity}</span> : null}
           </div>
           <div className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-[2px] text-[9px] uppercase tracking-[1.5px] text-white/70">
             {card.origin}

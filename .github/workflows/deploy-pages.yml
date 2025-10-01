@@ -1,4 +1,4 @@
-name: Deploy Card Bazaar Pages
+name: Deploy Metablazt Pages
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "card-bazaar-pages"
+  group: "metablazt-pages"
   cancel-in-progress: true
 
 jobs:
@@ -34,11 +34,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Generate Prisma client
-        run: npm run prisma:generate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/card_bazaar?schema=public
 
       - name: Build static site
         run: npm run build
