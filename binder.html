@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Bazaar - My Binder</title>
+  <link rel="stylesheet" href="styles.css?v=20260406i">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+</head>
+<body class="binder-view">
+  <div class="container">
+    <div class="header">
+      <a class="logo" id="homeLogo" href="index.html">CARD BAZAAR</a>
+      <div class="header-controls">
+        <div class="search-wrap">
+          <div id="searchBar" class="searchbar">
+            <input id="globalSearchInput" type="text" name="binderSearch" placeholder="Search your binder..." aria-label="Search your binder" autocomplete="off">
+            <button id="globalSearchBtn" class="search-btn">Search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="action-stack" id="actionStack">
+      <div class="sidebar-auth">
+        <div id="loginBtn" class="login-cta sidebar-login" role="button" aria-expanded="true" tabindex="0">
+          <div class="login-title"><span id="loginLabel">Log In / Sign Up</span></div>
+          <div id="loginForm" class="login-panel" aria-hidden="false">
+            <div class="login-box">
+              <input type="email" id="loginEmail" placeholder="Email" autocomplete="username">
+              <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+              <div class="login-actions">
+                <button id="loginSubmit" type="button" class="btn-ghost">Submit</button>
+                <button id="loginCreate" type="button" class="btn-ghost">Create</button>
+              </div>
+              <span id="userStatus" class="user-status"></span>
+            </div>
+            <div id="loginProfile" class="login-profile">
+              <div id="loginProfileName" class="login-profile-name"></div>
+              <div class="login-badges">
+                <span class="login-badge">Card Bazaar Gold</span>
+              </div>
+              <div class="login-profile-actions">
+                <a href="profile.html" class="btn-ghost">Settings</a>
+                <a href="profile.html" class="btn-ghost">Watchlist</a>
+                <button id="loginSignOut" type="button" class="btn-ghost">Sign Out</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <a id="binderHeaderBtn" class="btn-cta sidebar-binder" href="binder.html">My Binder</a>
+      </div>
+      <div class="cart-panel">
+        <div class="cart-panel-header">
+          <div class="cart-panel-title">Sell Cart</div>
+          <div id="sellCartTotal" class="cart-panel-credit">$0.00</div>
+        </div>
+        <ul id="sellCartItems" class="cart-list"></ul>
+        <div id="sellCartEmpty" class="cart-empty">Your sell cart is empty.</div>
+        <div class="cart-actions">
+          <button id="sellCartSubmit" class="btn-cta">Submit Sell Order</button>
+          <button id="sellCartClear" class="btn-ghost">Clear</button>
+        </div>
+      </div>
+      <div id="dbBanner" class="db-banner">
+        <div class="db-banner-title">Card Bazaar Database</div>
+        <div class="db-banner-subtitle">News - Set Spoilers - Reviews - Promos</div>
+        <a id="dbBannerLink" href="#" target="_blank" class="db-banner-link">Read Now</a>
+      </div>
+    </div>
+    <div class="content binder-content">
+      <div class="binder-top">
+        <div>
+          <div class="binder-title">My Binder</div>
+          <div id="binderSummary" class="binder-summary">0 cards - Cost: $0.00 - Live: $0.00</div>
+        </div>
+        <div class="binder-credit">
+          <span>Store Credit</span>
+          <span id="binderCreditValue" class="binder-credit-value">$0.00</span>
+        </div>
+      </div>
+      <div class="binder-add">
+        <div class="binder-add-title">Add Card to Binder</div>
+        <div class="binder-add-row">
+          <div class="searchbar binder-add-search">
+            <input id="binderAddName" type="text" placeholder="Search cards to add..." aria-label="Add card to binder">
+            <button id="binderAddBtn" class="search-btn" type="button">Add</button>
+          </div>
+        </div>
+        <div id="binderAddMessage" class="binder-add-message"></div>
+      </div>
+      <div id="binderEmpty" class="binder-empty">Your binder is empty. Add cards or check out while logged in to track purchases here.</div>
+      <div class="binder-spread">
+        <div class="binder-page">
+          <div class="binder-page-grid" id="binderLeftGrid"></div>
+        </div>
+        <div class="binder-page">
+          <div class="binder-page-grid" id="binderRightGrid"></div>
+        </div>
+      </div>
+      <div class="binder-pagination">
+        <button id="binderPrev" class="btn-ghost">Previous</button>
+        <div id="binderPageIndicator" class="binder-page-indicator">Page 1</div>
+        <button id="binderNext" class="btn-ghost">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/binder.mjs?v=20260111"></script>
+  <script type="module" src="js/mobile.mjs?v=20260406i"></script>
+</body>
+</html>
+
+
+
+

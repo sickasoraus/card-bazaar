@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open a Pack - Card Bazaar</title>
+  <link rel="stylesheet" href="styles.css?v=20260406i">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand-row">
+        <a class="logo" id="homeLogo" href="/">CARD BAZAAR</a>
+        <div class="header-strips">
+          <div class="header-strip header-strip--trust">
+            <div class="strip-line">Live scan inventory &bull; Premium cards &bull; Authenticated and protected</div>
+          </div>
+          <div class="header-strip header-strip--format">
+            <div class="header-nav-links">
+              <a class="nav-link nav-link--static" href="index-top.html">Index</a>
+              <a class="nav-link nav-link--static" href="index.html">Trending</a>
+              <a class="nav-link nav-link--static" href="vintage.html">Vintage</a>
+              <a class="nav-link nav-link--static" href="alternates.html">Alternates</a>
+            </div>
+          </div>
+          <div class="header-strip header-strip--editions">
+            <div class="header-nav-links header-nav-links--editions">
+              <a class="nav-link nav-link--static" href="editions.html">Editions</a>
+              <a class="nav-link nav-link--static" href="edition.html?set=lorwyn%20eclipse">Lorwyn Eclipsed</a>
+              <a class="nav-link nav-link--static" href="edition.html?set=avatar">Avatar</a>
+              <a class="nav-link nav-link--static" href="edition.html?set=spider-man">Spider Man</a>
+              <a class="nav-link nav-link--static" href="edition.html?set=edge%20of%20eternities">Edge of Eternities</a>
+              <a class="nav-link nav-link--static" href="edition.html?set=final%20fantasy">Final Fantasy</a>
+              <select id="frontSort" class="sort-select sort-select--compact">
+                <option value="default">Sort: Default</option>
+                <option value="newest">Newest</option>
+                <option value="popular">Most Popular</option>
+                <option value="price-high">Highest Price</option>
+                <option value="price-low">Lowest Price</option>
+              </select>
+            </div>
+          </div>
+          <div class="header-strip header-strip--search"></div>
+        </div>
+      </div>
+    </div>
+    <div class="action-stack" id="actionStack">
+      <div class="sidebar-auth">
+        <div class="sidebar-search">
+          <div id="searchBar" class="searchbar searchbar--strip">
+            <input id="globalSearchInput" type="text" name="cardSearch" placeholder="Search cards by name, Edition..." aria-label="Search cards by name" autocomplete="off">
+            <button id="globalSearchBtn" class="search-btn">Search</button>
+          </div>
+        </div>
+        <div id="loginBtn" class="login-cta sidebar-login" role="button" aria-expanded="true" tabindex="0">
+          <div class="login-title"><span id="loginLabel">Log In / Sign Up</span></div>
+          <div id="loginForm" class="login-panel" aria-hidden="false">
+            <div class="login-box">
+              <input type="email" id="loginEmail" placeholder="Email" autocomplete="username">
+              <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+              <div class="login-actions">
+                <button id="loginSubmit" type="button" class="btn-ghost">Submit</button>
+                <button id="loginCreate" type="button" class="btn-ghost">Create</button>
+              </div>
+              <span id="userStatus" class="user-status"></span>
+            </div>
+            <div id="loginProfile" class="login-profile">
+              <div id="loginProfileName" class="login-profile-name"></div>
+              <div class="login-badges">
+                <span class="login-badge">Card Bazaar Gold</span>
+              </div>
+              <div class="login-profile-actions">
+                <a href="profile.html" class="btn-ghost">Settings</a>
+                <a href="profile.html" class="btn-ghost">Watchlist</a>
+                <button id="loginSignOut" type="button" class="btn-ghost">Sign Out</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <a id="binderHeaderBtn" class="btn-cta sidebar-binder" href="binder.html" style="display:none;">My Binder</a>
+      </div>
+      <div class="sidebar-actions">
+        <a class="btn-cta sidebar-openpack" href="open-pack.html">Open a Pack</a>
+        <div class="sidebar-links">
+          <a class="btn-cta sidebar-link sidebar-link-cta" href="supplies.html">Supplies</a>
+        </div>
+      </div>
+      <a id="contactBtn" class="btn-cta sidebar-contact" href="contact.html">Contact Us</a>
+      <div id="dbBanner" class="db-banner">
+        <div class="db-banner-title">Card Bazaar Database</div>
+        <div class="db-banner-subtitle">News - Set Spoilers - Reviews - Promos</div>
+        <a id="dbBannerLink" href="database.html" target="_blank" class="db-banner-link">Read Now</a>
+      </div>
+      <div class="cart-panel">
+        <div class="cart-tabs">
+          <button id="buyCartTab" class="cart-tab active" type="button">Buy Cart</button>
+          <button id="sellCartTab" class="cart-tab" type="button">Sell Cart</button>
+        </div>
+        <div id="buyCartPanel" class="cart-panel-body">
+          <div class="cart-panel-header">
+            <div class="cart-panel-title">My Cart</div>
+            <span id="cartSavedBadge" class="cart-saved-badge"></span>
+            <div id="cartStoreCredit" class="cart-panel-credit">$0.00 credit</div>
+          </div>
+          <ul id="cartItems" class="cart-list"></ul>
+          <div id="cartTotal" class="cart-total"></div>
+          <div id="cartEmptyState" class="cart-empty-state" style="display:none;">
+            <div class="cart-empty-title">Our Mission</div>
+            <div class="cart-empty-text">Live scans, verified grading, insured shipping - every order.</div>
+          </div>
+          <button id="checkoutBtn" class="btn-cta cart-checkout" style="display:none;">Proceed to Checkout</button>
+          <div class="cart-trust">
+            <div class="cart-shipping">Ships in 1-2 days - Seattle same-day delivery available - 30-day returns.</div>
+            <div id="freeShippingNote" class="cart-shipping-note"></div>
+            <div class="cart-payments">
+              <img class="pay-logo" src="assets/payment/visa.png" alt="Visa">
+              <img class="pay-logo" src="assets/payment/mastercard.png" alt="Mastercard">
+              <img class="pay-logo" src="assets/payment/paypal.png" alt="PayPal">
+              <img class="pay-logo" src="assets/payment/applepay.png" alt="Apple Pay">
+              <img class="pay-logo" src="assets/payment/stripe.png" alt="Stripe">
+            </div>
+            <div class="cart-payments-note">Secure checkout by Stripe. Pay later + crypto coming soon.</div>
+          </div>
+        </div>
+        <div id="sellCartPanel" class="cart-panel-body" style="display:none;">
+          <div class="cart-panel-header">
+            <div class="cart-panel-title">Sell Cart</div>
+            <div id="sellCartTotal" class="cart-panel-credit">$0.00</div>
+          </div>
+          <div class="sell-approval-note">Sell orders are awaiting your approval by default.</div>
+          <label class="sell-fasttrack">
+            <input id="sellFastTrack" type="checkbox">
+            Fast-track for +5% store credit
+          </label>
+          <ul id="sellCartItems" class="cart-list"></ul>
+          <div id="sellCartEmpty" class="cart-empty">Your sell cart is empty.</div>
+          <div class="sell-ship-note">Ship to: Card Bazaar, 1741 N 45th St, Seattle, WA 98103.</div>
+          <div class="cart-actions">
+            <button id="sellCartSubmit" class="btn-cta">Submit Sell Order</button>
+            <button id="sellCartClear" class="btn-ghost">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="catalog-hero">
+        <div class="catalog-eyebrow">Open a Pack</div>
+        <h1 class="simple-title">Pack Openings</h1>
+        <div class="simple-subtitle">Open sealed packs online, sell pulls for store credit, or ship what you keep.</div>
+      </div>
+      <div class="grid pack-grid">
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/edgeofeternities.png" alt="Edge of Eternities Booster Pack">
+            <img class="variant-image pack-image" src="assets/packs/edgeofeternities.png" alt="Edge of Eternities Booster Pack">
+            <img class="variant-image active pack-image" src="assets/packs/edgeofeternities.png" alt="Edge of Eternities Booster Pack">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Edge of Eternities Set Booster</span></div>
+            <div class="card-meta-row pack-price">From $6.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Edge of Eternities Set Booster" data-set="eoe" data-image="assets/packs/edgeofeternities.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Edge of Eternities Set Booster" data-set="eoe" data-image="assets/packs/edgeofeternities.png" data-price="6.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/edgeofeternitiescollectorbooster.png" alt="Edge of Eternities Collector Pack">
+            <img class="variant-image pack-image" src="assets/packs/edgeofeternitiescollectorbooster.png" alt="Edge of Eternities Collector Pack">
+            <img class="variant-image active pack-image" src="assets/packs/edgeofeternitiescollectorbooster.png" alt="Edge of Eternities Collector Pack">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Edge of Eternities Collector Booster</span></div>
+            <div class="card-meta-row pack-price">From $24.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Edge of Eternities Collector Booster" data-set="eoe" data-image="assets/packs/edgeofeternitiescollectorbooster.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Edge of Eternities Collector Booster" data-set="eoe" data-image="assets/packs/edgeofeternitiescollectorbooster.png" data-price="24.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/finalfantasy.png" alt="Final Fantasy Booster Pack">
+            <img class="variant-image pack-image" src="assets/packs/finalfantasy.png" alt="Final Fantasy Booster Pack">
+            <img class="variant-image active pack-image" src="assets/packs/finalfantasy.png" alt="Final Fantasy Booster Pack">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Final Fantasy Set Booster</span></div>
+            <div class="card-meta-row pack-price">From $6.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Final Fantasy Set Booster" data-set="fin" data-image="assets/packs/finalfantasy.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Final Fantasy Set Booster" data-set="fin" data-image="assets/packs/finalfantasy.png" data-price="6.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/finalfantasycollectorbooster.png" alt="Final Fantasy Collector Pack">
+            <img class="variant-image pack-image" src="assets/packs/finalfantasycollectorbooster.png" alt="Final Fantasy Collector Pack">
+            <img class="variant-image active pack-image" src="assets/packs/finalfantasycollectorbooster.png" alt="Final Fantasy Collector Pack">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Final Fantasy Collector Booster</span></div>
+            <div class="card-meta-row pack-price">From $24.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Final Fantasy Collector Booster" data-set="fin" data-image="assets/packs/finalfantasycollectorbooster.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Final Fantasy Collector Booster" data-set="fin" data-image="assets/packs/finalfantasycollectorbooster.png" data-price="24.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/avatarthelastairbender.png" alt="Avatar: The Last Airbender Booster">
+            <img class="variant-image pack-image" src="assets/packs/avatarthelastairbender.png" alt="Avatar: The Last Airbender Booster">
+            <img class="variant-image active pack-image" src="assets/packs/avatarthelastairbender.png" alt="Avatar: The Last Airbender Booster">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Avatar Set Booster</span></div>
+            <div class="card-meta-row pack-price">From $7.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Avatar Set Booster" data-set="tla" data-image="assets/packs/avatarthelastairbender.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Avatar Set Booster" data-set="tla" data-image="assets/packs/avatarthelastairbender.png" data-price="7.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/avatarthelastairbendercollectorbooster.png" alt="Avatar: The Last Airbender Collector Pack">
+            <img class="variant-image pack-image" src="assets/packs/avatarthelastairbendercollectorbooster.png" alt="Avatar: The Last Airbender Collector Pack">
+            <img class="variant-image active pack-image" src="assets/packs/avatarthelastairbendercollectorbooster.png" alt="Avatar: The Last Airbender Collector Pack">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Avatar Collector Booster</span></div>
+            <div class="card-meta-row pack-price">From $29.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Avatar Collector Booster" data-set="tla" data-image="assets/packs/avatarthelastairbendercollectorbooster.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Avatar Collector Booster" data-set="tla" data-image="assets/packs/avatarthelastairbendercollectorbooster.png" data-price="29.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/modernhorizons3.png" alt="Modern Horizons 3 Booster Box">
+            <img class="variant-image pack-image" src="assets/packs/modernhorizons3.png" alt="Modern Horizons 3 Booster Box">
+            <img class="variant-image active pack-image" src="assets/packs/modernhorizons3.png" alt="Modern Horizons 3 Booster Box">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Modern Horizons 3 Set Booster</span></div>
+            <div class="card-meta-row pack-price">From $219.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Modern Horizons 3 Set Booster" data-set="mh3" data-image="assets/packs/modernhorizons3.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Modern Horizons 3 Set Booster" data-set="mh3" data-image="assets/packs/modernhorizons3.png" data-price="219.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+        <div class="card pack-card">
+          <div class="card-stack pack-stack">
+            <img class="variant-image pack-image" src="assets/packs/thelordoftherings.png" alt="The Lord of the Rings Booster">
+            <img class="variant-image pack-image" src="assets/packs/thelordoftherings.png" alt="The Lord of the Rings Booster">
+            <img class="variant-image active pack-image" src="assets/packs/thelordoftherings.png" alt="The Lord of the Rings Booster">
+          </div>
+          <div class="card-meta pack-meta">
+            <div class="card-meta-title"><span class="card-title">Lord of the Rings Set Booster</span></div>
+            <div class="card-meta-row pack-price">From $7.99</div>
+            <div class="pack-actions">
+              <button class="btn-cta pack-open" type="button" data-pack="Lord of the Rings Set Booster" data-set="ltr" data-image="assets/packs/thelordoftherings.png">Open Pack</button>
+              <button class="btn-ghost pack-add" type="button" data-pack="Lord of the Rings Set Booster" data-set="ltr" data-image="assets/packs/thelordoftherings.png" data-price="7.99">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="packOverlay" class="cb-modal-overlay" aria-hidden="true">
+    <div class="cb-modal" role="dialog" aria-labelledby="packTitle" aria-modal="true" style="max-width:760px;">
+      <div class="cb-modal-grid" style="min-height:0;">
+        <div class="cb-modal-body" style="flex: 1 1 100%; background:#fff; color:#333;">
+          <div class="cb-brand" style="color:#d92626;">CARD BAZAAR</div>
+          <h3 id="packTitle" style="margin:0 0 8px; color:#111;">Open a Pack</h3>
+          <p class="pack-terms">We open sealed packs on camera, re-seal them, and never check the contents. Pulls can be sold for store credit or shipped to you.</p>
+          <div class="pack-modal-media">
+            <img id="packPreview" src="" alt="Pack preview">
+          </div>
+          <div class="pack-modal-actions">
+            <button id="packRevealBtn" class="btn-cta">Open Pack</button>
+            <button id="packCloseBtn" class="btn-ghost">Cancel</button>
+          </div>
+          <div id="packResults" class="pack-results" style="display:none;">
+            <div class="pack-results-title">Your Pulls</div>
+            <div id="packResultsGrid" class="pack-results-grid"></div>
+            <div class="pack-results-note">Click cards to add them to your buy or sell cart.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="js/open-pack.mjs"></script>
+  <script type="module" src="js/mobile.mjs?v=20260406i"></script>
+</body>
+</html>
+
+
+
+

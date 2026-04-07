@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card Bazaar - Card</title>
+  <link rel="stylesheet" href="styles.css?v=20260406i">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+</head>
+<body class="card-page">
+  <div class="card-page-header">
+    <a class="logo" href="/">CARD BAZAAR</a>
+    <div class="card-page-actions">
+      <a class="btn-ghost" href="/">Back to Store</a>
+    </div>
+  </div>
+
+  <div class="card-page-content">
+    <section class="card-viewer">
+      <div class="card-rotator" id="cardRotator" aria-label="Card viewer">
+        <div class="card-rotator-inner" id="cardRotatorInner">
+          <img id="cardFront" class="card-face card-front" alt="Card front">
+          <img id="cardBack" class="card-face card-back" alt="Card back">
+        </div>
+      </div>
+      <div class="card-viewer-hint">Click and drag to rotate the card.</div>
+    </section>
+
+    <section class="card-info">
+      <h1 id="cardTitle" class="card-detail-title">Card</h1>
+      <div class="card-detail-sub" id="cardSubtitle"></div>
+      <div class="card-detail-links">
+        <a id="cardScryfallLink" class="price-source price-source--scryfall" target="_blank" rel="noopener">Scryfall</a>
+        <a id="cardCkLink" class="price-source price-source--ck" target="_blank" rel="noopener">Card Kingdom</a>
+        <a id="cardTcgLink" class="price-source price-source--tcg" target="_blank" rel="noopener">TCG Player</a>
+      </div>
+
+      <div class="card-detail-section">
+        <h2>Alternate Versions</h2>
+        <div id="cardPrints" class="card-prints"></div>
+      </div>
+
+      <div class="card-detail-section">
+        <h2>Comments</h2>
+        <div class="card-detail-placeholder">No comments yet. Share your thoughts about this card.</div>
+      </div>
+
+      <div class="card-detail-section">
+        <h2>Card History</h2>
+        <div id="cardHistory" class="card-detail-placeholder">Release notes and major reprints will appear here.</div>
+      </div>
+
+      <div class="card-detail-section">
+        <h2>Card Provenance</h2>
+        <div class="card-detail-placeholder">Ownership trail and grading notes will live here.</div>
+      </div>
+
+      <div class="card-detail-section">
+        <h2>Usage in Decks</h2>
+        <div class="card-detail-placeholder">Deck usage stats will populate here as we expand data sources.</div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="js/card.mjs"></script>
+  <script type="module" src="js/mobile.mjs?v=20260406i"></script>
+</body>
+</html>
+
+
+
+

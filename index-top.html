@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Card Bazaar 1.3 FIXED</title>
+  <title>Card Bazaar Index</title>
   <link rel="stylesheet" href="styles.css?v=20260406i">
   <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
 </head>
@@ -19,7 +19,7 @@
           <div class="header-strip header-strip--format">
             <div class="header-nav-links">
               <a class="nav-link nav-link--static" href="index-top.html">Index</a>
-              <a class="nav-link nav-link--static active" href="index.html">Trending</a>
+              <a class="nav-link nav-link--static" href="index.html">Trending</a>
               <a class="nav-link nav-link--static" href="vintage.html">Vintage</a>
               <a class="nav-link nav-link--static" href="alternates.html">Alternates</a>
             </div>
@@ -144,17 +144,15 @@
       </div>
     </div>
     <div class="content">
-      <div class="grid" id="cardGrid">
-        <!-- Cards will be populated here -->
-      </div>
-      <!-- Personalized Suggestions (moved to bottom) -->
-      <div id="suggestSection" style="padding: 12px 24px 24px 24px; display:none;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-          <div style="font-family: 'Bangers', Impact, Charcoal, sans-serif; font-size: 28px; color:#d92626; text-shadow:1px 1px #000;">Suggested for You</div>
-          <button id="refreshSuggest" class="btn-ghost" style="font-size:14px; padding:6px 10px;">Refresh</button>
+      <div class="index-hero">
+        <div class="index-hero-label">Card Bazaar Index</div>
+        <div class="index-hero-subtitle">Top value cards in Magic, tracked as a living market index.</div>
+        <div class="index-total-row">
+          <span class="index-total-label">Index Total (Scryfall)</span>
+          <span id="indexTotal" class="index-total-value">$0.00</span>
         </div>
-        <div id="suggestRow" class="suggest-row" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:8px;"></div>
       </div>
+      <div id="indexTiers" class="index-tiers"></div>
     </div>
   </div>
   <footer class="site-footer">
@@ -323,7 +321,7 @@
       </div>
     </div>
   </div>
-  <script type="module" src="js/index.mjs"></script>
+  <script type="module" src="js/index-top.mjs"></script>
   <script type="module" src="js/mobile.mjs?v=20260406i"></script>
 </body>
 </html>
