@@ -1,0 +1,67 @@
+{
+  "title": "Card Bazaar Index",
+  "tiers": [
+    {
+      "id": "tier1",
+      "label": "Tier 1",
+      "cards": [
+        { "name": "Black Lotus", "set": "lea", "collector": "232" },
+        { "name": "Black Lotus", "set": "leb", "collector": "233" },
+        { "name": "Black Lotus", "set": "2ed", "collector": "233" },
+        { "name": "Mox Jet", "set": "lea", "collector": "262" },
+        { "name": "Mox Sapphire", "set": "lea", "collector": "265" },
+        { "name": "Mox Pearl", "set": "lea", "collector": "263" },
+        { "name": "Mox Ruby", "set": "lea", "collector": "264" },
+        { "name": "Mox Emerald", "set": "lea", "collector": "261" },
+        { "name": "Time Walk", "set": "lea", "collector": "83" },
+        { "name": "Ancestral Recall", "set": "lea", "collector": "47" }
+      ]
+    },
+    {
+      "id": "tier2",
+      "label": "Tier 2",
+      "cards": [
+        { "name": "Time Walk", "set": "leb", "collector": "84" },
+        { "name": "Ancestral Recall", "set": "leb", "collector": "48" },
+        { "name": "Timetwister", "set": "lea", "collector": "84" },
+        { "name": "Timetwister", "set": "leb", "collector": "85" },
+        { "name": "Mox Jet", "set": "leb", "collector": "263" },
+        { "name": "Mox Sapphire", "set": "leb", "collector": "266" },
+        { "name": "Mox Pearl", "set": "leb", "collector": "264" },
+        { "name": "Mox Ruby", "set": "leb", "collector": "265" },
+        { "name": "Mox Emerald", "set": "leb", "collector": "262" },
+        { "name": "Sol Ring", "set": "lea", "collector": "269" },
+        { "name": "Mana Vault", "set": "lea", "collector": "259" },
+        { "name": "Library of Alexandria", "set": "arn", "collector": "76" },
+        { "name": "Chaos Orb", "set": "lea", "collector": "235" },
+        { "name": "Chaos Orb", "set": "leb", "collector": "236" },
+        { "name": "The Tabernacle at Pendrell Vale", "set": "leg", "collector": "307" }
+      ]
+    },
+    {
+      "id": "tier3",
+      "label": "Tier 3",
+      "cards": [
+        { "name": "Underground Sea", "set": "lea", "collector": "285" },
+        { "name": "Tropical Island", "set": "lea", "collector": "283" },
+        { "name": "Volcanic Island", "set": "leb", "collector": "287" },
+        { "name": "Tundra", "set": "lea", "collector": "284" },
+        { "name": "Bayou", "set": "lea", "collector": "278" },
+        { "name": "Savannah", "set": "lea", "collector": "280" },
+        { "name": "Taiga", "set": "lea", "collector": "282" },
+        { "name": "Scrubland", "set": "lea", "collector": "281" },
+        { "name": "Badlands", "set": "lea", "collector": "277" },
+        { "name": "Plateau", "set": "lea", "collector": "279" },
+        { "name": "Underground Sea", "set": "leb", "collector": "286" },
+        { "name": "Tropical Island", "set": "leb", "collector": "284" },
+        { "name": "Tundra", "set": "leb", "collector": "285" },
+        { "name": "Bayou", "set": "leb", "collector": "279" },
+        { "name": "Bazaar of Baghdad", "set": "arn", "collector": "70" },
+        { "name": "City in a Bottle", "set": "arn", "collector": "60" },
+        { "name": "Mirror Universe", "set": "leg", "collector": "287" },
+        { "name": "Moat", "set": "leg", "collector": "28" },
+        { "name": "Candelabra of Tawnos", "set": "atq", "collector": "43" }
+      ]
+    }
+  ]
+}

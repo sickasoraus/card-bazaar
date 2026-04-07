@@ -7,7 +7,7 @@
 
 ## Files Changed
 - `index.html`: Adds modal markup and styles.
-- `app.js`: Modal logic, validation, localStorage gating, optional POST endpoint.
+- `js/app.mjs`: Modal logic, validation, localStorage gating, optional POST endpoint.
 
 ## Acceptance Criteria
 - First-time visitors (not logged in) see a modal after ~2 seconds.
@@ -16,7 +16,7 @@
 - Desktop and mobile display the same visual layout for the modal.
 
 ## Configuration
-- Set `EMAIL_CAPTURE_ENDPOINT` in `app.js` to send to a backend/webhook (optional). When null, it simulates success and stores locally.
+- Set `EMAIL_CAPTURE_ENDPOINT` in `js/app.mjs` to send to a backend/webhook (optional). When null, it simulates success and stores locally.
 
 ## How to Test
 1. Open the site in a private window → modal appears after ~2s.

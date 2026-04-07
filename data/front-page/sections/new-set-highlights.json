@@ -1,0 +1,18 @@
+{
+  "id": "new_set_highlights",
+  "title": "New Set Highlights",
+  "formats": [
+    "standard",
+    "new"
+  ],
+  "cards": [
+    {
+      "name": "Orcish Bowmasters",
+      "formats": [
+        "standard"
+      ],
+      "set": "ltr",
+      "tags": []
+    }
+  ]
+}

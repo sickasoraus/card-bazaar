@@ -7,7 +7,7 @@
 
 ## Files Changed
 - `index.html`: CSS tweaks for small screens (grid padding, button sizing).
-- `fetchCardImages.js`: Detects coarse pointers; toggles condition bar on tap; preserves hover on desktop.
+- `js/cards.mjs`: Detects coarse pointers; toggles condition bar on tap; preserves hover on desktop.
 
 ## Acceptance Criteria
 - On mobile/tablet (coarse pointer), tapping a card toggles the NM/EX/VG condition bar.

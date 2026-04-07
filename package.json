@@ -4,6 +4,7 @@
   "description": "Card Bazaar is a Magic: The Gathering singles marketplace concept site.   This version (1.3 FIXED) fetches live card images from the [Scryfall API](https://scryfall.com/docs/api)   and displays them in a two-column grid with interactive hover overlays showing pricing and condition variants.",
   "main": "index.js",
   "scripts": {
+    "dev": "npx http-server -p 5173",
     "test": "node --test"
   },
   "keywords": [],

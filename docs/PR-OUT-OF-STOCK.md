@@ -7,7 +7,7 @@
 
 ## Files Changed
 - `index.html`: CSS for celebration banner, last-copy badge, disabled condition buttons, and sold-out styling.
-- `fetchCardImages.js`: Per-card inventory state; UI updates on add-to-cart; overlay/badge logic.
+- `js/cards.mjs`: Per-card inventory state; UI updates on add-to-cart; overlay/badge logic.
 
 ## Acceptance Criteria
 - Clicking “Add to Cart” or double-clicking the image decrements the active condition count for that card.

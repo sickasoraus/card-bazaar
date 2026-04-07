@@ -1,0 +1,31 @@
+{
+  "id": "vintage_icons",
+  "title": "Vintage Icons",
+  "formats": [
+    "vintage",
+    "legacy",
+    "commander"
+  ],
+  "cards": [
+    {
+      "name": "Bazaar of Baghdad",
+      "formats": [
+        "vintage",
+        "legacy",
+        "commander"
+      ],
+      "set": "arn",
+      "tags": []
+    },
+    {
+      "name": "The Tabernacle at Pendrell Vale",
+      "formats": [
+        "vintage",
+        "legacy",
+        "commander"
+      ],
+      "set": "leg",
+      "tags": []
+    }
+  ]
+}

@@ -9,7 +9,7 @@
 
 ## Files Changed
 - `index.html`: Styling for `.card-meta`, `.testimonial-user`, `.testimonial-sold`.
-- `fetchCardImages.js`: Seeded testimonial data, live updates on purchase.
+- `js/cards.mjs`: Seeded testimonial data, live updates on purchase.
 
 ## Acceptance Criteria
 - Every card tile shows a testimonial row with user id and copies sold.

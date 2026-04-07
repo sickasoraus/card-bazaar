@@ -1,0 +1,37 @@
+{
+  "id": "supplies",
+  "title": "Supplies",
+  "formats": [],
+  "cards": [
+    {
+      "name": "Card Bazaar Binder",
+      "type": "supplies",
+      "image": "assets/products/binder.png",
+      "price": 39.99,
+      "tags": [
+        "supplies"
+      ],
+      "set": "supplies"
+    },
+    {
+      "name": "Card Bazaar Sleeves",
+      "type": "supplies",
+      "image": "assets/products/sleeves.png",
+      "price": 14.99,
+      "tags": [
+        "supplies"
+      ],
+      "set": "supplies"
+    },
+    {
+      "name": "Card Bazaar Playmat",
+      "type": "supplies",
+      "image": "assets/products/playmat.png",
+      "price": 24.99,
+      "tags": [
+        "supplies"
+      ],
+      "set": "supplies"
+    }
+  ]
+}

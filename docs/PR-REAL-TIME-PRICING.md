@@ -8,7 +8,7 @@
 - Keeps cart behavior consistent: adding the active condition uses the correct live price.
 
 ## Files Changed
-- `fetchCardImages.js`: add pricing fetch, condition multipliers, NM/EX/VG only, hover-only buttons, price trend coloring.
+- `js/cards.mjs`: add pricing fetch, condition multipliers, NM/EX/VG only, hover-only buttons, price trend coloring.
 - `README.md`: document hover-only pricing, three conditions, multipliers, and local behavior.
 - `docs/ROADMAP.md`: roadmap and sprint suggestion (added earlier in this branch).
 - `CONTRIBUTING.md`: contribution and workflow guide (added earlier in this branch).

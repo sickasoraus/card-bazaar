@@ -1,0 +1,27 @@
+{
+  "id": "sealed",
+  "title": "Sealed",
+  "formats": [],
+  "cards": [
+    {
+      "name": "Sealed Draft Booster Box",
+      "type": "sealed",
+      "image": "assets/packs/edgeofeternities.png",
+      "price": 139.99,
+      "tags": [
+        "sealed"
+      ],
+      "set": "sealed"
+    },
+    {
+      "name": "Sealed Collector Booster Box",
+      "type": "sealed",
+      "image": "assets/packs/finalfantasycollectorbooster.png",
+      "price": 229.99,
+      "tags": [
+        "sealed"
+      ],
+      "set": "sealed"
+    }
+  ]
+}

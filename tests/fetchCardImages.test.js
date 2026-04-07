@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { changeVariant, cycleVariant } = require('../fetchCardImages');
+const cardsPromise = import('../js/cards.mjs');
 
 class Element {
     constructor(tag) {
@@ -131,6 +131,7 @@ function buildCard() {
 }
 
 test('changeVariant reorders stack and updates labels', async () => {
+  const { changeVariant } = await cardsPromise;
   const { card, stack, price, condition, buttons } = buildCard();
 
   await changeVariant(buttons[2], 'EX', '$19.99');
@@ -149,6 +150,7 @@ test('changeVariant reorders stack and updates labels', async () => {
 });
 
   test('cycleVariant advances to next image', async () => {
+    const { cycleVariant } = await cardsPromise;
     const { stack, price, condition } = buildCard();
     await cycleVariant(stack);
     assert.equal(stack.lastElementChild.dataset.condition, 'G');

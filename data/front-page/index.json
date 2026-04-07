@@ -1,0 +1,46 @@
+{
+  "pageSize": 100,
+  "totalCards": 100,
+  "sections": [
+    {
+      "id": "cool_picks",
+      "title": "Cool Picks",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "source": "sections/cool-picks.json"
+    },
+    {
+      "id": "supplies",
+      "title": "Supplies",
+      "formats": [],
+      "source": "sections/supplies.json"
+    },
+    {
+      "id": "sealed",
+      "title": "Sealed",
+      "formats": [],
+      "source": "sections/sealed.json"
+    },
+    {
+      "id": "vintage_icons",
+      "title": "Vintage Icons",
+      "formats": [
+        "vintage",
+        "legacy",
+        "commander"
+      ],
+      "source": "sections/vintage-icons.json"
+    },
+    {
+      "id": "new_set_highlights",
+      "title": "New Set Highlights",
+      "formats": [
+        "standard",
+        "new"
+      ],
+      "source": "sections/new-set-highlights.json"
+    }
+  ]
+}

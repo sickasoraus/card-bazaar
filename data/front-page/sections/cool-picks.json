@@ -1,0 +1,970 @@
+{
+  "id": "cool_picks",
+  "title": "Cool Picks",
+  "formats": [
+    "modern",
+    "commander"
+  ],
+  "cards": [
+    {
+      "name": "Gaea's Cradle",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "usg",
+      "collector": "",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Grim Monolith",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ulg",
+      "collector": "",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Grief",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "7006",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Llanowar Elves",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "fdn",
+      "collector": "429",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Liliana of the Veil",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pwcs",
+      "collector": "2023-3",
+      "lang": "ja",
+      "tags": []
+    },
+    {
+      "name": "Bitterblossom",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "g11",
+      "collector": "1",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Necropotence",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "dkm",
+      "collector": "7",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Vendilion Clique",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "g11",
+      "collector": "3",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "K'rrik, Son of Yawgmoth",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "1186",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Snapcaster Mage",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "808",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Edgar Markov",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "inr",
+      "collector": "491",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Liliana, Dreadhorde General",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "war",
+      "collector": "97%E2%98%85",
+      "lang": "ja",
+      "tags": []
+    },
+    {
+      "name": "Dark Confidant",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sch",
+      "collector": "3",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Westvale Abbey // Ormendahl, Profane Prince",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "1159",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Volcanic Island",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "291",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Sheoldred, the Apocalypse",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pdmu",
+      "collector": "107s",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "The One Ring",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ltr",
+      "collector": "451",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Ugin, the Ineffable",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pwar",
+      "collector": "2s%E2%98%85",
+      "lang": "ja",
+      "tags": []
+    },
+    {
+      "name": "Fatal Push",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "slp",
+      "collector": "3",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Arcane Signet",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "1492",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Arcane Signet",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "1919",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Arcane Signet",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "7068",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Arcane Signet",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pip",
+      "collector": "356",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Arcane Signet",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "908",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Chrome Mox",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "mrd",
+      "tags": []
+    },
+    {
+      "name": "Bloodstained Mire",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ons",
+      "tags": []
+    },
+    {
+      "name": "Misty Rainforest",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "zen",
+      "tags": []
+    },
+    {
+      "name": "Scalding Tarn",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "zen",
+      "tags": []
+    },
+    {
+      "name": "The Soul Stone",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "spm",
+      "collector": "243",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Badgermole Cub",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "tla",
+      "collector": "326",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mox Diamond",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sth",
+      "collector": "138",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mox Ruby",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "2ed",
+      "collector": "265",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Lion's Eye Diamond",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "mir",
+      "collector": "307",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Underground Sea",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "290",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Tropical Island",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "288",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Tundra",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "289",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Quantum Riddler",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "eoe",
+      "collector": "305",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Taiga",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "leb",
+      "collector": "283",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Bayou",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "283",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Rhystic Study",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "j18",
+      "collector": "7",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mishra's Workshop",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "atq",
+      "collector": "81",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Wan Shi Tong, Librarian",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "tla",
+      "collector": "320",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "The One Ring",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ltr",
+      "collector": "748",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Badlands",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "282",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "City of Traitors",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "exo",
+      "collector": "143",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Plateau",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "284",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mox Emerald",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "2ed",
+      "collector": "262",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mox Jet",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "2ed",
+      "collector": "263",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Scrubland",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "286",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Wheel of Fortune",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "g10",
+      "collector": "7",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Aerith Gainsborough",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ppro",
+      "collector": "2025-3",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mox Sapphire",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "2ed",
+      "collector": "266",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Candelabra of Tawnos",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "atq",
+      "collector": "43",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Savannah",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "3ed",
+      "collector": "285",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Urza's Saga",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "slc",
+      "collector": "21",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Bazaar of Baghdad",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "arn",
+      "collector": "70",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Ancient Tomb",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "exp",
+      "collector": "36",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Force of Negation",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "rfin",
+      "collector": "J1",
+      "lang": "ja",
+      "tags": []
+    },
+    {
+      "name": "Force of Will",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "all",
+      "collector": "28",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Smothering Tithe",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "7009",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Traveling Chocobo",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "fin",
+      "collector": "551b",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "The One Ring",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ltr",
+      "collector": "451",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Greymond, Avacyn's Stalwart",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "143",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Malik, Grim Manipulator",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "147",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Tifa Lockhart",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pf25",
+      "collector": "9",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Gandalf the White",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ltr",
+      "collector": "299",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Jace, the Mind Sculptor",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "8001",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Kefka, Court Mage // Kefka, Ruler of Ruin",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "fin",
+      "collector": "322",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Traveling Chocobo",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "fin",
+      "collector": "551",
+      "lang": "ja",
+      "tags": []
+    },
+    {
+      "name": "Pact of Negation",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "mp2",
+      "collector": "16",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Pact of Negation",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "ltc",
+      "collector": "523",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mox Amber",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pdom",
+      "collector": "224s",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Enlightened Tutor",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "prm",
+      "collector": "35998",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Mystical Tutor",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "plst",
+      "collector": "SS1-6",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Silence",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "1445",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Cyclonic Rift",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "2xm",
+      "collector": "339",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Show and Tell",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "j13",
+      "collector": "8",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Entomb",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "g11",
+      "collector": "4",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Entomb",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "mp2",
+      "collector": "23",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Dark Confidant",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "g11",
+      "collector": "6",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Dauthi Voidwalker",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sch",
+      "collector": "23e",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Thoughtseize",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "mp2",
+      "collector": "45",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Lightning Greaves",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "mps",
+      "collector": "14",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Swiftfoot Boots",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "606",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Midgar, City of Mako // Reactor Raid",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pfin",
+      "collector": "286s",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Idyllic Tutor",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "pthb",
+      "collector": "24s",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Frantic Search",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "sld",
+      "collector": "228",
+      "lang": "",
+      "tags": []
+    },
+    {
+      "name": "Doubling Season",
+      "formats": [
+        "modern",
+        "commander"
+      ],
+      "set": "fdn",
+      "collector": "438",
+      "lang": "",
+      "tags": []
+    }
+  ]
+}

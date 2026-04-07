@@ -7,7 +7,7 @@
 
 ## Files Changed
 - `index.html`: Modal markup and styles; header `Daily Spin` button.
-- `app.js`: Spin gating, wheel animation, reward selection, and localStorage ledger.
+- `js/app.mjs`: Spin gating, wheel animation, reward selection, and localStorage ledger.
 
 ## Acceptance Criteria
 - Logged-in users see the modal on first visit of the day (or can open via `Daily Spin`).
